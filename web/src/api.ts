@@ -1,6 +1,6 @@
 // Typed client for the tidewater relay API. Base is the same origin,
 // so dev uses the Vite proxy (:8785) and production hits the relay.
-import type { FFResponse, Mesh, PortState, ZoneId } from './types';
+import type { FFResponse, GraphLive, JudgesLive, Mesh, PortState, ZoneId } from './types';
 
 export class ApiError extends Error {
   code: string;
@@ -91,16 +91,48 @@ export function postAssign(body: AssignBody): Promise<MutationResult> {
   return post<MutationResult>('/api/assign', payload);
 }
 
+export function postLicenceTrade(action: 'buy' | 'sell', ref: string): Promise<MutationResult> {
+  return post<MutationResult>('/api/licence', { action, ref });
+}
+
 export function postLicenceBuy(): Promise<MutationResult> {
-  return post<MutationResult>('/api/licence', { action: 'buy', ref: 'pool' });
+  return postLicenceTrade('buy', 'pool');
 }
 
 export function postLicenceSell(): Promise<MutationResult> {
-  return post<MutationResult>('/api/licence', { action: 'sell', ref: 'pool' });
+  return postLicenceTrade('sell', 'pool');
+}
+
+export function postDebt(action: 'buy' | 'forbear' | 'seize', ref: string): Promise<MutationResult> {
+  return post<MutationResult>('/api/debt', { action, ref });
+}
+
+export function postCouncil(action: 'propose' | 'vote', rule: string, indemnity?: number): Promise<MutationResult> {
+  return post<MutationResult>('/api/council', indemnity === undefined ? { action, rule } : { action, rule, indemnity });
+}
+
+export function getJudges(): Promise<JudgesLive> {
+  return request<JudgesLive>('/api/judges');
+}
+
+export function getGraph(): Promise<GraphLive> {
+  return request<GraphLive>('/api/graph');
 }
 
 export function postSurvey(zone: ZoneId): Promise<MutationResult> {
   return post<MutationResult>('/api/survey', { zone });
+}
+
+export interface DayReport {
+  day: number;
+  landings: Array<Record<string, unknown>>;
+  lines: string[];
+  week_rolled: boolean;
+  [key: string]: unknown;
+}
+
+export function postEndDay(): Promise<DayReport> {
+  return post<DayReport>('/api/day', {});
 }
 
 // FNV-1a 32-bit: judge-friendly word seeds fold into the numeric seed

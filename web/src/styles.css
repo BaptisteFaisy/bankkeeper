@@ -220,8 +220,27 @@ input {
 }
 .reason-list li { padding: 3px 0; border-top: 1px dashed var(--line); color: var(--muted); }
 
-.judges { margin-bottom: 12px; }
+.judges {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: min(620px, 46vw);
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+  z-index: 30;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
 .judge-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.harbour-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.harbour-block { margin-top: 10px; }
+.harbour-block h3 { font-size: 15px; margin: 0 0 6px; }
+.harbour-block label { display: inline-flex; gap: 4px; align-items: center; }
+.harbour-block input { width: 64px; }
+.harbour-block select { max-width: 150px; }
+.harbour-trade { display: inline-flex; gap: 6px; align-items: center; margin-right: 8px; }
+.harbour-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.harbour-list li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-top: 1px dashed var(--line); }
+.mesh-row button[aria-pressed="true"] { border-color: var(--gold); }
 .event-list { list-style: none; margin: 8px 0 0; padding: 0; font-size: 14px; }
 .event-list li { padding: 3px 0; border-top: 1px dashed var(--line); }
 

@@ -183,11 +183,13 @@ export default function JudgesPanel({ running, run, playerView, live, onRun }: P
         <p className="muted">No simulation yet. Judges run the harbour forward to audit the shared stock.</p>
       ) : (
         <>
+          <h4>Run curves</h4>
           <Chart history={shown.history} events={shown.events} live={live} />
           <p className="muted" data-testid="judges-gold">
-            Gold in port: {shown.goldTotal} · outside in: {shown.outsideIn} · outside out: {shown.outsideOut} ·
+            Live gold in port: {shown.goldTotal} · outside in: {shown.outsideIn} · outside out: {shown.outsideOut} ·
             net {shown.outsideIn - shown.outsideOut}
           </p>
+          <h4>Live standings</h4>
           <ActorsTable actors={shown.actors} />
         </>
       )}

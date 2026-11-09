@@ -1,8 +1,8 @@
 // Shared state hooks for the game screen. Small focused hooks
 // compose into one GameState object via useGame.
 import { useEffect, useRef, useState } from 'react';
-import { ApiError, getState } from './api';
-import type { FFResponse, PortState, ToastMsg } from './types';
+import { ApiError, getGraph, getJudges, getState } from './api';
+import type { FFResponse, GraphLive, JudgesLive, PortState, ToastMsg } from './types';
 import { EMPTY_AUCTION } from './types';
 import { clearSession, loadFf, loadSession, saveFf, saveSession } from './session';
 import type { Session } from './session';
@@ -181,6 +181,22 @@ export interface GameState {
 function validFf(ff: FFResponse | null): FFResponse | null {
   if (ff === null || !Array.isArray(ff.journal)) return null;
   return ff;
+}
+
+export function useJudges(dayKey: string): { judges: JudgesLive | null; graph: GraphLive | null } {
+  const [judges, setJudges] = useState<JudgesLive | null>(null);
+  const [graph, setGraph] = useState<GraphLive | null>(null);
+  useEffect(() => {
+    let live = true;
+    function load(): void {
+      getJudges().then((j) => { if (live) setJudges(j); }).catch(() => undefined);
+      getGraph().then((g) => { if (live) setGraph(g); }).catch(() => undefined);
+    }
+    load();
+    const t = window.setInterval(load, 10000);
+    return () => { live = false; window.clearInterval(t); };
+  }, [dayKey]);
+  return { judges, graph };
 }
 
 export function useGame(): GameState {

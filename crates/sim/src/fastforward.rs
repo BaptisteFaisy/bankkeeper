@@ -81,7 +81,7 @@ fn collect_events(report: &DayReport, events: &mut Vec<FfEvent>) {
         events.push(FfEvent {
             day: report.day,
             kind: "closure".to_string(),
-            detail: format!("{} stopped", actor.name()),
+            detail: format!("{} stopped (out of gold)", actor.name()),
         });
     }
     for line in &report.lines {

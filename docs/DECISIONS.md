@@ -33,3 +33,13 @@
 | Relevé « vaut une semaine » | Estimation figée 7 jours, rejouable ensuite | Évite le spam de relevés à 80 or |
 | Facteur de stock acheteur | `1 + 0,5 × écart relatif à la cible` | Formule du §12 |
 | Écoulement et paies | Chaque fin de journée | Conserves exportées → or extérieur ; paies dépensées → poissonnier/auberge |
+
+## 2026-11-10 — Round 1 : journée atomique (critic-1 B1, règles §11/TW-UI-04)
+
+Le temps direct avance par journées atomiques (`POST /api/day`, bouton
+« End the day ») : les trois sorties, les débarquements, la criée et le
+registre se résolvent d'un coup, avec le rapport de journée en toast.
+L'horloge de criée ne défile donc pas en direct ; la criée montre le dernier
+lot, les limites et le prix de vente avec sa ligne de raisonnement. Lecture
+assumée : jouable et démontrable, là où le §2.1 décrit un rythme continu
+(débarquement ~50 s, journée 5 min) que le tour par tour compresse.

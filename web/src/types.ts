@@ -191,3 +191,45 @@ export function zoneById(state: PortState | null, id: ZoneId): ZoneView | null {
 export function myBoats(state: PortState | null): BoatView[] {
   return state?.boats.filter((b) => b.mine) ?? [];
 }
+
+export interface JudgesActor {
+  id: string;
+  name: string;
+  gold: number;
+  licences: number;
+  stopped: boolean;
+}
+
+export interface LoanView {
+  id: number;
+  borrower: string;
+  holder: string;
+  outstanding: number;
+  missed: number;
+}
+
+export interface CouncilProposal {
+  quota_per_licence: number;
+  close_zone: string | null;
+  ban_small_mesh: boolean;
+  indemnity_per_licence_week: number;
+}
+
+export interface JudgesLive {
+  seed: number;
+  day: number;
+  week: number;
+  actors: JudgesActor[];
+  gold_total: number;
+  ext_in: number;
+  ext_out: number;
+  licence_pool: number;
+  proposal: CouncilProposal | null;
+  loans: LoanView[];
+}
+
+export interface GraphLive {
+  history: Array<Record<string, unknown>>;
+  stocks: [number, number, number];
+  capacity: [number, number, number];
+}

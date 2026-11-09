@@ -331,6 +331,18 @@ pub fn view_graph(game: &Game) -> Value {
     })
 }
 
+/// One loan note for the judges table: borrower, holder, arrears (TW-C3-05).
+fn loan_view(game: &Game, index: usize) -> Value {
+    let loan = &game.loans[index];
+    json!({
+        "id": loan.id,
+        "borrower": loan.borrower.name(),
+        "holder": loan.holder.name(),
+        "outstanding": gold_pieces(loan.outstanding as i64),
+        "missed": loan.missed,
+    })
+}
+
 /// Judges table for GET /api/judges: purses, licences, gold circuit (TW-J-03).
 pub fn view_judges(game: &Game) -> Value {
     let actors: Vec<Value> = ActorId::all()
@@ -345,6 +357,8 @@ pub fn view_judges(game: &Game) -> Value {
             })
         })
         .collect();
+    let loans: Vec<Value> =
+        (0..game.loans.len()).map(|index| loan_view(game, index)).collect();
     json!({
         "seed": game.port.seed,
         "day": game.port.day,
@@ -355,6 +369,7 @@ pub fn view_judges(game: &Game) -> Value {
         "ext_out": gold_pieces(game.flows_total.fuel_bait as i64),
         "licence_pool": game.port.licence_pool,
         "proposal": game.proposal,
+        "loans": loans,
     })
 }
 
@@ -411,5 +426,6 @@ mod tests {
         assert_eq!(state["licences"], 4);
         let judges = view_judges(&game);
         assert_eq!(judges["actors"].as_array().unwrap().len(), 10);
+        assert!(!judges["loans"].as_array().unwrap().is_empty());
     }
 }

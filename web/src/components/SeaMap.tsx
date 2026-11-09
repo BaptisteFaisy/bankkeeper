@@ -80,7 +80,7 @@ function layoutBoats(boats: BoatView[]): BoatSpot[] {
     const r = ZONE_RECTS[boat.zone];
     const n = perZone.get(boat.zone) ?? 0;
     perZone.set(boat.zone, n + 1);
-    spots.push({ boat, x: r.x + 210 + (n % 4) * 88, y: r.y + 42 + Math.floor(n / 4) * 52 });
+    spots.push({ boat, x: r.x + 180 + (n % 5) * 64, y: r.y + 44 + Math.floor(n / 5) * 46 });
   }
   return spots;
 }
@@ -138,9 +138,9 @@ function paintCoast(ctx: CanvasRenderingContext2D): void {
   ctx.strokeStyle = '#8a764f';
   ctx.lineWidth = 2;
   ctx.strokeRect(QUAY.x - 8, QUAY.y - 8, QUAY.w + 16, QUAY.h + 16);
-  ctx.fillStyle = '#4d4231';
+  ctx.fillStyle = INK;
   ctx.font = '12px sans-serif';
-  ctx.fillText('QUAY', QUAY.x + 2, QUAY.y + QUAY.h + 14);
+  ctx.fillText('QUAY', QUAY.x + 2, QUAY.y + QUAY.h - 8);
 }
 
 // Harbour sheds: an open buyer shows lit windows, a closed one goes
@@ -180,7 +180,7 @@ function paintSchools(ctx: CanvasRenderingContext2D, zone: ZoneView): void {
   const r = ZONE_RECTS[zone.id];
   ctx.fillStyle = 'rgba(228, 237, 230, 0.55)';
   for (let i = 0; i < zone.schools; i += 1) {
-    const x = r.x + 24 + (i % 2) * 34;
+    const x = r.x + r.w - 70 + (i % 2) * 34;
     const y = r.y + r.h - 26 - Math.floor(i / 2) * 26;
     ctx.beginPath();
     ctx.ellipse(x, y, 9, 4, 0, 0, Math.PI * 2);
@@ -212,7 +212,8 @@ function paintZoneFrame(ctx: CanvasRenderingContext2D, zone: ZoneView, armed: bo
   ctx.fillStyle = trendColor(zone.trend);
   ctx.fillText(zone.trend, r.x + 12, r.y + 56);
   ctx.fillStyle = MUTED;
-  ctx.fillText(`${zone.boats} boats · ${zone.tripCost}g/trip`, r.x + 12, r.y + 72);
+  const hulls = zone.boats === 1 ? '1 boat' : `${zone.boats} boats`;
+  ctx.fillText(`${hulls} · ${zone.tripCost}g/trip`, r.x + 12, r.y + 72);
   if (zone.survey !== null) {
     ctx.fillStyle = '#e3b65a';
     ctx.fillText(zone.survey, r.x + 12, r.y + 88);

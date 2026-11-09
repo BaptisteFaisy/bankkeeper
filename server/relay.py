@@ -6,7 +6,7 @@ fast-forwards; serves the built web UI when present. Auth is social
 stored in a disposable file next to the live state.
 
 GET:  health, state, graph, judges. POST: auth, assign, survey,
-licence, debt, council, fastforward ({days: 7|28, seed?}).
+licence, debt, council, day, fastforward ({days: 7|28, seed?}).
 Errors are stable {"error": code, "message": text} envelopes; a sim
 rule refusal maps to HTTP 409. Fast-forward runs on a temp copy only.
 """
@@ -21,9 +21,12 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
-from simclient import (SIM_TIMEOUT, build_assign_argv, build_council_argv, build_debt_argv,
-                       build_licence_argv, build_query_argv, build_survey_argv, call_sim,
-                       run_fastforward_isolated, sim_bin)
+from simclient import (SIM_TIMEOUT, build_assign_argv, build_council_argv, build_day_argv,
+                       build_debt_argv, build_licence_argv, build_query_argv, build_survey_argv,
+                       call_sim, run_fastforward_isolated, sim_bin)
+from payloads import (validate_assign_payload, validate_auth_payload, validate_council_payload,
+                      validate_day_payload, validate_debt_payload, validate_fastforward_payload,
+                      validate_licence_payload, validate_survey_payload)
 
 DEFAULT_PORT = 8785
 
@@ -36,7 +39,7 @@ _API_METHODS = {"/api/health": "GET", "/api/auth": "POST",
                 "/api/survey": "POST", "/api/licence": "POST",
                 "/api/debt": "POST", "/api/council": "POST",
                 "/api/fastforward": "POST", "/api/graph": "GET",
-                "/api/judges": "GET"}
+                "/api/judges": "GET", "/api/day": "POST"}
 
 _MESSAGES = {
     "E_BAD_JSON": "The request body is not valid JSON.",
@@ -74,6 +77,28 @@ def state_path() -> str:
     return os.environ.get("SIM_STATE", default_state_path())
 
 
+def sim_seed() -> int:
+    try:
+        return max(0, int(os.environ.get("SIM_SEED", "7")))
+    except ValueError:
+        return 7
+
+
+def ensure_state() -> None:
+    """Seed a fresh harbour when the state file is missing (M5).
+
+    First sign-in on a fresh state path must play, never dead-end.
+    """
+    path = state_path()
+    if os.path.isfile(path):
+        return
+    with MUTATION_LOCK:
+        if os.path.isfile(path):
+            return
+        call_sim([sim_bin(), "init", "--seed", str(sim_seed()),
+                  "--out", path], SIM_TIMEOUT)
+
+
 def sessions_path() -> str:
     override = os.environ.get("SIM_SESSIONS")
     if override:
@@ -108,149 +133,6 @@ def parse_route(method: str, target: str) -> str:
     if path == "/api" or path.startswith("/api/"):
         return "api_not_found"
     return "static"
-
-
-def _as_nonempty_str(value: object) -> str | None:
-    if isinstance(value, str) and value.strip():
-        return value.strip()
-    return None
-
-
-def _as_int(value: object) -> int | None:
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str) and value.strip():
-        try:
-            return int(value.strip())
-        except ValueError:
-            return None
-    return None
-
-
-def _as_nonneg_int(value: object) -> int | None:
-    n = _as_int(value)
-    return n if n is not None and n >= 0 else None
-
-
-def _as_number(value: object) -> float | None:
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str) and value.strip():
-        try:
-            return float(value.strip())
-        except ValueError:
-            return None
-    return None
-
-
-def _as_action(value: object, allowed: set[str]) -> str | None:
-    text = _as_nonempty_str(value)
-    if text is None:
-        return None
-    return text.lower() if text.lower() in allowed else None
-
-
-def _as_dict(body: object) -> dict | None:
-    return body if isinstance(body, dict) else None
-
-
-def validate_auth_payload(body: object) -> tuple[dict | None, str | None]:
-    """Return (clean, None) or (None, error_code). Pure."""
-    data = _as_dict(body)
-    if data is None:
-        return None, "E_BAD_JSON"
-    email = _as_nonempty_str(data.get("email"))
-    pseudo = _as_nonempty_str(data.get("pseudo"))
-    if email is None or "@" not in email or pseudo is None:
-        return None, "E_BAD_AUTH"
-    return {"email": email, "pseudo": pseudo}, None
-
-
-MESH_NAMES = {"large": "large", "large mesh": "large",
-              "small": "small", "small mesh": "small"}
-
-
-def validate_assign_payload(body: object) -> tuple[dict | None, str | None]:
-    data = _as_dict(body)
-    if data is None:
-        return None, "E_BAD_JSON"
-    boat = _as_nonempty_str(data.get("boat"))
-    zone = _as_nonempty_str(data.get("zone"))
-    quay = data.get("quay") is True or (zone is not None
-                                        and zone.lower() == "quay")
-    if boat is None or (zone is None and not quay):
-        return None, "E_BAD_ASSIGN"
-    mesh = None
-    if data.get("mesh") is not None:
-        raw = _as_nonempty_str(data.get("mesh"))
-        mesh = MESH_NAMES.get(raw.lower()) if raw else None
-        if mesh is None:
-            return None, "E_BAD_ASSIGN"
-    return {"boat": boat, "zone": zone, "quay": quay, "mesh": mesh}, None
-
-
-def validate_survey_payload(body: object) -> tuple[dict | None, str | None]:
-    data = _as_dict(body)
-    if data is None:
-        return None, "E_BAD_JSON"
-    zone = _as_nonempty_str(data.get("zone"))
-    if zone is None:
-        return None, "E_BAD_SURVEY"
-    return {"zone": zone}, None
-
-
-def _validate_action_ref(body: object, allowed: set[str],
-                         code: str) -> tuple[dict | None, str | None]:
-    data = _as_dict(body)
-    if data is None:
-        return None, "E_BAD_JSON"
-    action = _as_action(data.get("action"), allowed)
-    ref = _as_nonempty_str(data.get("ref"))
-    if action is None or ref is None:
-        return None, code
-    return {"action": action, "ref": ref}, None
-
-
-def validate_licence_payload(body: object) -> tuple[dict | None, str | None]:
-    return _validate_action_ref(body, {"buy", "sell"}, "E_BAD_LICENCE")
-
-
-def validate_debt_payload(body: object) -> tuple[dict | None, str | None]:
-    return _validate_action_ref(body, {"buy", "forbear", "seize"}, "E_BAD_DEBT")
-
-
-def validate_council_payload(body: object) -> tuple[dict | None, str | None]:
-    data = _as_dict(body)
-    if data is None:
-        return None, "E_BAD_JSON"
-    action = _as_action(data.get("action"), {"propose", "vote"})
-    rule = _as_nonempty_str(data.get("rule"))
-    if action is None or rule is None:
-        return None, "E_BAD_COUNCIL"
-    clean: dict = {"action": action, "rule": rule}
-    if data.get("indemnity") is not None:
-        amount = _as_number(data.get("indemnity"))
-        if amount is None or amount < 0:
-            return None, "E_BAD_COUNCIL"
-        clean["indemnity"] = amount
-    return clean, None
-
-
-def validate_fastforward_payload(body: object) -> tuple[dict | None,
-                                                       str | None]:
-    data = _as_dict(body)
-    if data is None:
-        return None, "E_BAD_JSON"
-    if _as_int(data.get("days")) not in (7, 28):
-        return None, "E_BAD_FASTFORWARD"
-    seed = _as_nonneg_int(data.get("seed", 7))
-    if seed is None:
-        return None, "E_BAD_FASTFORWARD"
-    return {"days": _as_int(data.get("days")), "seed": seed}, None
 
 
 def load_sessions(path: str) -> dict:
@@ -321,6 +203,8 @@ _POST_SIM = {
     "council": (validate_council_payload,
                 lambda c: build_council_argv(*_sim_active(), c["action"],
                                              c["rule"], c.get("indemnity"))),
+    "day": (validate_day_payload,
+            lambda c: build_day_argv(*_sim_active())),
 }
 
 
@@ -391,6 +275,7 @@ class RelayHandler(BaseHTTPRequestHandler):
         return (parsed, 0, None)
 
     def _query_via_sim(self, command: str):
+        ensure_state()
         argv = build_query_argv(sim_bin(), state_path(), command)
         with MUTATION_LOCK:
             status, body = call_sim(argv, SIM_TIMEOUT)
@@ -466,6 +351,7 @@ class RelayHandler(BaseHTTPRequestHandler):
         if err is not None:
             self._send_json(400, error_body(err))
             return
+        ensure_state()
         with MUTATION_LOCK:
             status, resp = call_sim(to_argv(clean), SIM_TIMEOUT)
         self._send_json(status, self._envelope(resp))
@@ -475,6 +361,7 @@ class RelayHandler(BaseHTTPRequestHandler):
         if err is not None:
             self._send_json(400, error_body(err))
             return
+        ensure_state()
         status, resp = run_fastforward_isolated(
             state_path(), clean["days"], clean["seed"], lock=MUTATION_LOCK)
         self._send_json(status, self._envelope(resp))

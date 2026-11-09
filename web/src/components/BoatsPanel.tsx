@@ -50,11 +50,11 @@ function BoatCard({ boat, selected, busy, onSelectBoat, onAssign, onMesh }: Prop
           </div>
           <div className="mesh-row">
             <span className="muted">Net:</span>
-            <button type="button" disabled={busy || !atQuay || boat.mesh === 'large'} onClick={() => onMesh(boat, 'large')}>
-              Large
+            <button type="button" disabled={busy || !atQuay || boat.mesh === 'large'} aria-pressed={boat.mesh === 'large'} onClick={() => onMesh(boat, 'large')}>
+              {boat.mesh === 'large' ? 'Large (current)' : 'Large'}
             </button>
-            <button type="button" disabled={busy || !atQuay || boat.mesh === 'small'} onClick={() => onMesh(boat, 'small')}>
-              Small
+            <button type="button" disabled={busy || !atQuay || boat.mesh === 'small'} aria-pressed={boat.mesh === 'small'} onClick={() => onMesh(boat, 'small')}>
+              {boat.mesh === 'small' ? 'Small (current)' : 'Small'}
             </button>
             {!atQuay && <span className="muted">Nets change at the quay only.</span>}
           </div>
