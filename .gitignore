@@ -1,2 +1,8 @@
 __pycache__/
-*.py[cod]
+*.pyc
+target/
+node_modules/
+web/dist/
+server/state.json
+server/*.state.json
+.DS_Store

@@ -1,6 +1,11 @@
-# near_tidewater
+# near_tidewater — Tidewater
 
-tidewater : le port de pêche et son stock commun
+Tidewater : le port de pêche et son stock commun. Tu es capitaine dans un
+port où tous les bateaux puisent dans les mêmes bancs : ce que chacun
+prend aujourd'hui décide de ce qu'il restera demain.
+
+Jeu du hackathon NEAR, track *Games With Real Economies*. Le brief fait
+foi : [`tidewater.md`](tidewater.md). Docs : [`docs/`](docs).
 
 ## Pipeline
 
@@ -15,3 +20,42 @@ checks requis `ci`, `ci-budget` (jobs ≤ 5 min), `couche0` (garde `## Scope`).
 
 Preuve pipeline : 2026-11-09T22:18:58Z — balayeur attendu.
 Preuve activation Merge Queue : 2026-11-09T23:16:46Z — produit activé sur dashboard, merge par la file attendu.
+
+## Démarrage local
+
+Prérequis : Rust (cargo), Python 3 (stdlib uniquement côté relais),
+Node 20+ pour le web.
+
+```sh
+# 1. Simu + contrat (vérification Rust)
+cargo test --workspace
+
+# 2. Relais : port 8785 en dev, jamais 8775 (live Market Town) ni 8765
+PORT=8785 python3 server/relay.py
+
+# 3. Web : http://localhost:5173 (proxy /api -> 8785)
+cd web && npm install && npm run dev
+```
+
+Tests : ports et états jetables par run, Chrome headless à profil
+séparé sous `/tmp`, aucun processus laissé derrière (brief §8).
+
+## Disposition du dépôt
+
+- `crates/rules/` — règles uniques partagées par la simu et le contrat.
+- `crates/sim/` — moteur de cycles, NPC, fast-forward, graine.
+- `contracts/tidewater/` — contrat NEP-245 (or, poissons, licences,
+  bateaux, dettes, parts).
+- `server/` — relais HTTP Python (stdlib only).
+- `web/` — React + Vite + TS strict, canvas maison.
+- `tests/`, `fixtures/` — garde structurelle CI et graines de référence.
+- `docs/` — architecture, API, économie, boucle, démo juges, décisions.
+- `tidewater.md` — le brief, autorité première.
+
+## Contraintes (brief §8)
+
+Fichiers < 500 lignes, fonctions < 50 ; code, commentaires et UI en
+anglais, docs en français ; goût (ni violet ni indigo, pas de titre en
+dégradé, etc.) ; `prefers-reduced-motion` partout, DPR ≤ 2 ; zéro
+erreur console sur le parcours de référence. `.github/` est gelé : la
+CI reste docs + gardes.
