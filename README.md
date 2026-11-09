@@ -14,3 +14,4 @@ checks requis `ci`, `ci-budget` (jobs ≤ 5 min), `couche0` (garde `## Scope`).
 - `main` est protégée (ruleset) : tout passe par PR + file, jamais de push direct.
 
 Preuve pipeline : 2026-11-09T22:18:58Z — balayeur attendu.
+Preuve activation Merge Queue : 2026-11-09T23:16:46Z — produit activé sur dashboard, merge par la file attendu.
