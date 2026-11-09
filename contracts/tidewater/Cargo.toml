@@ -1,0 +1,19 @@
+[package]
+name = "tidewater"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Tidewater NEP-245 multi-token contract: gold, fish, licences, boat deeds, loans, shares"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk.workspace = true
+serde.workspace = true
+rules.workspace = true
+
+# near-sdk 5 gate: host builds only pass with this feature unified in.
+# Dev-deps are active for `cargo test`, inactive for `cargo-near build`.
+[dev-dependencies]
+near-sdk = { version = "5", features = ["unit-testing"] }
