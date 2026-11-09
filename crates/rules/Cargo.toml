@@ -1,0 +1,10 @@
+[package]
+name = "rules"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Single tidewater rules module shared by the sim and the contract (stocks, trips, auction, licences, goldflow, bankruptcy)"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
