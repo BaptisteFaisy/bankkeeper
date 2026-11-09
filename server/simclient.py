@@ -13,6 +13,7 @@ CLI contract (implemented by `crates/sim`, binary `sim`):
   sim licence --state F --action buy|sell --ref R
   sim debt   --state F --action buy|forbear|seize --ref R
   sim council --state F --action propose|vote --rule R [--indemnity N]
+  sim day --state F                                    -> day report
   sim fastforward --state COPY --days 7|28 --seed S \\
       --journal J --series R --markers M                -> summary on stdout
 
@@ -81,6 +82,11 @@ def build_debt_argv(binary: str, state: str, action: str,
                     ref: str) -> list[str]:
     return [binary, "debt", "--state", state, "--action", action,
             "--ref", ref]
+
+
+def build_day_argv(binary: str, state: str) -> list[str]:
+    """Argv ending the current live day; prints the day report."""
+    return [binary, "day", "--state", state]
 
 
 def build_council_argv(binary: str, state: str, action: str, rule: str,

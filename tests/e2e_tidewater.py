@@ -70,7 +70,7 @@ if cmd == "state":
     print(json.dumps(state))
 elif cmd in ("graph", "judges"):
     print(json.dumps({"ok": True, "view": cmd, "points": []}))
-elif cmd in ("assign", "survey", "licence", "debt", "council"):
+elif cmd in ("assign", "survey", "licence", "debt", "council", "day"):
     print(json.dumps({"ok": True, "cmd": cmd}))
 elif cmd == "fastforward":
     json.dump([{"day": 1, "kind": "council", "detail": "vote"}],
@@ -179,6 +179,13 @@ def journey(driver, base, notes):
     except Exception as exc:
         notes.append(f"blocked: assign a boat ({exc})")
     try:
+        wait.until(ec.element_to_be_clickable((By.XPATH, "//button[text()='End the day']"))).click()
+        time.sleep(4)
+        body = driver.find_element(By.TAG_NAME, "body").text
+        notes.append("day: ends" if "ends:" in body else "blocked: no day toast after 4s")
+    except Exception as exc:
+        notes.append(f"blocked: end the day ({exc})")
+    try:
         driver.find_element(By.XPATH, "//button[text()='Judges']").click()
         wait.until(ec.element_to_be_clickable((By.XPATH, "//button[text()='Buy licence']"))).click()
         notes.append("licence: bought one")
@@ -188,7 +195,7 @@ def journey(driver, base, notes):
         driver.find_element(By.XPATH, "//button[text()='Fast-forward 7 days']").click()
         time.sleep(5)
         body = driver.find_element(By.TAG_NAME, "body").text
-        notes.append("ff7: hash shown" if "Hash" in body else "blocked: no ff hash after 5s")
+        notes.append("ff7: hash shown" if "hash " in body else "blocked: no ff hash after 5s")
     except Exception as exc:
         notes.append(f"blocked: fast-forward 7 days ({exc})")
     try:

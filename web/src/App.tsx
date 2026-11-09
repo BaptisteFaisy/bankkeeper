@@ -1,25 +1,31 @@
 // App: session gate plus the single 1280x800 game screen.
 // Top bar, sea chart, auction, boats, ledger and the judges drawer.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import type { BoatView, FFResponse, Mesh, PortState, ZoneId } from './types';
-import { EMPTY_AUCTION } from './types';
-import { useGame } from './hooks';
+import type { BoatView, FFResponse, GraphLive, JudgesLive, Mesh, PortState, ZoneId } from './types';
+import { EMPTY_AUCTION, ZONE_LABEL } from './types';
+import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
-import { doAssign, doLicenceBuy, doRunFF } from './actions';
+import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doRunFF, doSurvey } from './actions';
 import { postLogin } from './api';
 import type { Session } from './session';
 import SeaMap from './components/SeaMap';
 import AuctionPanel from './components/AuctionPanel';
 import BoatsPanel from './components/BoatsPanel';
 import LedgerPanel from './components/LedgerPanel';
+import HarbourPanel from './components/HarbourPanel';
+import JudgesPanel from './components/JudgesPanel';
+import type { JudgeRun } from './components/JudgesPanel';
+import type { StockPoint } from './components/Chart';
 
-function TopBar({ port, session, onLogout, judgesOpen, onJudges }: {
+function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy }: {
   port: PortState | null;
   session: Session;
   onLogout: () => void;
   judgesOpen: boolean;
   onJudges: (open: boolean) => void;
+  onEndDay: () => void;
+  dayBusy: boolean;
 }) {
   return (
     <header className="topbar">
@@ -28,6 +34,9 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges }: {
       <span className="tide-stat gold">{port?.playerGold ?? '—'}g</span>
       <span className="tide-stat">Quota left: {port?.quotaLeft ?? '—'}</span>
       <span className="muted">{session.name}</span>
+      <button type="button" disabled={dayBusy} onClick={onEndDay}>
+        End the day
+      </button>
       <button type="button" className="ghost" onClick={() => onJudges(!judgesOpen)} aria-expanded={judgesOpen}>
         Judges
       </button>
@@ -102,35 +111,53 @@ function guardedMesh(game: GameState, boat: BoatView, mesh: Mesh): void {
   void doAssign(game.actions, { boat: boat.id, zone: null, net: mesh }, boat.name);
 }
 
-function JudgesDrawer({ game, port }: { game: GameState; port: PortState | null }) {
-  const ff: FFResponse | null = game.ff;
-  const running = game.busy === 'ff';
+function ffToRun(ff: FFResponse, live: JudgesLive | null): JudgeRun {
+  const days: number[] = Array.isArray(ff.series?.days) ? ff.series.days : [];
+  const stocks: number[][] = Array.isArray(ff.series?.stocks) ? ff.series.stocks : [];
+  const prices: number[] = Array.isArray(ff.series?.herring_price) ? ff.series.herring_price : [];
+  const history: StockPoint[] = days.map((day, i) => ({
+    day,
+    shallows: stocks[i]?.[0] ?? 0,
+    greybank: stocks[i]?.[1] ?? 0,
+    deeps: stocks[i]?.[2] ?? 0,
+    herringPrice: prices[i] ?? 0,
+  }));
+  return {
+    seed: String(ff.summary?.seed ?? ''),
+    days: ff.summary?.days_run ?? 0,
+    hash: String(ff.summary?.history_hash ?? ''),
+    history,
+    events: Array.isArray(ff.journal) ? ff.journal : [],
+    actors: (live?.actors ?? []).map((a) => ({ id: a.id, name: a.name, gold: a.gold, licences: a.licences, stopped: a.stopped })),
+    goldTotal: live?.gold_total ?? 0,
+    outsideIn: live?.ext_in ?? 0,
+    outsideOut: live?.ext_out ?? 0,
+  };
+}
+
+function livePoint(graph: GraphLive | null, judges: JudgesLive | null): StockPoint | null {
+  if (graph === null || judges === null) return null;
+  if (!Array.isArray(graph.stocks) || !Array.isArray(graph.history)) return null;
+  const last = graph.history[graph.history.length - 1] as { herring_price?: unknown } | undefined;
+  const price = typeof last?.herring_price === 'number' ? (last.herring_price as number) : 0;
+  return { day: judges.day, shallows: graph.stocks[0] ?? 0, greybank: graph.stocks[1] ?? 0, deeps: graph.stocks[2] ?? 0, herringPrice: price };
+}
+
+function JudgeBench({ game, port, judges, graph }: { game: GameState; port: PortState | null; judges: JudgesLive | null; graph: GraphLive | null }) {
   const seed = port?.seed ?? 'tidewater';
+  const run = game.ff === null ? null : ffToRun(game.ff, judges);
+  const playerView = (port?.zones ?? []).map((z) => ({ zone: ZONE_LABEL[z.id], catchPerTrip: z.catchPerTrip, trend: z.trend }));
   return (
     <section className="panel judges" aria-label="Judges">
       <h2>Judges</h2>
       <p className="muted">Seed {seed}: same seed, same season.</p>
-      <div className="judge-row">
-        <button type="button" disabled={running} onClick={() => { void doRunFF(game.actions, 7, seed); }}>
-          Fast-forward 7 days
-        </button>
-        <button type="button" disabled={running} onClick={() => { void doRunFF(game.actions, 28, seed); }}>
-          Fast-forward 28 days
-        </button>
-        {ff !== null && <span className="muted">Hash {ff.summary.history_hash} · {ff.summary.events} events</span>}
-        {game.port !== null && (
-          <button type="button" className="ghost" disabled={game.busy !== null} onClick={() => { void doLicenceBuy(game.actions); }}>
-            Buy licence
-          </button>
-        )}
-      </div>
-      {ff !== null && ff.journal.length > 0 && (
-        <ul className="event-list">
-          {ff.journal.slice(-8).map((e, i) => (
-            <li key={i}>Day {e.day} · {e.kind}: {e.detail}</li>
-          ))}
-        </ul>
-      )}
+      <JudgesPanel
+        running={game.busy === 'ff'}
+        run={run}
+        playerView={playerView}
+        live={livePoint(graph, judges)}
+        onRun={(days, seedText) => { void doRunFF(game.actions, days === 28 ? 28 : 7, seedText); }}
+      />
     </section>
   );
 }
@@ -176,6 +203,8 @@ function Board({ game, port, selected }: { game: GameState; port: PortState | nu
 function GameScreen({ game, session }: { game: GameState; session: Session }) {
   const port = game.port;
   const selected = findBoat(port, game.selectedBoat);
+  const dayKey = `${port?.week ?? 0}-${port?.day ?? ''}`;
+  const { judges, graph } = useJudges(dayKey);
   return (
     <>
       <TopBar
@@ -184,13 +213,27 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
         onLogout={game.logout}
         judgesOpen={game.judgesOpen}
         onJudges={game.setJudgesOpen}
+        onEndDay={() => { void doEndDay(game.actions); }}
+        dayBusy={game.busy !== null}
       />
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
       )}
       <Board game={game} port={port} selected={selected} />
       <LedgerPanel landings={port?.landings ?? []} reasoning={port?.reasoning ?? []} />
-      {game.judgesOpen && <JudgesDrawer game={game} port={port} />}
+      <HarbourPanel
+        captains={port?.captains ?? []}
+        loans={judges?.loans ?? []}
+        licencePool={judges?.licence_pool ?? 0}
+        proposal={judges?.proposal ?? null}
+        busy={game.busy !== null}
+        onSurvey={(zone) => { void doSurvey(game.actions, zone); }}
+        onLicence={(action, ref) => { void doLicenceTrade(game.actions, action, ref); }}
+        onDebt={(action, ref) => { void doDebt(game.actions, action, ref); }}
+        onPropose={(rule, indemnity) => { void doCouncil(game.actions, 'propose', rule, indemnity); }}
+        onVote={(yes) => { void doCouncil(game.actions, 'vote', yes ? 'yes' : 'no'); }}
+      />
+      {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
     </>
   );
 }
@@ -214,6 +257,15 @@ function ToastStack({ game }: { game: GameState }) {
 
 export default function App() {
   const game = useGame();
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (e.key !== 'Escape') return;
+      game.setSelectedBoat(null);
+      game.setJudgesOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [game]);
   if (game.session === null) {
     return (
       <div className="app">

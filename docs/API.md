@@ -50,6 +50,11 @@ de référence.
   `no` — le silence appuie sa propre motion).
 - Renflouement (TW-N-52) : uniquement via `sim refloat` en ligne de
   commande au lot 0, pas de route relais.
+- `POST /api/day` — `{}` : termine la journée directe (sorties,
+  débarquements, criée, repousse, charges, faillites) et répond le
+  rapport de journée (`day`, `landings`, `lines`, `week_rolled`). Le
+  bouton « End the day » de l'UI l'appelle ; le temps direct n'avance
+  que par cette route.
 
 ## Juges
 
