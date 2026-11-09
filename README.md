@@ -12,3 +12,5 @@ checks requis `ci`, `ci-budget` (jobs ≤ 5 min), `couche0` (garde `## Scope`).
   fichiers ; les workflows sont des fichiers de garde (`SAMVISION_ALLOW_GUARD_BUMP`).
 - Conflits : agent Fireworks ; tests rouges : agent zeroclaw `fw` via `triage-rouge`.
 - `main` est protégée (ruleset) : tout passe par PR + file, jamais de push direct.
+
+Preuve pipeline : 2026-11-09T22:18:58Z — balayeur attendu.
