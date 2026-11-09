@@ -6,7 +6,10 @@ self-hosted n'ont pas PyYAML garanti). Analyse volontairement simple :
 on lit les workflows ligne à ligne, on repère la section `jobs:` et, pour
 chaque job (clé à 2 espaces), le `timeout-minutes:` à 4 espaces.
 
-Erreurs (exit 1) : job sans `timeout-minutes`, ou timeout > MAX_MINUTES.
+Erreurs (exit 1) : job sans `timeout-minutes`, ou timeout > MAX_MINUTES
+sur un workflow qui tourne sur pull_request. Les workflows hors PR (push sur
+la branche protégée, tags, déclenchement manuel) peuvent dépasser, avec un
+timeout explicite et un commentaire qui justifie le chiffre.
 Avertissements (exit 0) : `concurrency` absent, checkout sans fetch-depth: 1.
 """
 
@@ -51,19 +54,31 @@ def scan_jobs(lines):
     return jobs
 
 
-def check_file(path, errors, warnings):
-    rel = path
+def runs_on_pr(lines):
+    """Vrai si le workflow se déclenche sur pull_request (donc soumis au budget)."""
+    for line in lines:
+        if line.startswith("jobs:"):
+            break
+        code = line.split("#", 1)[0]
+        if re.search(r"\bpull_request\b", code):
+            return True
+    return False
+
+
+def check_file(path, errors, warnings, display=None):
+    rel = display if display is not None else path
     lines = read_lines(path)
     jobs = scan_jobs(lines)
     if not jobs:
         warnings.append("%s: aucun job détecté (workflow vide ?)" % rel)
         return
+    on_pr = runs_on_pr(lines)
     for name, timeout in jobs:
         if timeout is None:
             errors.append(
                 "%s: job '%s' sans timeout-minutes (défaut 360 min, interdit)"
                 % (rel, name))
-        elif timeout > MAX_MINUTES:
+        elif timeout > MAX_MINUTES and on_pr:
             errors.append(
                 "%s: job '%s' timeout-minutes: %d > %d (budget CI)"
                 % (rel, name, timeout, MAX_MINUTES))
@@ -84,7 +99,10 @@ def main():
     if not paths:
         print("::warning::Aucun workflow dans %s" % WORKFLOWS)
     for path in paths:
-        check_file(os.path.relpath(path, root), errors, warnings)
+        # On lit le chemin réel (CI_BUDGET_ROOT peut viser ailleurs que le
+        # répertoire courant) mais on affiche le chemin relatif, stable.
+        check_file(path, errors, warnings,
+                   display=os.path.relpath(path, root))
 
     for message in warnings:
         print("::warning::%s" % message)

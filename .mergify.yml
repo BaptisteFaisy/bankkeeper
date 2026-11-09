@@ -1,19 +1,18 @@
-# File de merge Mergify — socle CI self-hosted (R630).
+# File de merge Mergify — CI self-hosted (R630), pipeline « comme vision ».
 #
-# Le depot demarre sans gate IA ni batterie de tests : les queue_conditions
-# n'exigent donc aucun check inexistant (le socle CI est en dry-run —
-# variable de depot HERMES_LITE_DRY_RUN=1). Le seul check exige est
-# `ci-budget`, livre par le socle : aucune PR ne peut entrer dans la file
-# avec un job declare a plus de 5 minutes. Quand la CI reelle du depot
-# existera, ajouter dans queue_conditions :
-#   - check-success = "<check reel>"
+# Trois checks requis, ceux du ruleset de `main` : `ci` (sanity docs +
+# tests des gardes, `.github/workflows/ci.yml`), `ci-budget` (garde-fou
+# des 5 min, règle user 2026-10-24) et `couche0` (périmètre déclaré +
+# motifs interdits). Le gate hermes-lite reste en dry-run (variable de
+# dépôt HERMES_LITE_DRY_RUN=1) : Mergify est le seul pilote de merge.
 # Structure copiée du .mergify.yml de BaptisteFaisy/duello (décision
 # user 2026-10-10) : inline labels urgent / priority-low identiques.
 queue_rules:
   - name: default
     queue_conditions:
-      # Budget CI 5 min (règle user 2026-10-24) : le garde-fou du socle.
+      - check-success = ci
       - check-success = ci-budget
+      - check-success = couche0
       - -conflict
       - -draft
       - base = main
@@ -36,9 +35,9 @@ priority_rules:
     priority: low
 
 merge_queue:
-  # N workers self-hosted (R630, labels near_tidewater-worker) ; la speculation
-  # Mergify reste bornee a 4, ajustable.
-  max_parallel_checks: 4
+  # 5 workers self-hosted (R630, label near_tidewater-worker) : la
+  # spéculation Mergify reste bornée à 2 pour ne pas affamer la CI des PR.
+  max_parallel_checks: 2
 
 # Auto-queue natif (produit Merge Queue) : évite de dépendre du produit
 # « Workflow Automation » (pull_request_rules), constaté désactivé le 24/10.
