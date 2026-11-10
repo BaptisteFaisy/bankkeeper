@@ -3,6 +3,7 @@
 // build-time `VITE_TIDEWATER_CONTRACT`. Nothing is hard-coded: with no answer
 // the page says "pas encore déployé" instead of pretending.
 import { viewFunction } from '../near/rpc';
+import type { TokenIconKind } from './icons';
 
 export const RPC_URL = 'https://rpc.testnet.fastnear.com';
 export const CHAIN_KEY = 'tidewater-chain-v1';
@@ -10,15 +11,62 @@ export const CHAIN_KEY = 'tidewater-chain-v1';
 export interface TokenSpec {
   id: string;
   label: string;
+  icon: TokenIconKind;
+  unit: string;
   expected: number | null;
+  detail: string;
 }
 
-// Token ids from contracts/tidewater/src/lib.rs (brief section 6).
+// Token categories from contracts/tidewater/src/lib.rs (brief section 6).
 export const TOKENS: TokenSpec[] = [
-  { id: '0', label: 'Or (milli-or)', expected: null },
-  { id: '1', label: 'Hareng', expected: null },
-  { id: '2', label: 'Morue', expected: null },
-  { id: '3', label: 'Licences', expected: 20 },
+  {
+    id: '0',
+    label: 'Or',
+    icon: 'gold',
+    unit: 'milli-or (1 000 = 1 or)',
+    expected: null,
+    detail: 'Masse monétaire liquide en circulation',
+  },
+  {
+    id: '1',
+    label: 'Hareng',
+    icon: 'herring',
+    unit: 'caisses',
+    expected: null,
+    detail: 'Poisson pélagique débarqué par les navires',
+  },
+  {
+    id: '2',
+    label: 'Cabillaud / Morue',
+    icon: 'cod',
+    unit: 'caisses',
+    expected: null,
+    detail: 'Poisson de fond pêché dans The Deeps',
+  },
+  {
+    id: '3',
+    label: 'Licences de pêche',
+    icon: 'licence',
+    unit: 'titres',
+    expected: 20,
+    detail: 'Offre fixe 20, max 8 par capitaine, 1 licence = 1 voix',
+  },
+  {
+    id: '10',
+    label: 'Actes de bateaux',
+    icon: 'deed',
+    unit: 'titres (10–19)',
+    expected: 1,
+    detail: 'Un titre par navire du port (10 actes au total)',
+  },
+  {
+    id: '100',
+    label: 'Notes de dette',
+    icon: 'loan',
+    unit: 'titres (100+)',
+    expected: 1,
+    detail: 'Créance de Brandt gagée sur son navire',
+  },
 ];
 
 export interface SupplyRow extends TokenSpec {

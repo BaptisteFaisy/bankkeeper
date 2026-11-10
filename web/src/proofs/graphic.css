@@ -1,0 +1,266 @@
+/* graphic.css — styles for the graphical proofs sections: harbour scene,
+   token cards and the transaction timeline. Loaded by Proofs.tsx; the base
+   page styles stay in web/src/proofs.css. Palette tokens only, flat fills,
+   explicit grid columns. */
+
+.pf-nav-links { margin: 12px 0 0; font-size: 14px; }
+
+.pf-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.pf-card .pf-card-head h2 { margin: 0; }
+
+.pf-card.pf-card-timeline { border-left-color: var(--gold); }
+
+.pf-actions-row { margin: 12px 0 10px; }
+
+.pf-ink-accent { color: var(--ink); }
+
+.pf-unreachable-block { margin-top: 10px; }
+
+/* Waiting harbour figure */
+.pf-harbor-figure {
+  margin: 14px 0 18px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.pf-harbor-canvas-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.pf-harbor-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 760 / 220;
+}
+
+.pf-harbor-caption {
+  padding: 12px 16px;
+  background: var(--panel-2);
+  font-size: 13.5px;
+}
+
+.pf-harbor-status-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.pf-harbor-expl { color: var(--ink); font-weight: 500; }
+
+.pf-harbor-details p { margin: 4px 0; font-size: 13px; line-height: 1.45; }
+
+/* Token cards: three explicit columns, one card per token type */
+.pf-tk-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.pf-tk-card {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--sand);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pf-tk-card:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.pf-tk-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pf-tk-canvas {
+  display: block;
+  width: 48px;
+  height: 48px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.pf-tk-titles { display: flex; flex-direction: column; }
+
+.pf-tk-id {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--sand);
+  font-family: monospace;
+}
+
+.pf-tk-label {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.pf-tk-body { border-top: 1px solid var(--line); padding-top: 10px; }
+
+.pf-tk-supply-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pf-tk-num {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.pf-tk-unit { font-size: 12px; color: var(--muted); }
+
+.pf-tk-detail { margin: 0 0 6px; font-size: 12.5px; line-height: 1.4; }
+
+.pf-tk-expected {
+  display: inline-block;
+  font-size: 11.5px;
+  color: var(--kelp);
+  border: 1px solid var(--kelp);
+  padding: 1px 6px;
+}
+
+/* Transaction timeline: rail, dots and status tags */
+.pf-tl-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0 0 0 8px;
+  position: relative;
+}
+
+.pf-tl-list::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  bottom: 24px;
+  left: 17px;
+  width: 2px;
+  background: var(--line);
+}
+
+.pf-tl-item {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 18px;
+  position: relative;
+}
+
+.pf-tl-item:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.pf-tl-marker {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.pf-tl-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  box-sizing: border-box;
+}
+
+.pf-tl-confirmed .pf-tl-dot { border-color: var(--kelp); background: var(--kelp); }
+.pf-tl-pending .pf-tl-dot { border-color: var(--gold); background: var(--panel-2); }
+.pf-tl-absent .pf-tl-dot { border-color: var(--muted); background: var(--bg); }
+
+.pf-tl-order {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+  font-family: monospace;
+}
+
+.pf-tl-content {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 10px 14px;
+  flex-grow: 1;
+}
+
+.pf-tl-confirmed .pf-tl-content { border-left: 3px solid var(--kelp); }
+.pf-tl-pending .pf-tl-content { border-left: 3px solid var(--gold); }
+.pf-tl-absent .pf-tl-content { border-left: 3px solid var(--muted); }
+
+.pf-tl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.pf-tl-action { font-size: 14px; font-weight: 700; color: var(--gold); }
+
+.pf-tl-tag {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.pf-tl-tag-confirmed { border-color: var(--kelp); color: var(--kelp); background: var(--bg); }
+.pf-tl-tag-pending { border-color: var(--gold); color: var(--gold); background: var(--bg); }
+.pf-tl-tag-absent { border-color: var(--line); color: var(--muted); background: var(--bg); }
+
+.pf-tl-summary { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+
+.pf-tl-meta {
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pf-tl-hash { font-size: 12px; }
+
+.pf-tl-ext { color: var(--gold); }
+
+@media (max-width: 820px) {
+  .pf-tk-grid { grid-template-columns: 1fr; }
+}
