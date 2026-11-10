@@ -8,8 +8,11 @@
 
 pub mod attribution;
 pub mod bots;
+pub mod charter;
+pub mod chronicle;
 pub mod cli;
 pub mod cycle;
+mod day_record;
 mod evening;
 pub mod favours;
 pub mod fastforward;
@@ -17,6 +20,7 @@ pub mod fleet;
 pub mod fund;
 pub mod govern;
 pub mod harness;
+pub mod labels;
 pub mod policies;
 mod reading;
 mod merchant_views;
@@ -26,8 +30,9 @@ pub mod season;
 pub mod seed;
 pub mod views;
 
+pub use day_record::DayRecord;
 pub use fund::Fund;
-pub use seed::{draw, draw_below, seed_game, Rng};
+pub use seed::{draw, draw_below, seed_game, seed_game_with, Rng};
 
 use rules::bankruptcy::{bailout_owed, bailout_payout};
 use rules::config::Config;
@@ -82,61 +87,6 @@ impl Bailout {
     }
 }
 
-/// One finished day, as the NPCs and the judges read it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DayRecord {
-    pub day: u64,
-    /// Trips sailed and crates landed per zone.
-    pub trips: [u64; 3],
-    pub crates: [u64; 3],
-    /// Trips sailed and crates landed per captain.
-    pub captain_trips: [u64; 10],
-    pub captain_crates: [u64; 10],
-    /// Auction revenue and boats that fished, per captain.
-    pub gold_earned: [i64; 10],
-    pub boats_fished: [u64; 10],
-    /// First zone fished and mesh used (small if any small trip), per captain.
-    pub fished_zone: [Option<Zone>; 10],
-    pub fished_mesh: [Mesh; 10],
-    /// Crates-weighted herring lot price (0 when no herring sold).
-    pub herring_price: u64,
-    pub herring_crates: u64,
-    /// Price x crates summed over all lots, and total lot crates.
-    pub lot_price_sum: u64,
-    pub lot_crates: u64,
-    pub gold_total: i64,
-}
-
-impl DayRecord {
-    /// Blank record for a day about to run.
-    pub fn new(day: u64) -> Self {
-        Self {
-            day,
-            trips: [0; 3],
-            crates: [0; 3],
-            captain_trips: [0; 10],
-            captain_crates: [0; 10],
-            gold_earned: [0; 10],
-            boats_fished: [0; 10],
-            fished_zone: [None; 10],
-            fished_mesh: [Mesh::Large; 10],
-            herring_price: 0,
-            herring_crates: 0,
-            lot_price_sum: 0,
-            lot_crates: 0,
-            gold_total: 0,
-        }
-    }
-
-    /// Fold one herring sale into the crates-weighted average price.
-    pub fn add_herring_sale(&mut self, price: u64, crates: u64) {
-        let sum = self.herring_price as u128 * self.herring_crates as u128
-            + price as u128 * crates as u128;
-        self.herring_crates += crates;
-        self.herring_price = (sum / self.herring_crates as u128) as u64;
-    }
-}
-
 /// Full sim state: shared core plus layer books plus journal. Serializable so
 /// the relay can persist it as JSON.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -177,6 +127,12 @@ pub struct Game {
     /// Bilan of every closed season, oldest first: the campaign log.
     #[serde(default)]
     pub campaign: Vec<season::Bilan>,
+    /// The port's public memory: one entry per closed season, oldest first.
+    #[serde(default)]
+    pub chronicle: Vec<chronicle::ChronicleEntry>,
+    /// The charter this campaign runs under, if the player wrote one.
+    #[serde(default)]
+    pub charter: Option<charter::Charter>,
     /// The day in progress, when the build lands one lot at a time.
     #[serde(default)]
     pub pending: Option<cycle::PendingDay>,

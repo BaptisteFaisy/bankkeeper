@@ -2,6 +2,7 @@
 // so dev uses the Vite proxy (:8785) and production hits the relay.
 import { engineCall, engineEnabled } from './engine';
 import { toApiError } from './errors';
+import type { Charter } from './charter';
 import type { FFResponse, GraphLive, JudgesLive, Mesh, PortState, ZoneId } from './types';
 
 export { ApiError } from './errors';
@@ -49,6 +50,9 @@ export interface ExportBody {
 export interface InitBody {
   seed: number;
   weeks: number;
+  // The institution the last campaign left behind; the engine applies it at
+  // seeding, so it rules this campaign and never the one being closed.
+  charter?: Charter | null;
 }
 
 /** The whole harbour as JSON, for the browser's own storage. */

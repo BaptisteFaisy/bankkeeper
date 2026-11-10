@@ -398,6 +398,39 @@ section.judges {
 .chain-tx { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .chain-error { color: var(--red); font-size: 12px; }
 
+/* The chronicle: the harbour's own book, read back season by season. */
+.chronicle { grid-column: 1 / -1; }
+.chronicle-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.chronicle-table th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  padding: 4px 8px 4px 0;
+}
+.chronicle-table td { padding: 5px 8px 5px 0; border-top: 1px dashed var(--line); font-size: 14px; }
+.chronicle-table tr:first-child td { border-top: none; }
+
+/* Writing the charter: three sentences, one choice, one new campaign. */
+.charter-screen { margin-top: 12px; }
+.charter-choices { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.charter-choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.charter-choice.picked { border-color: var(--buoy); }
+.charter-choice strong { display: block; margin-bottom: 2px; }
+
 /* Tutorial: three cards over the chart, read once, reopened on demand.
    Solid panels only: no gradient, no blur, one bright colour (the buoy). */
 .tutorial-backdrop {

@@ -6,70 +6,27 @@ import type { BoatView, CouncilOutcome, DayNote, FFResponse, GraphLive, JudgesLi
 import { EMPTY_AUCTION, ZONE_LABEL, parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
-import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
+import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
 import type { Session } from './session';
+import type { Charter } from './charter';
 import SeaMap from './components/SeaMap';
 import AuctionPanel from './components/AuctionPanel';
 import BoatsPanel from './components/BoatsPanel';
 import LedgerPanel from './components/LedgerPanel';
 import HarbourPanel from './components/HarbourPanel';
 import ChainBar from './components/ChainBar';
-import { ClockControls, CopyLink, HowToPlay } from './components/HeaderControls';
+import ChroniclePanel from './components/ChroniclePanel';
+import CharterScreen from './components/CharterScreen';
+import { CopyLink } from './components/HeaderControls';
 import { Tutorial, useTutorial } from './components/Tutorial';
+import TopBar from './components/TopBar';
 import JudgesPanel from './components/JudgesPanel';
 import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
 import { fmtCrates, fmtGold } from './format';
 import { CHAIN_ENABLED } from './near/chain';
-
-function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot, onHowToPlay }: {
-  port: PortState | null;
-  session: Session;
-  onLogout: () => void;
-  judgesOpen: boolean;
-  onJudges: (open: boolean) => void;
-  onEndDay: () => void;
-  dayBusy: boolean;
-  over: boolean;
-  onReset: () => void;
-  live: boolean;
-  setLive: (on: boolean) => void;
-  secondsLeft: number;
-  nextLot: () => void;
-  onHowToPlay: () => void;
-}) {
-  return (
-    <header className="topbar">
-      <h1>Tidewater</h1>
-      <span className="tide-stat">Week {port?.week ?? '—'} · {port?.day ?? '—'} · {port?.tide ?? '—'}</span>
-      <span className="tide-stat gold">{port === null ? '—' : `${fmtGold(port.playerGold)}g`}</span>
-      <span className="tide-stat">Quota left: {port?.quotaLeft ?? '—'}</span>
-      {port !== null && (port.campaignSeasons ?? 1) > 1 ? (
-        <span className="tide-stat">Season {port.season ?? 1} of {port.campaignSeasons}</span>
-      ) : null}
-      <span className="muted">{session.name}</span>
-      <ClockControls
-        live={live}
-        setLive={setLive}
-        secondsLeft={secondsLeft}
-        nextLot={nextLot}
-        onEndDay={onEndDay}
-        busy={dayBusy}
-        over={over}
-      />
-      <HowToPlay onOpen={onHowToPlay} />
-      <button type="button" className="ghost" disabled={dayBusy} onClick={onReset}>
-        New harbour
-      </button>
-      <button type="button" className="ghost" onClick={() => onJudges(!judgesOpen)} aria-expanded={judgesOpen}>
-        Judges
-      </button>
-      <button type="button" className="ghost" onClick={onLogout}>Log out</button>
-    </header>
-  );
-}
 
 function AuthGate({ onLogin }: { onLogin: (email: string, name: string) => void }) {
   const [email, setEmail] = useState('');
@@ -373,6 +330,7 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
     <>
       <Board game={game} port={port} selected={selected} over={over} />
       <LedgerPanel landings={port?.landings ?? []} reasoning={port?.reasoning ?? []} />
+      <ChroniclePanel entries={port?.chronicle ?? []} charter={port?.charter ?? null} />
       <HarbourPanel
         captains={port?.captains ?? []}
         loans={judges?.loans ?? []}
@@ -393,6 +351,14 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
   );
 }
 
+// The charter is kept by the browser and handed to `init`: the next campaign
+// starts one seed further on, under the sentence the player just wrote.
+function sailUnder(actions: GameActions, port: PortState, charter: Charter): void {
+  const seed = Number.parseInt(port.seed ?? '7', 10);
+  const next = { seed: (Number.isFinite(seed) ? seed : 7) + 1, weeks: port.weeksPerSeason ?? 2, charter };
+  void doNewCampaign(actions, next);
+}
+
 function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: Session; onHowToPlay: () => void }) {
   const port = game.port;
   const selected = findBoat(port, game.selectedBoat);
@@ -401,9 +367,12 @@ function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: 
   const { dayNote, noted } = useDayNote(game);
   const you = port?.captains.find((c) => c.id === 'you') ?? null;
   const end = overState(port, graph, dayNote, you !== null && !you.active);
+  // The campaign's last bilan outranks a bankruptcy: the port still asks for
+  // its charter, so the overlay must not cover the screen that writes it.
+  const campaignDone = port !== null && port.seasonOver === true && port.campaignOver === true;
   return (
     <>
-      {end.seasonOver && you !== null && port !== null && (
+      {(end.seasonOver || campaignDone) && you !== null && port !== null && (
         <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
       <TopBar
@@ -428,7 +397,10 @@ function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: 
       {CHAIN_ENABLED && <ChainBar email={session.email} />}
       <PlayPanels game={game} port={port} selected={selected} judges={judges} youLicences={you?.licences ?? 0} council={end.council} over={end.over} />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
-      {end.bankrupt && you !== null && port !== null && (
+      {campaignDone && port !== null && (
+        <CharterScreen busy={game.busy !== null} onSail={(charter) => sailUnder(noted, port, charter)} />
+      )}
+      {end.bankrupt && !campaignDone && you !== null && port !== null && (
         <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver={false} onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
     </>
