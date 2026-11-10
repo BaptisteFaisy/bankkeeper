@@ -128,13 +128,13 @@ dépôt ni dans un journal.
 
 | Élément | Valeur |
 |---|---|
-| Déployé le | 2026-11-10 18:55 (Europe/Paris) — 17:55:24 UTC |
-| Commit `main` déployé | `809d71e2ec9f2107671e3eef2b843dc34110b2ce` (barreau 3 : une motion porte son argent) |
+| Déployé le | 2026-11-10 20:23 (Europe/Paris) — 19:23:32 UTC |
+| Commit `main` déployé | `b0869ee67f0286070b90fccc75be2c2d89beafcb` (barreau 4 : la dette envers la mer, puis intégration moteur : faveurs, marge quotidienne, chronique + charte) |
 | URL de production | <https://tidewater-play.vercel.app> |
-| Déploiement | `dpl_7FXFxWr5TRMySLYAqa39jwryGTq1` — `tidewater-play-7rxlwbbgd-bg-1fa3.vercel.app` |
-| `engine.wasm` servi | 868 305 octets (848 Kio), md5 `00f4096ef65f3b6dd13d2781fd858e1e` |
-| Service worker | `sw.js` estampillé, 12 fichiers en précache |
-| Vérifications | HTTP 200 sur `/` et `/engine.wasm`, titre `Tidewater`, parcours de référence rejoué contre l'URL publique : **0 erreur console, 0 requête `/api/`, 0 requête en échec** ; `tests/e2e_offline.py` et `tests/e2e_pwa.py` verts sur le même `dist` |
+| Déploiement | `dpl_ArrvXkKHV9FUnmMHhpk6CTNuUwrG` — `tidewater-play-c6pkqcbp3-bg-1fa3.vercel.app` |
+| `engine.wasm` servi | 875 666 octets (855 Kio), md5 `8db4e2c1641c3cb30f716d336fa5ac1b`, sha256 `ce564f299433d805916eb15df55a65a787849c90b4579b6de790425fa5129392` |
+| Service worker | `sw.js` estampillé `tidewater-eb3951f2de08`, 12 fichiers en précache, actif et contrôlant la page |
+| Vérifications | HTTP 200 sur `/`, `/engine.wasm`, `/sw.js`, `/manifest.webmanifest`, `/offline.html` et `/proofs.html` ; parcours de référence rejoué contre l'URL publique (connexion email → carte → tutoriel → bateau assigné → `End the day` → `Fast-forward 7 days` → signature `3455655248798445433`) : **0 erreur console SEVERE, 0 requête `/api/`, 0 requête en échec** ; inventaire panneau par panneau complet (criée + why, attribution, fonds du port, « Paid by », dette envers la mer, licences + location, notes de dette, Juges, tutoriel, PWA) ; bilan de fin de saison atteint : « Debt to the sea · 906 crates » ; captures `/tmp/site-final.png` et `/tmp/site-bilan.png` ; `tests/e2e_offline.py` et `tests/e2e_pwa.py` verts sur le même `dist` (en local : ces scripts servent `web/dist` eux-mêmes et n'acceptent pas d'URL externe) |
 
 Cette section vit dans un fichier que `scripts/testnet/deploy.mjs` réécrit
 entièrement : le lien canonique est aussi rappelé dans `README.md`, qui n'est
