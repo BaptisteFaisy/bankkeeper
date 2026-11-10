@@ -20,6 +20,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:8785',
+      // Sponsored NEAR relayer (VITE_CHAIN=1); unused by the wasm demo.
+      '/chain': 'http://localhost:8786',
     },
   },
 });
