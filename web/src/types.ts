@@ -376,15 +376,23 @@ export interface SeaZone {
   ceiling: number;
   debt: number;
   fallowWeeks: number;
+  // What one week of rest on that zone would pay the debt, in crates.
+  fallowCredit?: number;
 }
 
 /** The debt owed to the sea, live: the bill and the two ways to pay it. */
 export interface SeaView {
   debt: number;
   season: number;
+  // True while the season's own bill is still running up: it is not written
+  // down in the carried debt until the council sits.
+  pending?: boolean;
   zones: SeaZone[];
-  reseedPrice: number;
-  reseedGold: number;
+  // Gold a crate costs for a reseed, in gold pieces.
+  reseedPrice?: number;
+  reseedGold?: number;
+  // What the port fund holds, in gold pieces.
+  fundBalance?: number;
 }
 
 function readStocks(raw: unknown): [number, number, number] | null {

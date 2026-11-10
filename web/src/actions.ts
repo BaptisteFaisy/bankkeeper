@@ -1,9 +1,10 @@
 // Relay mutations as small module functions. Each takes the shared
 // action context, runs one mutation, and never throws (errors toast).
 // Mutations return true on success so callers can flash the UI.
-import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postInit, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postSurvey, postTick } from './api';
+import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postFallow, postInit, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postReseed, postSurvey, postTick } from './api';
 import type { AssignBody, InitBody, MutationResult } from './api';
 import { charterLabel, saveCharter } from './charter';
+import { fmtGold } from './format';
 import type { DayNote, FFResponse, ToastMsg, ZoneId } from './types';
 import { ZONE_LABEL, parseCouncilOutcome } from './types';
 
@@ -86,6 +87,25 @@ export async function doSurvey(actions: GameActions, zone: ZoneId): Promise<bool
   const r = await mutate(actions.deps, 'survey', () => postSurvey(zone));
   if (r === null) return false;
   actions.pushToast('report', `Survey of ${ZONE_LABEL[zone]} complete.`, 'The estimate holds for a week.');
+  return true;
+}
+
+// Barreau 4: the two ways out of the debt owed to the sea, from the
+// browser. The fallow costs no gold — the closed zone earns nothing while
+// it rests; the reseed is paid by the port fund.
+export async function doFallow(actions: GameActions, zone: ZoneId, weeks: number): Promise<boolean> {
+  const r = await mutate(actions.deps, 'sea:fallow', () => postFallow(zone, weeks));
+  if (r === null) return false;
+  const paid = typeof r.paid === 'number' ? r.paid : 0;
+  actions.pushToast('report', `${ZONE_LABEL[zone]} rests ${weeks} week(s): ${paid} crates paid to the sea.`);
+  return true;
+}
+
+export async function doReseed(actions: GameActions, zone: ZoneId, crates: number): Promise<boolean> {
+  const r = await mutate(actions.deps, 'sea:reseed', () => postReseed(zone, crates));
+  if (r === null) return false;
+  const spent = typeof r.spent === 'number' ? r.spent : 0;
+  actions.pushToast('report', `${crates} crates put back into ${ZONE_LABEL[zone]}: ${fmtGold(spent / 100)}g out of the port fund.`);
   return true;
 }
 

@@ -32,7 +32,7 @@ def flag(name):
     return argv[argv.index(name) + 1] if name in argv else None
 if cmd in ("state", "graph", "judges"):
     print(json.dumps({"ok": True, "view": cmd}))
-elif cmd in ("assign", "survey", "licence", "debt", "council", "day"):
+elif cmd in ("assign", "survey", "licence", "debt", "council", "fallow", "reseed", "day"):
     if "REFUSE" in argv:
         print(json.dumps({"error": "E_SIM_FAILED"}))
     else:
@@ -191,6 +191,32 @@ class RelayCase(unittest.TestCase):
                                   "indemnity": -1})
         self.assertEqual(status, 400)
         self.assert_envelope(body, "E_BAD_COUNCIL")
+
+    def test_fallow_ok_and_bad(self):
+        status, body = self.call("POST", "/api/fallow",
+                                 {"zone": "greybank", "weeks": 2})
+        self.assertEqual(status, 200)
+        self.assertTrue(body.get("ok"))
+        status, body = self.call("POST", "/api/fallow",
+                                 {"zone": "greybank", "weeks": 0})
+        self.assertEqual(status, 400)
+        self.assert_envelope(body, "E_BAD_FALLOW")
+        status, body = self.call("POST", "/api/fallow", {"weeks": 2})
+        self.assertEqual(status, 400)
+        self.assert_envelope(body, "E_BAD_FALLOW")
+
+    def test_reseed_ok_and_bad(self):
+        status, body = self.call("POST", "/api/reseed",
+                                 {"zone": "deeps", "crates": 100})
+        self.assertEqual(status, 200)
+        self.assertTrue(body.get("ok"))
+        status, body = self.call("POST", "/api/reseed",
+                                 {"zone": "deeps", "crates": 0})
+        self.assertEqual(status, 400)
+        self.assert_envelope(body, "E_BAD_RESEED")
+        status, body = self.call("POST", "/api/reseed", {"crates": 10})
+        self.assertEqual(status, 400)
+        self.assert_envelope(body, "E_BAD_RESEED")
 
     def test_reset_ok(self):
         status, body = self.call("POST", "/api/reset", {"seed": 11})

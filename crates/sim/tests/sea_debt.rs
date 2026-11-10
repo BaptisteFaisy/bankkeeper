@@ -218,6 +218,37 @@ fn gold_is_conserved_while_the_sea_is_paid() {
     }
 }
 
+/// The panel announces what a rest pays before the click: the view publishes
+/// the regrowth of each zone, and the engine pays exactly that.
+#[test]
+fn the_view_announces_what_a_rest_pays() {
+    let mut game = harbour(2_500);
+    game.sea_debt = 5_000;
+    let view = sim::sea::sea_view(&game);
+    let greybank = view["zones"]
+        .as_array()
+        .expect("zones")
+        .iter()
+        .find(|row| row["zone"] == "greybank")
+        .cloned()
+        .expect("the greybank row");
+    assert_eq!(greybank["fallowCredit"], 434, "a week of rest on Greybank");
+    let week = greybank["fallowCredit"].as_u64().expect("crates");
+    let paid = game.pay_in_fallow(Zone::Greybank, 1).expect("fallow");
+    assert_eq!(paid, week, "the panel announced what the engine pays");
+}
+
+/// The fund's purse travels with the sea block: the panel says what a reseed
+/// would cost before the click.
+#[test]
+fn the_view_shows_what_the_fund_holds() {
+    let mut game = harbour(2_500);
+    game.fund.balance = 12_345;
+    let view = sim::sea::sea_view(&game);
+    assert_eq!(view["fundBalance"], 123.45);
+    assert!(view["reseedPrice"].as_f64().expect("price") > 0.0);
+}
+
 /// The audit's conservation reading, reseeding included: the change in total
 /// gold equals the net outside flow.
 fn balances(game: &mut Game) -> bool {

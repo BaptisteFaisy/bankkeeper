@@ -13,7 +13,9 @@ use std::cell::RefCell;
 
 use serde_json::{json, Value};
 use sim::charter::Charter;
-use sim::{cycle::try_day, fastforward, relay, seed_game, seed_game_with, views, Game};
+use sim::{cycle::try_day, fastforward, seed_game, seed_game_with, views, Game};
+
+mod ops;
 
 thread_local! {
     static GAME: RefCell<Option<Game>> = RefCell::new(None);
@@ -70,151 +72,6 @@ fn reset(seed: u64, weeks: u64, charter: Option<Charter>) -> Value {
     json!({ "ok": true, "seed": seed, "state": state })
 }
 
-/// Trade-style reply: `{ok, line}` or `{error}` — the relay's shape.
-fn outcome(result: Result<String, String>) -> Value {
-    match result {
-        Ok(line) => json!({ "ok": true, "line": line }),
-        Err(error) => json!({ "error": error }),
-    }
-}
-
-fn actor(name: Option<&str>) -> Result<rules::state::ActorId, String> {
-    let raw = name.unwrap_or("bank");
-    relay::parse_actor_name(raw).ok_or_else(|| format!("unknown captain {raw}"))
-}
-
-fn zone(name: Option<&str>) -> Result<rules::state::Zone, String> {
-    let raw = name.unwrap_or("greybank");
-    relay::parse_zone_name(raw).ok_or_else(|| format!("unknown zone {raw}"))
-}
-
-fn mesh(name: Option<&str>) -> rules::state::Mesh {
-    match name.map(str::to_lowercase).as_deref() {
-        Some("small") => rules::state::Mesh::Small,
-        _ => rules::state::Mesh::Large,
-    }
-}
-
-fn number(body: &Value, key: &str) -> Option<u64> {
-    body.get(key).and_then(|value| {
-        value
-            .as_u64()
-            .or_else(|| value.as_str().and_then(|text| text.parse().ok()))
-    })
-}
-
-fn text<'a>(body: &'a Value, key: &str) -> Option<&'a str> {
-    body.get(key).and_then(Value::as_str)
-}
-
-/// `assign`: boat id, zone or quay, optional mesh (TW-N-11, TW-C2-02).
-fn assign(game: &mut Game, body: &Value) -> Value {
-    use rules::state::ActorId;
-    let Some(boat) = number(body, "boat") else {
-        return json!({ "error": "E_BAD_ASSIGN" });
-    };
-    let quay = body.get("quay") == Some(&Value::Bool(true));
-    let target = if quay { None } else { Some(body.get("zone").and_then(Value::as_str)) };
-    let zone = match target {
-        None => None,
-        Some(Some(name)) => match relay::parse_zone_name(name) {
-            Some(zone) => Some(zone),
-            None => return json!({ "error": "E_BAD_ASSIGN" }),
-        },
-        Some(None) => return json!({ "error": "E_BAD_ASSIGN" }),
-    };
-    let net = mesh(text(body, "mesh"));
-    match game.assign_boat(ActorId::You, boat, zone, net) {
-        Ok(()) => json!({ "ok": true }),
-        Err(error) => json!({ "error": error }),
-    }
-}
-
-/// `survey`: pay for an estimate of one ground (TW-C1-03).
-fn survey(game: &mut Game, body: &Value) -> Value {
-    use rules::state::ActorId;
-    let Ok(zone) = zone(text(body, "zone")) else {
-        return json!({ "error": "E_BAD_SURVEY" });
-    };
-    match game.buy_survey(ActorId::You, zone) {
-        Ok(survey) => serde_json::to_value(survey).unwrap_or_else(|_| json!({ "ok": true })),
-        Err(error) => json!({ "error": error }),
-    }
-}
-
-/// `licence`: buy or sell one, from the pool or a named captain (TW-N-22).
-fn licence(game: &mut Game, body: &Value) -> Value {
-    use rules::state::ActorId;
-    let buying = text(body, "action").is_some_and(|a| a.eq_ignore_ascii_case("buy"));
-    let reference = text(body, "ref").unwrap_or("pool");
-    let pooled = reference.eq_ignore_ascii_case("pool") || reference.eq_ignore_ascii_case("bank");
-    let result = if pooled {
-        game.pool_licence(ActorId::You, buying)
-    } else {
-        match actor(Some(reference)) {
-            Ok(other) if buying => game.trade_licence(other, ActorId::You),
-            Ok(other) => game.trade_licence(ActorId::You, other),
-            Err(error) => return json!({ "error": error }),
-        }
-    };
-    outcome(result)
-}
-
-/// `lease`: rent a licence out, or end a lease early (TW-N-24). The quota
-/// follows the lessee every Monday the rent is paid.
-fn lease_op(game: &mut Game, body: &Value) -> Value {
-    let (Some(lessor), Some(lessee)) = (text(body, "lessor"), text(body, "lessee")) else {
-        return json!({ "error": "E_BAD_LEASE" });
-    };
-    let (Ok(lessor), Ok(lessee)) = (actor(Some(lessor)), actor(Some(lessee))) else {
-        return json!({ "error": "E_BAD_LEASE" });
-    };
-    let weeks = number(body, "weeks").unwrap_or(2);
-    let ending = text(body, "action").is_some_and(|a| a.eq_ignore_ascii_case("unlease"));
-    outcome(if ending { game.unlease(lessor, lessee) } else { game.lease(lessor, lessee, weeks) })
-}
-
-/// `debt`: buy the note, grant a delay, or call the default (TW-C3-05).
-fn debt(game: &mut Game, body: &Value) -> Value {
-    use rules::state::ActorId;
-    let Some(note) = number(body, "ref") else {
-        return json!({ "error": "E_BAD_DEBT" });
-    };
-    let result = match text(body, "action").map(str::to_lowercase).as_deref() {
-        Some("buy") => game.buy_note(ActorId::You, note).map(|()| format!("You hold note {note}.")),
-        Some("forbear") => game.defer_loan(ActorId::You, note).map(|()| format!("Note {note} deferred.")),
-        Some("seize") => game.seize_note(ActorId::You, note),
-        _ => return json!({ "error": "E_BAD_DEBT" }),
-    };
-    outcome(result)
-}
-
-/// `council`: table a motion (and back it) or record the ballot (TW-C4-03).
-fn council(game: &mut Game, body: &Value) -> Value {
-    let rule = text(body, "rule").unwrap_or_default();
-    let indemnity = number(body, "indemnity").unwrap_or(0);
-    if text(body, "action").is_some_and(|a| a.eq_ignore_ascii_case("propose")) {
-        let tabled = game.proposed_motion(rule, indemnity).map(|motion| {
-            let quota = motion.quota_per_licence;
-            game.propose(motion);
-            game.cast_vote(true);
-            format!("Motion tabled: quota {quota}.")
-        });
-        return outcome(tabled);
-    }
-    match rule.trim().to_lowercase().as_str() {
-        "yes" | "for" => {
-            game.cast_vote(true);
-            outcome(Ok("You vote yes.".to_string()))
-        }
-        "no" | "against" => {
-            game.cast_vote(false);
-            outcome(Ok("You vote no.".to_string()))
-        }
-        _ => json!({ "error": "E_BAD_COUNCIL" }),
-    }
-}
-
 /// `fastforward`: play `days` on a copy; the live harbour is untouched.
 fn fastforward_reply(game: &Game, days: u64, seed: Option<u64>) -> Value {
     if !matches!(days, 7 | 14 | 28) {
@@ -264,15 +121,15 @@ fn import(body: &Value) -> Value {
 fn route(op: &str, body: &Value) -> Value {
     match op {
         "health" => json!({ "ok": true, "mode": "wasm", "sim": true }),
-        "auth" => json!({ "ok": true, "token": "local", "pseudo": text(body, "pseudo").unwrap_or("captain") }),
+        "auth" => json!({ "ok": true, "token": "local", "pseudo": ops::text(body, "pseudo").unwrap_or("captain") }),
         "state" => with_game(|game| views::view_state(game)),
         "graph" => with_game(|game| views::view_graph(game)),
         "judges" => with_game(|game| views::view_judges(game)),
         "export" => with_game(export),
         "import" => import(body),
         "init" => reset(
-            number(body, "seed").unwrap_or(DEFAULT_SEED),
-            number(body, "weeks").unwrap_or(DEFAULT_WEEKS),
+            ops::number(body, "seed").unwrap_or(DEFAULT_SEED),
+            ops::number(body, "weeks").unwrap_or(DEFAULT_WEEKS),
             charter_of(body),
         ),
         "reset" => {
@@ -280,14 +137,16 @@ fn route(op: &str, body: &Value) -> Value {
             // A plain reset keeps the charter the harbour is sailing under;
             // the charter screen sends its own.
             let charter = charter_of(body).or_else(|| with_game(|game| game.charter.clone()));
-            reset(number(body, "seed").unwrap_or(seed), number(body, "weeks").unwrap_or(weeks), charter)
+            reset(ops::number(body, "seed").unwrap_or(seed), ops::number(body, "weeks").unwrap_or(weeks), charter)
         }
-        "assign" => with_game(|game| assign(game, body)),
-        "survey" => with_game(|game| survey(game, body)),
-        "licence" => with_game(|game| licence(game, body)),
-        "lease" => with_game(|game| lease_op(game, body)),
-        "debt" => with_game(|game| debt(game, body)),
-        "council" => with_game(|game| council(game, body)),
+        "assign" => with_game(|game| ops::assign(game, body)),
+        "survey" => with_game(|game| ops::survey(game, body)),
+        "licence" => with_game(|game| ops::licence(game, body)),
+        "lease" => with_game(|game| ops::lease_op(game, body)),
+        "debt" => with_game(|game| ops::debt(game, body)),
+        "council" => with_game(|game| ops::council(game, body)),
+        "fallow" => with_game(|game| ops::fallow(game, body)),
+        "reseed" => with_game(|game| ops::reseed(game, body)),
         "day" => with_game(|game| match try_day(game) {
             Ok(report) => serde_json::to_value(&report).unwrap_or_else(|_| json!({ "error": "E_SIM_FAILED" })),
             Err(error) => json!({ "error": error }),
@@ -301,8 +160,8 @@ fn route(op: &str, body: &Value) -> Value {
             Err(error) => json!({ "error": error }),
         }),
         "fastforward" => {
-            let days = number(body, "days").unwrap_or(7);
-            let seed = number(body, "seed");
+            let days = ops::number(body, "days").unwrap_or(7);
+            let seed = ops::number(body, "seed");
             with_game(|game| fastforward_reply(game, days, seed))
         }
         other => json!({ "error": "E_UNKNOWN_ENDPOINT", "detail": other }),
@@ -465,5 +324,29 @@ mod tests {
         assert_eq!(ff["summary"]["days_run"], 7);
         let after = call(r#"{"op":"state"}"#);
         assert_eq!(before["day"], after["day"], "the live harbour did not move");
+    }
+
+    #[test]
+    fn the_bill_can_be_paid_from_the_browser() {
+        // A fortnight of trading leaves a bill; the panel then pays it, in
+        // crates (fallow) or out of the port fund (reseed).
+        call(r#"{"op":"init","body":{"seed":7,"weeks":2}}"#);
+        for _ in 0..14 {
+            call(r#"{"op":"day"}"#);
+        }
+        let state = call(r#"{"op":"state"}"#);
+        let debt = state["sea"]["debt"].as_u64().expect("a debt");
+        assert!(debt > 0, "a fortnight of hard fishing leaves a bill");
+
+        let rested = call(r#"{"op":"fallow","body":{"zone":"greybank","weeks":1}}"#);
+        assert_eq!(rested["ok"], true);
+        assert!(rested["paid"].as_u64().unwrap_or(0) > 0, "the rest pays crates");
+        let after = call(r#"{"op":"state"}"#);
+        assert_eq!(after["sea"]["debt"].as_u64().unwrap_or(0), debt - rested["paid"].as_u64().unwrap_or(0));
+
+        let bad = call(r#"{"op":"fallow","body":{"zone":"nowhere","weeks":1}}"#);
+        assert_eq!(bad["error"], "E_BAD_FALLOW");
+        let seeded = call(r#"{"op":"reseed","body":{"zone":"greybank","crates":0}}"#);
+        assert!(seeded["error"].as_str().unwrap_or_default().contains("crate"), "{seeded}");
     }
 }

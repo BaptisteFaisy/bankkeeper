@@ -62,6 +62,12 @@ de référence.
   une indemnité en or par licence et par semaine, versée aux votants
   pour (TW-C4-03) ; `vote` enregistre le bulletin du joueur (`yes` ou
   `no` — le silence appuie sa propre motion).
+- `POST /api/fallow` — `{zone, weeks}` (barreau 4) : ferme la zone `zone`
+  pendant `weeks` semaines ; le crédit de repousse diminue d'autant la
+  dette envers la mer. Aucun or ne bouge.
+- `POST /api/reseed` — `{zone, crates}` (barreau 4) : achète des alevins
+  au cours du marché sur le fonds du port pour repeupler `zone`. La dette
+  diminue du même nombre de caisses ; l'or sort du fonds comme achat extérieur.
 - Renflouement (TW-N-52) : uniquement via `sim refloat` en ligne de
   commande au lot 0, pas de route relais.
 - `POST /api/day` — `{}` : termine la journée directe (sorties,

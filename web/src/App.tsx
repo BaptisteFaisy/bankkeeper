@@ -6,7 +6,7 @@ import type { BoatView, CouncilOutcome, DayNote, FFResponse, GraphLive, JudgesLi
 import { EMPTY_AUCTION, ZONE_LABEL, parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
-import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
+import { doAssign, doCouncil, doDebt, doEndDay, doFallow, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doReseed, doRunFF, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
 import type { Session } from './session';
@@ -329,7 +329,14 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
   return (
     <>
       <Board game={game} port={port} selected={selected} over={over} />
-      <LedgerPanel landings={port?.landings ?? []} reasoning={port?.reasoning ?? []} />
+      <LedgerPanel
+        landings={port?.landings ?? []}
+        reasoning={port?.reasoning ?? []}
+        sea={port?.sea ?? null}
+        busy={game.busy !== null}
+        onFallow={(zone, weeks) => { void doFallow(game.actions, zone, weeks); }}
+        onReseed={(zone, crates) => { void doReseed(game.actions, zone, crates); }}
+      />
       <ChroniclePanel entries={port?.chronicle ?? []} charter={port?.charter ?? null} />
       <HarbourPanel
         captains={port?.captains ?? []}
