@@ -23,8 +23,8 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from e2e_tidewater import (  # noqa: E402  (path set above)
-    ROOT, SCRATCH, console_errors, failed_requests, free_port, guard,
-    start_chrome,
+    ROOT, SCRATCH, console_errors, dismiss_tutorial, failed_requests,
+    free_port, guard, start_chrome,
 )
 
 
@@ -44,18 +44,6 @@ def serve_dist():
             time.sleep(0.05)
     proc.terminate()
     raise RuntimeError("static server never came up")
-
-
-def dismiss_tutorial(driver):
-    """A first launch opens the tutorial; a player presses `Skip`. Do the same."""
-    from selenium.webdriver.common.by import By
-    for dialog in driver.find_elements(By.CSS_SELECTOR, "[role='dialog']"):
-        for button in dialog.find_elements(By.XPATH, ".//button[text()='Skip']"):
-            if button.is_displayed():
-                button.click()
-                time.sleep(0.4)
-                return True
-    return False
 
 
 def journey(driver, base, notes):

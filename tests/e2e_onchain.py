@@ -30,6 +30,10 @@ import time
 import urllib.error
 import urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from e2e_tidewater import dismiss_tutorial  # noqa: E402  (path set above)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRATCH = "/tmp/tidewater-onchain"
 DIST = os.path.join(ROOT, "web", "dist-chain")
@@ -164,6 +168,11 @@ def ui_steps(driver, base, relayer_base, account, rpc_url, contract):
     wait.until(lambda d: account in status.text)
     log("  status line: " + status.text)
     assert account in status.text, "the status line does not name the captain's account"
+
+    # The first launch opens the tutorial, and its backdrop covers the
+    # screen: the strip's buttons would be unclickable under it.
+    if dismiss_tutorial(driver):
+        log("  tutorial: closed with Skip")
 
     log("  gold before: {} milli".format(balance(rpc_url, contract, account, GOLD)))
     driver.find_element(By.CSS_SELECTOR, "[data-testid=chain-licence]").click()

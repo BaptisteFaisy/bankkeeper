@@ -239,6 +239,22 @@ def console_errors(driver):
             if e.get("level") == "SEVERE"]
 
 
+def dismiss_tutorial(driver):
+    """A first launch opens the tutorial; a player presses `Skip`. Do the same.
+
+    The backdrop covers the whole screen, so every click under it is
+    intercepted — the on-chain strip included.
+    """
+    from selenium.webdriver.common.by import By
+    for dialog in driver.find_elements(By.CSS_SELECTOR, "[role='dialog']"):
+        for button in dialog.find_elements(By.XPATH, ".//button[text()='Skip']"):
+            if button.is_displayed():
+                button.click()
+                time.sleep(0.4)
+                return True
+    return False
+
+
 def failed_requests(driver):
     """Deduped (status, url) for HTTP 4xx/5xx and failed loads."""
     bad = set()

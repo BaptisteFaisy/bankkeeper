@@ -15,6 +15,8 @@ import fs from 'node:fs';
 import http from 'node:http';
 import { paths, view } from '../../sandbox/lib.mjs';
 import { chainConfig, buyLicence, buyLoan, chainError, login, normaliseEmail, position, vote } from './chain.mjs';
+import { allowAction, allowCall, recordAction } from './guard.mjs';
+import { accountKey } from './identity.mjs';
 
 const PORT = Number(process.env.TW_RELAYER_PORT || 8786);
 const ORIGIN = process.env.TW_ALLOW_ORIGIN || '*';
@@ -67,21 +69,52 @@ async function health() {
   };
 }
 
+function refuse(status, code) {
+  const error = new Error(code);
+  error.status = status;
+  return error;
+}
+
+/** Who is calling: the address, and the captain when there is one. */
+function callerKey(req, email) {
+  const ip = req.socket?.remoteAddress ?? 'unknown';
+  return `${ip}|${email ? accountKey(email) : '-'}`;
+}
+
+/** One sponsored transaction: the rate limit first, the per-captain cap
+ *  second, the counter last (a refused action costs nothing). */
+async function guarded(req, email, work) {
+  if (!allowCall(callerKey(req, email))) throw refuse(429, 'E_RATE_LIMIT');
+  const key = accountKey(normaliseEmail(email));
+  if (!allowAction(key)) throw refuse(429, 'E_ACTION_CAP');
+  const result = await work();
+  recordAction(key);
+  return result;
+}
+
 async function route(req, url) {
   if (req.method === 'GET' && url.pathname === '/health') return health();
   if (req.method === 'GET' && url.pathname === '/position') {
-    return position(normaliseEmail(url.searchParams.get('email')));
+    const email = normaliseEmail(url.searchParams.get('email'));
+    if (!allowCall(callerKey(req, email))) throw refuse(429, 'E_RATE_LIMIT');
+    return position(email);
   }
   const body = await readBody(req);
-  if (req.method === 'POST' && url.pathname === '/login') return login(body.email);
+  if (req.method === 'POST' && url.pathname === '/login') {
+    if (!allowCall(callerKey(req, body.email))) throw refuse(429, 'E_RATE_LIMIT');
+    return login(body.email);
+  }
   if (req.method === 'POST' && url.pathname === '/licence/buy') {
-    return { ...(await buyLicence(body.email)), ...(await position(body.email)) };
+    const receipt = await guarded(req, body.email, () => buyLicence(body.email));
+    return { ...receipt, ...(await position(body.email)) };
   }
   if (req.method === 'POST' && url.pathname === '/loan/buy') {
-    return { ...(await buyLoan(body.email, body.tokenId)), ...(await position(body.email)) };
+    const receipt = await guarded(req, body.email, () => buyLoan(body.email, body.tokenId));
+    return { ...receipt, ...(await position(body.email)) };
   }
   if (req.method === 'POST' && url.pathname === '/council/vote') {
-    return { ...(await vote(body.email, body.approve !== false, body.proposalId ?? null)), ...(await position(body.email)) };
+    const receipt = await guarded(req, body.email, () => vote(body.email, body.approve !== false, body.proposalId ?? null));
+    return { ...receipt, ...(await position(body.email)) };
   }
   const notFound = new Error(`no route for ${req.method} ${url.pathname}`);
   notFound.status = 404;
