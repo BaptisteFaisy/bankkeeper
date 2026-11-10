@@ -131,8 +131,9 @@ pub(crate) fn drain_gull(game: &mut Game, report: &mut DayReport, flows: &mut Fl
     let (locals, travellers) = serve_species(game, ActorId::Gull, Species::Cod);
     let local_revenue = locals * base;
     let travel_revenue = (travellers as u128 * base as u128 * TRAVELLER_MULT_BPS as u128 / 10_000).min(u64::MAX as u128) as u64;
-    game.port.gold[ActorId::Townsfolk.idx()] -= local_revenue as i64;
-    game.port.gold[ActorId::Gull.idx()] += (local_revenue + travel_revenue) as i64;
+    // `serve_species` has already moved `local_revenue` from the townsfolk to
+    // the Gull: only the travellers' money is new here (TW-N-40 inflow).
+    game.port.gold[ActorId::Gull.idx()] += travel_revenue as i64;
     flows.add_travellers(travel_revenue);
     pay_rescuer(game, ActorId::Gull, local_revenue + travel_revenue);
     report.lines.push(format!(
