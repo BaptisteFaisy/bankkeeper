@@ -1,50 +1,15 @@
 // Typed client for the tidewater relay API. Base is the same origin,
 // so dev uses the Vite proxy (:8785) and production hits the relay.
+import { engineCall, engineEnabled } from './engine';
+import { toApiError } from './errors';
 import type { FFResponse, GraphLive, JudgesLive, Mesh, PortState, ZoneId } from './types';
 
-export class ApiError extends Error {
-  code: string;
-  detail?: unknown;
-  constructor(code: string, message?: string, detail?: unknown) {
-    super(message ?? code);
-    this.name = 'ApiError';
-    this.code = code;
-    this.detail = detail;
-  }
-}
-
-function variantMessage(variant: string, inner: unknown): string {
-  if (typeof inner === 'object' && inner !== null) {
-    const parts = inner as { have?: unknown; need?: unknown };
-    if (typeof parts.have === 'number' && typeof parts.need === 'number') {
-      return `${variant} (have ${parts.have}, need ${parts.need})`;
-    }
-  }
-  return variant;
-}
-
-function toApiError(payload: unknown): ApiError {
-  if (typeof payload === 'object' && payload !== null && 'error' in payload) {
-    const err = (payload as { error: unknown }).error;
-    if (typeof err === 'string') return new ApiError(err, err, payload);
-    if (typeof err === 'object' && err !== null) {
-      const obj = err as Record<string, unknown>;
-      if (typeof obj.code === 'string') {
-        const msg = typeof obj.message === 'string' ? obj.message : obj.code;
-        return new ApiError(obj.code, msg, payload);
-      }
-      // Externally tagged error: {"QuotaSpent": {"have": 0, "need": 14}}
-      const keys = Object.keys(obj);
-      if (keys.length === 1) {
-        const variant = keys[0];
-        return new ApiError(variant, variantMessage(variant, obj[variant]), payload);
-      }
-    }
-  }
-  return new ApiError('E_UNKNOWN', 'Unknown relay error', payload);
-}
+export { ApiError } from './errors';
+export { toApiError } from './errors';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // In-browser engine: same payloads, no server (see engine.ts).
+  if (engineEnabled()) return engineCall<T>(path, init);
   const res = await fetch(path, init);
   const payload: unknown = await res.json().catch(() => null);
   if (!res.ok) throw toApiError(payload);
