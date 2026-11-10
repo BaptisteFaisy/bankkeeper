@@ -73,27 +73,41 @@ pub struct PendingDay {
     /// for the last lot of it.
     #[serde(default)]
     pub gold_at_dawn: i64,
+    /// The lots of the day, frozen at dawn: `(hull index, round)`. Never
+    /// rebuilt from the fleet, so a hull that appears at noon sails no lot
+    /// today and a round already closed stays closed. `None` only for a save
+    /// written before the plan was stored; it is frozen on the first tick.
+    #[serde(default)]
+    pub plan: Option<Vec<(usize, u64)>>,
 }
 
 impl PendingDay {
-    fn dawn(day: u64, gold: i64) -> Self {
+    fn dawn(day: u64, gold: i64, plan: Vec<(usize, u64)>) -> Self {
         Self {
             gold_at_dawn: gold,
             record: DayRecord::new(day),
-            report: DayReport {
-                day,
-                landings: Vec::new(),
-                lines: Vec::new(),
-                closures: Vec::new(),
-                gold_total: 0,
-                flows: Flows::default(),
-                invariant_ok: false,
-                week_rolled: false,
-                council: None,
-                season_over: false,
-                bilan: None,
-            },
+            report: DayReport::blank(day),
             flows: Flows::default(),
+            plan: Some(plan),
+        }
+    }
+}
+
+impl DayReport {
+    /// A report with nothing in it yet, for a day about to run.
+    fn blank(day: u64) -> Self {
+        Self {
+            day,
+            landings: Vec::new(),
+            lines: Vec::new(),
+            closures: Vec::new(),
+            gold_total: 0,
+            flows: Flows::default(),
+            invariant_ok: false,
+            week_rolled: false,
+            council: None,
+            season_over: false,
+            bilan: None,
         }
     }
 }
@@ -117,21 +131,22 @@ pub fn try_tick(game: &mut Game) -> Result<TickReport, String> {
 
 /// One lot of the day, every thirty seconds in the live build.
 ///
-/// Dawn orders run once, on the first lot. The plan of the day is
-/// `boats x trips_per_boat_day` lots, round-major, exactly the order a whole
-/// day used to run in: landing one lot at a time changes the rhythm, never the
-/// result. When the last lot is sold, the harbour settles the evening.
+/// Dawn orders run once, on the first lot, and the day's plan is frozen with
+/// them: `boats x trips_per_boat_day` lots at dawn, round-major, exactly the
+/// order a whole day used to run in. Landing one lot at a time changes the
+/// rhythm, never the result. When the last lot is sold, the harbour settles
+/// the evening.
 pub fn tick(game: &mut Game) -> TickReport {
     let config = game.config.clone();
     if game.pending.is_none() {
-        game.pending = Some(PendingDay::dawn(game.port.day, game.gold_total()));
+        let plan = plan_from_fleet(game.port.boats.len(), config.trips_per_boat_day);
+        game.pending = Some(PendingDay::dawn(game.port.day, game.gold_total(), plan));
         let orders = bots::decide_all(game);
         if let Some(pending) = game.pending.as_mut() {
             pending.report.lines.extend(orders);
         }
     }
-    let plan = day_plan(game, &config);
-    let landed = plan.get(game.lots_landed as usize).copied();
+    let (landed, plan_len) = plan_cursor(game, &config);
     let Some((index, _round)) = landed else {
         return close_day(game, None);
     };
@@ -150,7 +165,7 @@ pub fn tick(game: &mut Game) -> TickReport {
         game.pending = Some(pending);
     }
     game.lots_landed += 1;
-    if game.lots_landed as usize >= plan.len() {
+    if game.lots_landed as usize >= plan_len {
         // The last lot of the day lands and the harbour settles in the same
         // beat: five minutes of trading, then the evening.
         return close_day(game, landing);
@@ -164,11 +179,29 @@ pub fn tick(game: &mut Game) -> TickReport {
     }
 }
 
-/// The lots of one day, in order: every boat once per round.
-fn day_plan(game: &Game, config: &Config) -> Vec<(usize, u64)> {
-    let mut plan = Vec::with_capacity(game.port.boats.len() * config.trips_per_boat_day as usize);
-    for round in 0..config.trips_per_boat_day {
-        for index in 0..game.port.boats.len() {
+/// The plan of the day, as frozen at dawn: returns the lot under the cursor
+/// and the plan's length. A save written before the plan was stored (no field)
+/// freezes it now rather than losing the day.
+fn plan_cursor(game: &mut Game, config: &Config) -> (Option<(usize, u64)>, usize) {
+    let fleet = game.port.boats.len();
+    let trips = config.trips_per_boat_day;
+    let cursor = game.lots_landed as usize;
+    match game.pending.as_mut() {
+        None => (None, 0),
+        Some(pending) => {
+            let plan = pending
+                .plan
+                .get_or_insert_with(|| plan_from_fleet(fleet, trips));
+            (plan.get(cursor).copied(), plan.len())
+        }
+    }
+}
+
+/// The lots of one day, in order: every hull once per round.
+fn plan_from_fleet(fleet: usize, trips: u64) -> Vec<(usize, u64)> {
+    let mut plan = Vec::with_capacity(fleet * trips as usize);
+    for round in 0..trips {
+        for index in 0..fleet {
             plan.push((index, round));
         }
     }
@@ -184,7 +217,7 @@ fn close_day(game: &mut Game, landing: Option<Landing>) -> TickReport {
     };
     let total_before = pending.gold_at_dawn;
     let mut day = std::mem::replace(&mut pending.record, DayRecord::new(game.port.day));
-    let mut report = std::mem::replace(&mut pending.report, PendingDay::dawn(game.port.day, 0).report);
+    let mut report = std::mem::replace(&mut pending.report, DayReport::blank(game.port.day));
     let mut flows = std::mem::replace(&mut pending.flows, Flows::default());
     for index in 0..game.port.boats.len() {
         if game.port.trips_today[index] > 0 {
