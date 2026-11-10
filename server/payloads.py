@@ -116,6 +116,25 @@ def validate_licence_payload(body: object) -> tuple[dict | None, str | None]:
     return _validate_action_ref(body, {"buy", "sell"}, "E_BAD_LICENCE")
 
 
+def validate_lease_payload(body: object) -> tuple[dict | None, str | None]:
+    """Lease desk: lease|unlease, both parties named, weeks 1..12."""
+    data = _as_dict(body)
+    if data is None:
+        return None, "E_BAD_JSON"
+    action = _as_action(data.get("action", "lease"), {"lease", "unlease"})
+    lessor = _as_nonempty_str(data.get("lessor"))
+    lessee = _as_nonempty_str(data.get("lessee"))
+    if action is None or lessor is None or lessee is None:
+        return None, "E_BAD_LEASE"
+    clean: dict = {"action": action, "lessor": lessor, "lessee": lessee}
+    if data.get("weeks") is not None:
+        weeks = _as_nonneg_int(data.get("weeks"))
+        if weeks is None or not 1 <= weeks <= 12:
+            return None, "E_BAD_LEASE"
+        clean["weeks"] = weeks
+    return clean, None
+
+
 def validate_debt_payload(body: object) -> tuple[dict | None, str | None]:
     return _validate_action_ref(body, {"buy", "forbear", "seize"}, "E_BAD_DEBT")
 

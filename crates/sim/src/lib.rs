@@ -171,6 +171,9 @@ pub struct Game {
     /// Lots already landed today: the cursor into the day's plan.
     #[serde(default)]
     pub lots_landed: u64,
+    /// Licence leases in force (TW-N-24): one record per licence lent out.
+    #[serde(default)]
+    pub leases: Vec<rules::licences::Lease>,
 }
 
 impl Game {
@@ -188,6 +191,25 @@ impl Game {
     /// Total gold in the port (TW-N-42 conservation input).
     pub fn gold_total(&self) -> i64 {
         self.port.total_gold()
+    }
+
+    /// Licences a captain fishes with this week: its own, minus those lent
+    /// out, plus those rented in. The day cycle reads the same number from
+    /// `port.licences`, so the lessee really lands the lessor's quota.
+    pub fn quota_licences(&self, actor: ActorId) -> u64 {
+        self.port.licences[actor.idx()]
+    }
+
+    /// Weekly landing quota of a captain, leases included (TW-N-24).
+    pub fn quota_crates(&self, actor: ActorId) -> u64 {
+        rules::licences::weekly_quota(self.quota_licences(actor), &self.config)
+    }
+
+    /// Licences a captain owns: fishing rights plus those lent out, minus
+    /// those rented in. A lease moves the quota, never the property, so the
+    /// 8-licence ceiling and the council vote read this count.
+    pub fn owned_licences(&self, actor: ActorId) -> u64 {
+        rules::licences::owned_licences(self.port.licences[actor.idx()], &self.leases, actor)
     }
 
     /// Last `days` journal entries (fewer at season start).
