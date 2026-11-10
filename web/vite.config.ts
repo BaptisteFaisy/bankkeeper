@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: 'index.html',
         proofs: 'proofs.html',
+        scene: 'scene-preview.html',
       },
     },
   },

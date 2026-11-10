@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Tidewater — the living harbour</title>
+    <style>
+      .preview {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 24px 16px 56px;
+      }
+      .preview h1 {
+        font-size: 22px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin: 0 0 6px;
+      }
+      .preview canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 760 / 556;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin: 18px 0 12px;
+        background: var(--bg);
+      }
+      .legend {
+        color: var(--ink);
+        font-size: 16px;
+        line-height: 1.45;
+        border-left: 3px solid var(--buoy);
+        padding: 4px 0 4px 12px;
+        min-height: 24px;
+      }
+      .note { font-size: 12px; margin-top: 18px; }
+    </style>
+  </head>
+  <body>
+    <main class="preview">
+      <h1>Bankkeeper — the living harbour</h1>
+      <p class="muted">
+        Standalone preview of the 2D engine: a fictional state, no React, no
+        wasm, no /api call. Same modules as the game, same palette.
+      </p>
+      <canvas
+        id="scene"
+        role="img"
+        aria-label="Animated sea chart: sand coast, harbour quay with three
+          merchant stalls, three fishing zones with their fish, two boats
+          sailing, the harbour chest and the instruments of the day."
+      ></canvas>
+      <p id="legend" class="legend">
+        Dawn on the harbour: two boats moored, the chest still shut.
+      </p>
+      <p class="muted note">
+        The canvas is informative and decorative only: every action of the
+        game stays available on the keyboard and on the DOM controls.
+      </p>
+    </main>
+    <script type="module" src="/src/scene-preview.ts"></script>
+  </body>
+</html>
