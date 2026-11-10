@@ -45,6 +45,7 @@ fn main() -> ExitCode {
         Some("lease") | Some("unlease") => cmd_lease(&args),
         Some("debt") => cmd_debt(&args),
         Some("council") => cmd_council(&args),
+        Some("favour") => cmd_favour(&args),
         _ => {
             eprintln!("usage: sim <init|day|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|state|graph|judges|attribution|fastforward|licence|lease|debt|council> [flags]");
             ExitCode::from(2)
@@ -408,9 +409,10 @@ fn cmd_licence(args: &[String]) -> ExitCode {
     let mut game = read_game(&path);
     let action = flag(args, "action").unwrap_or_default().to_lowercase();
     let reference = flag(args, "ref").unwrap_or_default();
+    let price = flag(args, "price").and_then(|raw| raw.parse::<f64>().ok());
     let outcome = match action.as_str() {
         "buy" => licence_buy(&mut game, &reference),
-        "sell" => licence_sell(&mut game, &reference),
+        "sell" => licence_sell(&mut game, &reference, price),
         _ => Err("licence needs buy|sell".to_string()),
     };
     finish_trade(&path, &game, outcome)
@@ -425,13 +427,28 @@ fn licence_buy(game: &mut Game, reference: &str) -> Result<String, String> {
     game.trade_licence(seller, ActorId::You)
 }
 
-/// Sell one licence to the pool or a named captain, at the going price.
-fn licence_sell(game: &mut Game, reference: &str) -> Result<String, String> {
+/// Sell one licence to the pool or a named captain, at the going price or
+/// at the `--price` named on the command line (gold).
+fn licence_sell(game: &mut Game, reference: &str, price: Option<f64>) -> Result<String, String> {
     if reference.eq_ignore_ascii_case("pool") || reference.eq_ignore_ascii_case("bank") {
         return game.pool_licence(ActorId::You, false);
     }
     let buyer = relay::parse_actor_name(reference).ok_or_else(|| format!("unknown buyer {reference}"))?;
-    game.trade_licence(ActorId::You, buyer)
+    let price = price.map_or(game.licence_price_now(), |gold| (gold.max(0.0) * 100.0) as u64);
+    game.trade_licence_at(ActorId::You, buyer, price)
+}
+
+/// Debug: write one captain's book by hand, without replaying the deed.
+fn cmd_favour(args: &[String]) -> ExitCode {
+    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
+    let mut game = read_game(&path);
+    let captain = actor_flag(args, "actor");
+    let score: i32 = flag(args, "score").and_then(|v| v.parse().ok()).unwrap_or(0);
+    let reason = format!("The judges write the book by hand (score {score}).");
+    game.record_favour(captain, score - game.favour_score(captain), &reason);
+    write_json(&path, &game);
+    println!("{}", serde_json::json!({"ok": true, "favour": game.favour(captain)}));
+    ExitCode::SUCCESS
 }
 
 /// Rent a licence out (`lease`) or end a lease early (`unlease`): the desk

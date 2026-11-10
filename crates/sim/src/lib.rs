@@ -10,6 +10,7 @@ pub mod attribution;
 pub mod bots;
 pub mod cycle;
 mod evening;
+pub mod favours;
 pub mod fastforward;
 pub mod fleet;
 mod reading;
@@ -139,6 +140,9 @@ pub struct Game {
     pub mesh: MeshLedger,
     pub bailouts: Vec<Bailout>,
     pub surveys: Vec<Survey>,
+    /// Each captain's moral book with the player (see [`favours`]).
+    #[serde(default)]
+    pub favours: Vec<favours::Favour>,
     /// Player motion for the next council; None means status quo.
     pub proposal: Option<Proposal>,
     /// Player ballot on the pending motion; None backs it (own motion).
@@ -348,6 +352,10 @@ impl Game {
             invested: amount,
             repaid: 0,
         });
+        if investor == ActorId::You {
+            let reason = format!("You put {} back on its feet.", actor.name());
+            self.record_favour(actor, favours::REFLOAT, &reason);
+        }
         Ok(())
     }
 
@@ -389,6 +397,11 @@ impl Game {
             return Err("only the note holder grants a delay".to_string());
         }
         loan.missed = 0;
+        let borrower = loan.borrower;
+        if holder == ActorId::You {
+            let reason = format!("You gave {} time on his note.", borrower.name());
+            self.record_favour(borrower, favours::DEFER, &reason);
+        }
         Ok(())
     }
 
