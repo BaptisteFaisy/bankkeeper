@@ -37,6 +37,8 @@ elif cmd in ("assign", "survey", "licence", "debt", "council", "day"):
         print(json.dumps({"error": "E_SIM_FAILED"}))
     else:
         print(json.dumps({"ok": True, "cmd": cmd}))
+elif cmd == "init":
+    print(json.dumps({"ok": True, "cmd": "init"}))
 elif cmd == "fastforward":
     journal, series, markers = flag("--journal"), flag("--series"), flag("--markers")
     json.dump([{"day": 1, "kind": "council", "detail": "vote"}], open(journal, "w"))
@@ -186,6 +188,12 @@ class RelayCase(unittest.TestCase):
                                   "indemnity": -1})
         self.assertEqual(status, 400)
         self.assert_envelope(body, "E_BAD_COUNCIL")
+
+    def test_reset_ok(self):
+        status, body = self.call("POST", "/api/reset", {"seed": 11})
+        self.assertEqual(status, 200)
+        self.assertTrue(body.get("ok"))
+        self.assertEqual(body.get("seed"), 11)
 
     def test_day_ok(self):
         status, body = self.call("POST", "/api/day", {})

@@ -1,7 +1,7 @@
 // Relay mutations as small module functions. Each takes the shared
 // action context, runs one mutation, and never throws (errors toast).
 // Mutations return true on success so callers can flash the UI.
-import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postSurvey } from './api';
+import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postReset, postSurvey } from './api';
 import type { AssignBody, MutationResult } from './api';
 import type { FFResponse, ToastMsg, ZoneId } from './types';
 import { ZONE_LABEL } from './types';
@@ -67,7 +67,8 @@ export async function doDebt(actions: GameActions, action: 'buy' | 'forbear' | '
 export async function doCouncil(actions: GameActions, action: 'propose' | 'vote', rule: string, indemnity?: number): Promise<boolean> {
   const r = await mutate(actions.deps, 'council', () => postCouncil(action, rule, indemnity));
   if (r === null) return false;
-  actions.pushToast('report', action === 'propose' ? `Motion tabled: ${rule}.` : `You vote ${rule}.`);
+  const pretty = rule.split(',').join(', ').replace(/quota(\d+)/, 'quota $1');
+  actions.pushToast('report', action === 'propose' ? `Motion tabled: ${pretty}.` : `You vote ${rule}.`);
   return true;
 }
 
@@ -83,6 +84,18 @@ export async function doEndDay(actions: GameActions): Promise<boolean> {
   if (r === null) return false;
   const landings = Array.isArray(r.landings) ? r.landings.length : 0;
   actions.pushToast('report', `Day ${r.day} ends: ${landings} landings.`);
+  if (r.council !== null && r.council !== undefined) {
+    const tally = r.council.tally;
+    actions.pushToast('report', `Season ${r.council.season} council: ${tally.for_votes} for, ${tally.against_votes} against — ${tally.passed ? 'passed' : 'rejected'}.`);
+  }
+  return true;
+}
+
+export async function doReset(actions: GameActions): Promise<boolean> {
+  const r = await mutate(actions.deps, 'reset', () => postReset());
+  if (r === null) return false;
+  actions.resetFf(null);
+  actions.pushToast('report', 'New harbour seeded. Fair winds.');
   return true;
 }
 

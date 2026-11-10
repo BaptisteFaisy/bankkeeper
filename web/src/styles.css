@@ -220,7 +220,7 @@ input {
 }
 .reason-list li { padding: 3px 0; border-top: 1px dashed var(--line); color: var(--muted); }
 
-.judges {
+section.judges {
   position: fixed;
   right: 16px;
   bottom: 16px;
@@ -241,6 +241,17 @@ input {
 .harbour-list { list-style: none; margin: 6px 0 0; padding: 0; }
 .harbour-list li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-top: 1px dashed var(--line); }
 .mesh-row button[aria-pressed="true"] { border-color: var(--gold); }
+.end-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 33, 38, 0.72);
+}
+.end-card { width: min(420px, 90vw); text-align: center; }
+.end-card ul { text-align: left; margin: 12px 0; }
 .event-list { list-style: none; margin: 8px 0 0; padding: 0; font-size: 14px; }
 .event-list li { padding: 3px 0; border-top: 1px dashed var(--line); }
 

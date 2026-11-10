@@ -296,8 +296,7 @@ fn regrow_all(game: &mut Game, report: &mut DayReport) {
             rules::species::effective_regrow_rate(rate, game.mesh.share_bps(zone), &game.config);
         let grown = rules::stocks::regrow(game.port.stocks[zone.idx()], capacity, effective);
         game.port.stocks[zone.idx()] += grown;
-        let left = rules::format_crates(game.port.stocks[zone.idx()]);
-        report.lines.push(format!("{} regrows {grown} crates ({left} left).", zone.name()));
+        report.lines.push(format!("{} regrows {grown} crates.", zone.name()));
     }
 }
 

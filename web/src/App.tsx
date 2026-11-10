@@ -6,7 +6,7 @@ import type { BoatView, FFResponse, GraphLive, JudgesLive, Mesh, PortState, Zone
 import { EMPTY_AUCTION, ZONE_LABEL } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
-import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doRunFF, doSurvey } from './actions';
+import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doReset, doRunFF, doSurvey } from './actions';
 import { postLogin } from './api';
 import type { Session } from './session';
 import SeaMap from './components/SeaMap';
@@ -17,8 +17,9 @@ import HarbourPanel from './components/HarbourPanel';
 import JudgesPanel from './components/JudgesPanel';
 import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
+import { fmtGold } from './format';
 
-function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy }: {
+function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, onReset }: {
   port: PortState | null;
   session: Session;
   onLogout: () => void;
@@ -26,16 +27,20 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
   onJudges: (open: boolean) => void;
   onEndDay: () => void;
   dayBusy: boolean;
+  onReset: () => void;
 }) {
   return (
     <header className="topbar">
       <h1>Tidewater</h1>
       <span className="tide-stat">Week {port?.week ?? '—'} · {port?.day ?? '—'} · {port?.tide ?? '—'}</span>
-      <span className="tide-stat gold">{port?.playerGold ?? '—'}g</span>
+      <span className="tide-stat gold">{port === null ? '—' : `${fmtGold(port.playerGold)}g`}</span>
       <span className="tide-stat">Quota left: {port?.quotaLeft ?? '—'}</span>
       <span className="muted">{session.name}</span>
       <button type="button" disabled={dayBusy} onClick={onEndDay}>
         End the day
+      </button>
+      <button type="button" className="ghost" disabled={dayBusy} onClick={onReset}>
+        New harbour
       </button>
       <button type="button" className="ghost" onClick={() => onJudges(!judgesOpen)} aria-expanded={judgesOpen}>
         Judges
@@ -186,7 +191,12 @@ function Board({ game, port, selected }: { game: GameState; port: PortState | nu
         />
       </section>
       <div className="side">
-        <AuctionPanel auction={port?.auction ?? EMPTY_AUCTION} buyers={port?.buyers ?? []} />
+        <AuctionPanel
+          auction={port?.auction ?? EMPTY_AUCTION}
+          buyers={port?.buyers ?? []}
+          landings={port?.landings ?? []}
+          dayKey={`${port?.week ?? 0}-${port?.day ?? ''}`}
+        />
         <BoatsPanel
           boats={port?.boats ?? []}
           selectedBoat={game.selectedBoat}
@@ -200,11 +210,32 @@ function Board({ game, port, selected }: { game: GameState; port: PortState | nu
   );
 }
 
+function EndScreen({ port, you, onReset }: { port: PortState; you: { gold: number; licences: number }; onReset: () => void }) {
+  return (
+    <section className="end-screen" aria-label="Season over">
+      <div className="panel end-card">
+        <h2>The harbour lets you go</h2>
+        <p className="muted">Week {port.week} · {port.day}. Your boats are laid up.</p>
+        <ul className="harbour-list">
+          <li><span>Net worth</span><span className="num">{fmtGold(port.netWorth)}g</span></li>
+          <li><span>Gold</span><span className="num">{fmtGold(you.gold)}g</span></li>
+          <li><span>Licences</span><span className="num">{you.licences}</span></li>
+        </ul>
+        <button type="button" onClick={onReset}>
+          New harbour
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function GameScreen({ game, session }: { game: GameState; session: Session }) {
   const port = game.port;
   const selected = findBoat(port, game.selectedBoat);
   const dayKey = `${port?.week ?? 0}-${port?.day ?? ''}`;
-  const { judges, graph } = useJudges(dayKey);
+  const { judges, graph } = useJudges(dayKey, game.busy);
+  const you = port?.captains.find((c) => c.id === 'you') ?? null;
+  const ended = you !== null && !you.active;
   return (
     <>
       <TopBar
@@ -215,6 +246,7 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
         onJudges={game.setJudgesOpen}
         onEndDay={() => { void doEndDay(game.actions); }}
         dayBusy={game.busy !== null}
+        onReset={() => { void doReset(game.actions); }}
       />
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
@@ -226,6 +258,8 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
         loans={judges?.loans ?? []}
         licencePool={judges?.licence_pool ?? 0}
         proposal={judges?.proposal ?? null}
+        playerGold={port?.playerGold ?? 0}
+        youLicences={you?.licences ?? 0}
         busy={game.busy !== null}
         onSurvey={(zone) => { void doSurvey(game.actions, zone); }}
         onLicence={(action, ref) => { void doLicenceTrade(game.actions, action, ref); }}
@@ -234,6 +268,9 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
         onVote={(yes) => { void doCouncil(game.actions, 'vote', yes ? 'yes' : 'no'); }}
       />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
+      {ended && you !== null && port !== null && (
+        <EndScreen port={port} you={you} onReset={() => { void doReset(game.actions); }} />
+      )}
     </>
   );
 }

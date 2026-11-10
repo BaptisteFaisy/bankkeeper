@@ -36,6 +36,17 @@ pub fn format_price(cents: u64) -> String {
     format!("{}.{}", cents / 100, (cents % 100) / 10)
 }
 
+/// Exact price for sale lines: two decimals trimmed to one when exact
+/// ("1.08", "3.6", "4.0"), so shown products always hold (M3).
+pub fn format_exact(cents: u64) -> String {
+    let text = format!("{}.{:02}", cents / 100, cents % 100);
+    if text.ends_with('0') {
+        text[..text.len() - 1].to_string()
+    } else {
+        text
+    }
+}
+
 /// A bps factor shown with two decimals: 9000 -> "0.90".
 pub fn format_factor_bps(factor_bps: u64) -> String {
     format!("{}.{:02}", factor_bps / 10_000, (factor_bps % 10_000) / 100)

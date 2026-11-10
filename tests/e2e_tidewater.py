@@ -54,7 +54,8 @@ STATE = {
     ],
     "landings": [
         {"captain": "You", "crates": 14, "species": "herring",
-         "price": 3.6, "mesh": "large"},
+         "price": 3.6, "total": 50.4, "buyer": "Cannery", "start": 8.0,
+         "mesh": "large"},
     ],
     "reasoning": ["Sold to Cannery: 14 x 3.6 = 50.4."],
 }
@@ -69,7 +70,15 @@ def flag(name):
 if cmd == "state":
     print(json.dumps(state))
 elif cmd in ("graph", "judges"):
-    print(json.dumps({"ok": True, "view": cmd, "points": []}))
+    body = {"ok": True, "view": cmd, "points": []}
+    if cmd == "judges":
+        body.update({"seed": 7, "day": 0, "week": 1, "actors": [],
+                     "gold_total": 0, "ext_in": 0, "ext_out": 0,
+                     "licence_pool": 1, "proposal": None, "loans": []})
+    if cmd == "graph":
+        body.update({"history": [], "stocks": [3000, 5000, 2000],
+                     "capacity": [3000, 5000, 2000]})
+    print(json.dumps(body))
 elif cmd in ("assign", "survey", "licence", "debt", "council", "day"):
     print(json.dumps({"ok": True, "cmd": cmd}))
 elif cmd == "fastforward":
@@ -196,6 +205,11 @@ def journey(driver, base, notes):
         time.sleep(5)
         body = driver.find_element(By.TAG_NAME, "body").text
         notes.append("ff7: hash shown" if "hash " in body else "blocked: no ff hash after 5s")
+        height = driver.execute_script(
+            "return document.querySelector(\"section[aria-label='Judges']\")"
+            ".getBoundingClientRect().height;")
+        assert height > 400, "judges sheet collapsed (inner div steals .judges)"
+        notes.append("judges: sheet %dpx" % height)
     except Exception as exc:
         notes.append(f"blocked: fast-forward 7 days ({exc})")
     try:

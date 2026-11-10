@@ -26,7 +26,7 @@ from simclient import (SIM_TIMEOUT, build_assign_argv, build_council_argv, build
                        call_sim, run_fastforward_isolated, sim_bin)
 from payloads import (validate_assign_payload, validate_auth_payload, validate_council_payload,
                       validate_day_payload, validate_debt_payload, validate_fastforward_payload,
-                      validate_licence_payload, validate_survey_payload)
+                      validate_licence_payload, validate_reset_payload, validate_survey_payload)
 
 DEFAULT_PORT = 8785
 
@@ -39,7 +39,8 @@ _API_METHODS = {"/api/health": "GET", "/api/auth": "POST",
                 "/api/survey": "POST", "/api/licence": "POST",
                 "/api/debt": "POST", "/api/council": "POST",
                 "/api/fastforward": "POST", "/api/graph": "GET",
-                "/api/judges": "GET", "/api/day": "POST"}
+                "/api/judges": "GET", "/api/day": "POST",
+                "/api/reset": "POST"}
 
 _MESSAGES = {
     "E_BAD_JSON": "The request body is not valid JSON.",
@@ -304,7 +305,7 @@ class RelayHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         endpoint = parse_route("POST", self.path)
-        if endpoint in _POST_SIM or endpoint in ("auth", "fastforward"):
+        if endpoint in _POST_SIM or endpoint in ("auth", "fastforward", "reset"):
             body, status, err = self._read_json()
             if err is not None:
                 self._send_json(status, err)
@@ -329,8 +330,24 @@ class RelayHandler(BaseHTTPRequestHandler):
             self._handle_auth(body)
         elif endpoint == "fastforward":
             self._handle_fastforward(body)
+        elif endpoint == "reset":
+            self._handle_reset(body)
         else:
             self._handle_sim_action(endpoint, body)
+
+    def _handle_reset(self, body: dict):
+        clean, err = validate_reset_payload(body)
+        if err is not None:
+            self._send_json(400, error_body(err))
+            return
+        with MUTATION_LOCK:
+            status, resp = call_sim([sim_bin(), "init", "--seed",
+                                     str(clean["seed"]), "--out",
+                                     state_path()], SIM_TIMEOUT)
+        if status != 200:
+            self._send_json(status, self._envelope(resp))
+            return
+        self._send_json(200, {"ok": True, "seed": clean["seed"]})
 
     def _handle_auth(self, body: dict):
         clean, err = validate_auth_payload(body)

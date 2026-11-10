@@ -128,11 +128,16 @@ export interface DayReport {
   landings: Array<Record<string, unknown>>;
   lines: string[];
   week_rolled: boolean;
+  council: { season: number; tally: { for_votes: number; against_votes: number; passed: boolean } } | null;
   [key: string]: unknown;
 }
 
 export function postEndDay(): Promise<DayReport> {
   return post<DayReport>('/api/day', {});
+}
+
+export function postReset(): Promise<MutationResult> {
+  return post<MutationResult>('/api/reset', {});
 }
 
 // FNV-1a 32-bit: judge-friendly word seeds fold into the numeric seed
