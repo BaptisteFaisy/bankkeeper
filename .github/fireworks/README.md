@@ -28,7 +28,7 @@ et une branche de PR peut être antérieure à ce découpage.
 
 ```bash
 FIREWORKS_API_KEY=... python3 conflict_agent.py resolve \
-  --repo BaptisteFaisy/near_tidewater --pr 118 --branch feat/x --sha <tête>
+  --repo BaptisteFaisy/bankkeeper --pr 118 --branch feat/x --sha <tête>
 ```
 
 Le script est lu sur `origin/main` (pas sur la branche de la PR, qui peut
@@ -56,7 +56,7 @@ Labels `hold` / `intervention-humaine` : main humaine, aucune saisine.
 Succès : label `agent-conflit`. Le modèle ne voit que les bords du conflit,
 jamais aucun secret.
 
-Recette : `python3 conflict_agent.py resolve --dry-run --repo BaptisteFaisy/near_tidewater
+Recette : `python3 conflict_agent.py resolve --dry-run --repo BaptisteFaisy/bankkeeper
 --pr N` affiche les prompts sans rien appeler (dans un clone en conflit).
 
 ## Agent de périmètre (`scope_agent.py`)
@@ -71,7 +71,7 @@ manquante qui est écrite.
 
 ```bash
 FIREWORKS_API_KEY=... python3 scope_agent.py fix \
-  --repo BaptisteFaisy/near_tidewater --pr 215 --sha <tête> --guard /tmp/check_couche0.py
+  --repo BaptisteFaisy/bankkeeper --pr 215 --sha <tête> --guard /tmp/check_couche0.py
 ```
 
 Sorties : `0` corps complété (un commentaire porte le marqueur `automerge-scope`

@@ -1,3 +1,8 @@
+# Déploiements
+
+Deux déploiements, deux objets distincts : la **démo web** (le jeu jouable,
+statique, hors-ligne) et le **contrat sur NEAR testnet** (pas encore déployé).
+
 # Déploiement testnet
 
 Statut : **pas encore déployé — le faucet public est en limite de débit**
@@ -101,3 +106,36 @@ NPC — ils tournent dans le moteur Rust (`crates/sim`, `crates/wasm`), et la
 chaîne ne règle que ce qu'un joueur peut échanger. Le rejeu dépend de l'horloge
 de la chaîne : après le jour 27 le conseil ferme, et une relance attend la
 saison suivante.
+
+## Démo web (Vercel) — le lien public
+
+Un seul lien canonique pour le jeu jouable :
+**<https://tidewater-play.vercel.app>** (projet Vercel `tidewater-play`, équipe
+`team_69W3p97P7EKfPQaumMuNX85m`). Aucun projet Vercel n'est lié à un dépôt Git :
+le déploiement est manuel, depuis `web/dist`, après un build hors-ligne.
+
+```sh
+cd web && npm ci && npm run build:offline      # moteur wasm + front hors-ligne
+npx --yes vercel deploy --prod --yes \
+  --scope team_69W3p97P7EKfPQaumMuNX85m \
+  --token "$(jq -r .token ~/.local/share/com.vercel.cli/auth.json)"   # depuis web/dist
+```
+
+Le jeton reste dans `~/.local/share/com.vercel.cli/auth.json`, jamais dans le
+dépôt ni dans un journal.
+
+### Empreinte du dernier déploiement
+
+| Élément | Valeur |
+|---|---|
+| Déployé le | 2026-11-10 18:55 (Europe/Paris) — 17:55:24 UTC |
+| Commit `main` déployé | `809d71e2ec9f2107671e3eef2b843dc34110b2ce` (barreau 3 : une motion porte son argent) |
+| URL de production | <https://tidewater-play.vercel.app> |
+| Déploiement | `dpl_7FXFxWr5TRMySLYAqa39jwryGTq1` — `tidewater-play-7rxlwbbgd-bg-1fa3.vercel.app` |
+| `engine.wasm` servi | 868 305 octets (848 Kio), md5 `00f4096ef65f3b6dd13d2781fd858e1e` |
+| Service worker | `sw.js` estampillé, 12 fichiers en précache |
+| Vérifications | HTTP 200 sur `/` et `/engine.wasm`, titre `Tidewater`, parcours de référence rejoué contre l'URL publique : **0 erreur console, 0 requête `/api/`, 0 requête en échec** ; `tests/e2e_offline.py` et `tests/e2e_pwa.py` verts sur le même `dist` |
+
+Cette section vit dans un fichier que `scripts/testnet/deploy.mjs` réécrit
+entièrement : le lien canonique est aussi rappelé dans `README.md`, qui n'est
+pas généré.

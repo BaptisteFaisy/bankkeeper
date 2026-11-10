@@ -18,6 +18,26 @@ Projet pour le hackathon NEAR — track **Games With Real Economies**.
 - 🔍 **Preuves publiques** : [`/proofs.html`](https://tidewater-play.vercel.app/proofs.html) et [`docs/deployments.md`](docs/deployments.md)
 - 📋 **Grille de conformité au track** : [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)
 
+### Démo publique & redéploiement
+
+Le jeu se joue sur un **lien public unique** : **<https://tidewater-play.vercel.app>**
+— build 100 % hors-ligne (moteur Rust en wasm), aucun serveur derrière.
+
+Pour le redéployer depuis `main` (le jeton reste dans `~/.local/share/com.vercel.cli/auth.json`,
+jamais dans le dépôt ni dans un journal) :
+
+```sh
+TOKEN="$(jq -r .token ~/.local/share/com.vercel.cli/auth.json)"
+cd web && npm ci && npm run build:offline          # engine.wasm + web/dist
+cd dist && npx --yes vercel link --yes --project tidewater-play \
+  --scope team_69W3p97P7EKfPQaumMuNX85m --token "$TOKEN"
+npx --yes vercel deploy --prod --yes \
+  --scope team_69W3p97P7EKfPQaumMuNX85m --token "$TOKEN"
+```
+
+Déploiement manuel (aucun projet Vercel n'est lié au dépôt). Empreinte du dernier
+déploiement et vérifications : [`docs/deployments.md`](docs/deployments.md).
+
 ---
 
 ## 1. Ce qui a été fait (l'état réel)
