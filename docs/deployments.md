@@ -22,10 +22,10 @@ faucet, avant même l'état du contrat. C'est ce nombre qui commande tout le res
 
 | Rôle | Compte |
 |---|---|
-| Contrat, et propriétaire (fait tourner la journée, pilote les bateaux NPC) | `tidewater26.testnet` |
-| Joueur | `player.tidewater26.testnet` |
-| Second capitaine (reçoit une licence dans le scénario) | `captain.tidewater26.testnet` |
-| Banque / signataire de réserve | `bank.tidewater26.testnet` |
+| Contrat, et propriétaire (fait tourner la journée, pilote les bateaux NPC) | `bankkeeper.testnet` |
+| Joueur | `player.bankkeeper.testnet` |
+| Second capitaine (reçoit une licence dans le scénario) | `captain.bankkeeper.testnet` |
+| Banque / signataire de réserve | `bank.bankkeeper.testnet` |
 
 Un seul appel au faucet crée la racine ; les trois autres sont ses sous-comptes,
 donc toute la démo ne consomme qu'un seul slot de création. Les clés ne sortent
@@ -44,7 +44,7 @@ Rate limit exceeded, retry in 3 hours.
 
 Dix créations de compte par trois heures et par IP, et le seau était déjà vide.
 La forme « top-up » du même endpoint renvoie le même 429 : pas de porte de
-service. Sans slot de création, il n'y a pas de `tidewater26.testnet`.
+service. Sans slot de création, il n'y a pas de `bankkeeper.testnet`.
 
 Le chemin de repli (créer le compte contrat comme sous-compte d'un compte déjà
 financé, `TIDEWATER_ROOT_PARENT=<financé.testnet>`) est implémenté dans
