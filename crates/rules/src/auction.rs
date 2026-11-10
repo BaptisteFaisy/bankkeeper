@@ -10,6 +10,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
+use crate::merchant;
 use crate::state::{ActorId, Species};
 use crate::{format_exact, format_factor_exact_bps};
 
@@ -49,26 +50,20 @@ pub enum Outcome {
     },
 }
 
-/// TW-N-31 stock factor in bps: 1 + 0.5 x relative gap to target. Over 1 when
-/// short, under 1 when overstocked, clamped at 0 when flooded.
+/// TW-N-31 stock factor in bps. The arithmetic lives in [`merchant`], the one
+/// file that holds every merchant pricing rule.
 pub fn stock_factor_bps(stock: u64, target: u64, config: &Config) -> u64 {
-    if target == 0 {
-        return 10_000;
-    }
-    let gap = target as i64 - stock as i64;
-    let factor = 10_000i64 + config.stock_gain_bps as i64 * gap / target as i64;
-    factor.max(0) as u64
+    merchant::stock_factor_bps(stock, target, config.stock_gain_bps)
 }
 
 /// TW-N-31 buyer limit in centigold: base x stock factor.
 pub fn bid_limit(base: u64, stock: u64, target: u64, config: &Config) -> u64 {
-    let limit = base as u128 * stock_factor_bps(stock, target, config) as u128 / 10_000u128;
-    limit.min(u64::MAX as u128) as u64
+    merchant::limit(base, stock, target, config.stock_gain_bps)
 }
 
 /// Floor price in centigold: base x 25% (TW-N-33).
 pub fn floor_price(base: u64, config: &Config) -> u64 {
-    base.saturating_mul(config.floor_bps) / 10_000
+    merchant::floor(base, config.floor_bps)
 }
 
 /// Run the Dutch clock over `buyers` for `lot`. Pure and deterministic.

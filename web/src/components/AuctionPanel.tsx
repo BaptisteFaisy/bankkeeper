@@ -53,11 +53,22 @@ function useSweep(start: number, hammer: number, lotKey: string): number {
   return price;
 }
 
+/// The merchant's own reasoning, on hover or on keyboard focus: the track asks
+/// for a tooltip, and the sentence comes from `rules::merchant`, not from here.
 function BuyerRow({ buyer, hammer }: { buyer: BuyerView; hammer: { name: string; price: number } | null }) {
   const won = hammer !== null && buyer.name === hammer.name;
+  const why = (buyer.limits ?? []).map((l) => l.reasoning).join(' ');
   return (
     <li className={buyer.open ? '' : 'closed'}>
-      <span className="buyer-name">{buyer.name}</span>
+      <span className="buyer-name">
+        {buyer.name}
+        {buyer.open && why !== '' ? (
+          <span className="tip" tabIndex={0} aria-label={`Why ${buyer.name} pays what it pays`}>
+            <span className="tip-mark" aria-hidden="true">why</span>
+            <span className="tip-body" role="tooltip">{why}</span>
+          </span>
+        ) : null}
+      </span>
       <span className="buyer-buys">{buyer.open ? buyer.buys : 'Closed'}</span>
       <span className="num">{buyer.open && won && hammer !== null ? fmtGold(hammer.price) : '—'}</span>
     </li>

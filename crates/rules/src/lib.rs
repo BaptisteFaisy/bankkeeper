@@ -12,6 +12,7 @@ pub mod council;
 pub mod debt;
 pub mod goldflow;
 pub mod licences;
+pub mod merchant;
 pub mod species;
 pub mod state;
 pub mod stocks;

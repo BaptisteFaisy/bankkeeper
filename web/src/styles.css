@@ -329,3 +329,44 @@ section.judges {
     scroll-behavior: auto !important;
   }
 }
+
+/* Merchant reasoning: a tooltip on hover or keyboard focus (track requirement). */
+.tip {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--sand, #c9b083);
+  border-bottom: 1px dotted currentColor;
+  cursor: help;
+}
+
+.tip-body {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  width: max-content;
+  max-width: 34ch;
+  padding: 8px 10px;
+  border: 1px solid rgba(228, 237, 230, 0.25);
+  background: #0f2a30;
+  color: #e4ede6;
+  font-size: 12px;
+  line-height: 1.45;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.tip:hover .tip-body,
+.tip:focus-visible .tip-body,
+.tip:focus-within .tip-body {
+  visibility: visible;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip-body { transition: none; }
+}

@@ -72,10 +72,18 @@ export interface CaptainView {
   active: boolean;
 }
 
+export interface BuyerLimit {
+  species: string;
+  limit: number;
+  reasoning: string;
+}
+
 export interface BuyerView {
   id: string;
   name: string;
   open: boolean;
+  // Every price this merchant would pay now, with its reasoning line.
+  limits?: BuyerLimit[];
   // Null when the buyer does not bid on the current lot.
   limit: number | null;
   stock: number;

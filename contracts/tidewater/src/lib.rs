@@ -57,6 +57,10 @@ pub const LICENCE_SUPPLY: u64 = 20;
 pub const LICENCE_CAP_PER_CAPTAIN: u64 = 8;
 pub const START_QUOTA_PER_LICENCE: u64 = 70;
 pub const UPKEEP_MILLI_PER_DAY: u64 = 6_000;
+/// Stock-factor gain, in bps: merchants pay 50% more than base on an empty
+/// store, 50% less on a store twice its target. Spelled here once, used by
+/// `rules::merchant` from both sides of the wire.
+pub const STOCK_GAIN_BPS: u64 = 5_000;
 /// Shareholders of a bailed-out actor take 20 % of its sales proceeds.
 /// The brief (TW-N-52) promises "a share" without a number: 20 % is ours.
 pub const SHARE_CUT_BPS: u64 = 2_000;
