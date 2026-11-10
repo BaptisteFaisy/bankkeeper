@@ -38,7 +38,10 @@ elif cmd in ("assign", "survey", "licence", "debt", "council", "day"):
     else:
         print(json.dumps({"ok": True, "cmd": cmd}))
 elif cmd == "init":
-    print(json.dumps({"ok": True, "cmd": "init"}))
+    if flag("--seed") == "424242":
+        print("seeded {} with seed 424242".format(flag("--out")))
+    else:
+        print(json.dumps({"ok": True, "cmd": "init"}))
 elif cmd == "fastforward":
     journal, series, markers = flag("--journal"), flag("--series"), flag("--markers")
     json.dump([{"day": 1, "kind": "council", "detail": "vote"}], open(journal, "w"))
@@ -194,6 +197,14 @@ class RelayCase(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(body.get("ok"))
         self.assertEqual(body.get("seed"), 11)
+
+    def test_reset_ok_with_plain_text_sim_output(self):
+        # Real `sim init` prints "seeded ..." (not JSON) on exit 0;
+        # reset must still answer 200 (round-3 critic major B1).
+        status, body = self.call("POST", "/api/reset", {"seed": 424242})
+        self.assertEqual(status, 200)
+        self.assertTrue(body.get("ok"))
+        self.assertEqual(body.get("seed"), 424242)
 
     def test_day_ok(self):
         status, body = self.call("POST", "/api/day", {})

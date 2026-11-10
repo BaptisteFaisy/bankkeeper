@@ -1,7 +1,9 @@
 // Harbour ledger: today landings per captain with prices and nets,
 // plus the raw reasoning lines behind prices and NPC decisions.
+// The net shown is the landing's own (landing.mesh), never the
+// boat's current net.
 import type { LandingView } from '../types';
-import { MESH_LABEL } from '../types';
+import { MESH_LABEL, parseMesh } from '../types';
 import { fmtGold } from '../format';
 
 interface Props {
@@ -24,7 +26,7 @@ export default function LedgerPanel({ landings, reasoning }: Props) {
                 <li key={`${l.captain}-${i}`}>
                   <span>{l.captain}</span>
                   <span>
-                    {l.crates} {l.species} @ {fmtGold(l.price)}g ({MESH_LABEL[l.mesh].toLowerCase()})
+                    {l.crates} {l.species} @ {fmtGold(l.price)}g ({MESH_LABEL[parseMesh(l.mesh)].toLowerCase()})
                   </span>
                 </li>
               ))}

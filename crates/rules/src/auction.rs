@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
 use crate::state::{ActorId, Species};
-use crate::{format_exact, format_factor_bps, format_price};
+use crate::{format_exact, format_factor_exact_bps};
 
 /// One bidder for a lot: limit inputs plus solvency inputs.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -104,7 +104,9 @@ pub fn clear(lot: &Lot, buyers: &[Buyer], config: &Config) -> Outcome {
 
 /// Brief section 7 reasoning line, e.g. "Sold to Cannery: 14 x 3.6 = 50.4.
 /// Limit 3.6 = base 4.0 x 0.90." No stock figure: TW-C1-01 forbids showing
-/// the real stock to the player (M1).
+/// the real stock to the player (M1). The shown factor is the EFFECTIVE one
+/// (limit / base): bid_limit floors to the cent, so the input stock factor
+/// would print an equation that does not hold (defect 3 follow-up).
 pub fn sale_reasoning(
     buyer: &str,
     crates: u64,
@@ -118,15 +120,27 @@ pub fn sale_reasoning(
         "Sold to {buyer}: {crates} x {} = {}. Limit {} = base {} x {}.",
         format_exact(price),
         format_exact(price.saturating_mul(crates)),
-        format_price(price),
-        format_price(base),
-        format_factor_bps(factor_bps),
+        format_exact(price),
+        format_exact(base),
+        format_factor_exact_bps(shown_factor_bps(price, base, factor_bps)),
     )
+}
+
+/// Effective factor in bps, round-half-up: the multiplier that rebuilds the
+/// shown limit from the shown base. Falls back to the input stock factor
+/// when the base is zero (never happens: bases are 400/1200).
+fn shown_factor_bps(price: u64, base: u64, factor_bps: u64) -> u64 {
+    if base == 0 {
+        return factor_bps;
+    }
+    let scaled = price as u128 * 10_000u128;
+    ((scaled + base as u128 / 2) / base as u128).min(u64::MAX as u128) as u64
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::format_price;
 
     fn config() -> Config {
         Config::default()
@@ -185,6 +199,26 @@ mod tests {
         assert_eq!(
             sale_reasoning("Cannery", 14, 360, 400, 9000, 180, 150),
             "Sold to Cannery: 14 x 3.6 = 50.4. Limit 3.6 = base 4.0 x 0.90."
+        );
+    }
+
+    #[test]
+    fn inexact_limit_shows_hammer_and_holds_the_equation() {
+        // 573 = 400 x 1.4325 exactly: the shown limit must equal the hammer
+        // price and the factor equation must hold (defect 3).
+        assert_eq!(
+            sale_reasoning("Cannery", 20, 573, 400, 14325, 20, 150),
+            "Sold to Cannery: 20 x 5.73 = 114.6. Limit 5.73 = base 4.0 x 1.4325."
+        );
+    }
+
+    #[test]
+    fn floored_limit_shows_the_effective_factor() {
+        // bid_limit floors 400 x 1.1433 = 457.32 to 457: the line must show
+        // the effective factor 457/400 = 1.1425, so the equation holds.
+        assert_eq!(
+            sale_reasoning("Cannery", 4, 457, 400, 11433, 20, 150),
+            "Sold to Cannery: 4 x 4.57 = 18.28. Limit 4.57 = base 4.0 x 1.1425."
         );
     }
 

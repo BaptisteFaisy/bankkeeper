@@ -2,7 +2,7 @@
 // Surveys per zone, licence trade (pool and captains), loan notes
 // (buy/forbear/seize) and council motions (propose + vote yes/no).
 import { useState } from 'react';
-import type { CaptainView, CouncilProposal, LoanView, ZoneId } from '../types';
+import type { CaptainView, CouncilOutcome, CouncilProposal, LoanView, ZoneId } from '../types';
 import { ZONE_LABEL } from '../types';
 import { fmtGold } from '../format';
 
@@ -11,7 +11,9 @@ interface Props {
   loans: LoanView[];
   licencePool: number;
   proposal: CouncilProposal | null;
+  lastCouncil: CouncilOutcome | null;
   playerGold: number;
+  licencePrice?: number;
   youLicences: number;
   busy: boolean;
   onSurvey: (zone: ZoneId) => void;
@@ -39,13 +41,17 @@ function SurveyRow({ busy, playerGold, onSurvey }: Pick<Props, 'busy' | 'playerG
   );
 }
 
-function LicenceRow({ captains, licencePool, youLicences, busy, onLicence }: Pick<Props, 'captains' | 'licencePool' | 'youLicences' | 'busy' | 'onLicence'>) {
+function LicenceRow({ captains, licencePool, youLicences, busy, playerGold, licencePrice, onLicence }: Pick<Props, 'captains' | 'licencePool' | 'youLicences' | 'busy' | 'playerGold' | 'licencePrice' | 'onLicence'>) {
   const others = captains.filter((c) => c.id !== 'you');
+  // Same pattern as the loan-note pool buy: no request fires when the
+  // purse cannot cover the known price. Unknown price: stay enabled.
+  const short = licencePrice !== undefined && playerGold < licencePrice;
+  const shortTitle = short && licencePrice !== undefined ? `Needs ${fmtGold(licencePrice)}g` : undefined;
   return (
     <div className="harbour-block">
-      <h3>Licences (pool: {licencePool}, yours: {youLicences})</h3>
+      <h3>Licences (pool: {licencePool}, yours: {youLicences}{licencePrice !== undefined ? `, ${fmtGold(licencePrice)}g each` : ''})</h3>
       <div className="harbour-row">
-        <button type="button" disabled={busy || licencePool === 0} title={licencePool === 0 ? 'Pool empty' : undefined} onClick={() => onLicence('buy', 'pool')}>
+        <button type="button" disabled={busy || short || licencePool === 0} title={licencePool === 0 ? 'Pool empty' : shortTitle} onClick={() => onLicence('buy', 'pool')}>
           Buy licence
         </button>
         <button type="button" disabled={busy || youLicences === 0} title={youLicences === 0 ? 'You hold none' : undefined} onClick={() => onLicence('sell', 'pool')}>
@@ -54,7 +60,7 @@ function LicenceRow({ captains, licencePool, youLicences, busy, onLicence }: Pic
         {others.map((c) => (
           <span key={c.id} className="harbour-trade">
             <span className="muted">{c.name} ({c.licences})</span>
-            <button type="button" disabled={busy || c.licences === 0} title={c.licences === 0 ? `${c.name} holds none` : undefined} onClick={() => onLicence('buy', c.id)}>
+            <button type="button" disabled={busy || short || c.licences === 0} title={c.licences === 0 ? `${c.name} holds none` : shortTitle} onClick={() => onLicence('buy', c.id)}>
               Buy
             </button>
             <button type="button" disabled={busy || youLicences === 0} title={youLicences === 0 ? 'You hold none' : undefined} onClick={() => onLicence('sell', c.id)}>
@@ -150,11 +156,28 @@ function ProposeForm({ busy, onPropose }: Pick<Props, 'busy' | 'onPropose'>) {
   );
 }
 
-function CouncilBlock({ proposal, busy, onPropose, onVote }: Pick<Props, 'proposal' | 'busy' | 'onPropose' | 'onVote'>) {
+function CouncilMinutes({ council }: { council: CouncilOutcome }) {
+  if (council.lines.length === 0) return null;
+  return (
+    <>
+      <p className="muted">Last council (season {council.season}):</p>
+      <ul className="reason-list">
+        {council.lines.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function CouncilBlock({ proposal, lastCouncil, busy, onPropose, onVote }: Pick<Props, 'proposal' | 'lastCouncil' | 'busy' | 'onPropose' | 'onVote'>) {
+  const showMinutes = proposal === null && lastCouncil !== null && lastCouncil.lines.length > 0;
   return (
     <div className="harbour-block">
       <h3>Council</h3>
-      <p className="muted">{proposal === null ? 'No motion tabled.' : `Motion: ${proposalText(proposal)}`}</p>
+      {proposal !== null && <p className="muted">Motion: {proposalText(proposal)}</p>}
+      {proposal === null && !showMinutes && <p className="muted">No motion tabled.</p>}
+      {showMinutes && lastCouncil !== null && <CouncilMinutes council={lastCouncil} />}
       <ProposeForm busy={busy} onPropose={onPropose} />
       <div className="harbour-row">
         <button type="button" disabled={busy} onClick={() => onVote(true)}>
@@ -173,9 +196,9 @@ export default function HarbourPanel(props: Props) {
     <section className="panel harbour" aria-label="Harbour office">
       <h2>Harbour office</h2>
       <SurveyRow busy={props.busy} playerGold={props.playerGold} onSurvey={props.onSurvey} />
-      <LicenceRow captains={props.captains} licencePool={props.licencePool} youLicences={props.youLicences} busy={props.busy} onLicence={props.onLicence} />
+      <LicenceRow captains={props.captains} licencePool={props.licencePool} youLicences={props.youLicences} busy={props.busy} playerGold={props.playerGold} licencePrice={props.licencePrice} onLicence={props.onLicence} />
       <DebtRow loans={props.loans} busy={props.busy} playerGold={props.playerGold} onDebt={props.onDebt} />
-      <CouncilBlock proposal={props.proposal} busy={props.busy} onPropose={props.onPropose} onVote={props.onVote} />
+      <CouncilBlock proposal={props.proposal} lastCouncil={props.lastCouncil} busy={props.busy} onPropose={props.onPropose} onVote={props.onVote} />
     </section>
   );
 }

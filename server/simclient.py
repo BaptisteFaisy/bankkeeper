@@ -17,7 +17,8 @@ CLI contract (implemented by `crates/sim`, binary `sim`):
   sim fastforward --state COPY --days 7|28 --seed S \\
       --journal J --series R --markers M                -> summary on stdout
 
-Every command prints JSON on stdout. A rule refusal prints
+Every command prints JSON on stdout, except `init` which prints
+plain text ("seeded ...") on success. A rule refusal prints
 `{"error": "E_..."}` and maps to HTTP 409. Fast-forward also writes the
 journal list, the series object and the markers list to J, R and M.
 """
@@ -149,6 +150,21 @@ def call_sim(argv: list[str], timeout: int = SIM_TIMEOUT,
     except OSError as exc:
         return (502, {"error": "E_NO_SIM", "detail": str(exc)[:200]})
     return map_sim_result(returncode, stdout, stderr)
+
+
+def call_sim_allow_text(argv: list[str], timeout: int = SIM_TIMEOUT,
+                        runner=run_sim) -> tuple[int, dict]:
+    """Run sim where exit 0 means success whatever stdout looks like.
+
+    For `init`, whose success output is plain text ("seeded ..."), not
+    JSON. Real failures (nonzero exit, timeout, missing binary) still
+    map exactly as in `call_sim`.
+    """
+    status, body = call_sim(argv, timeout, runner)
+    if status == 502 and body.get("error") == "E_BAD_SIM_OUTPUT":
+        # Exit 0 with unparsable stdout: the command itself succeeded.
+        return (200, {"ok": True})
+    return (status, body)
 
 
 def fastforward_response(summary: dict, journal: list, series: dict,

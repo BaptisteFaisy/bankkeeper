@@ -5,7 +5,7 @@
 //! (state, seed): the same seed replays the same season, so demos are
 //! reproducible and CI pins a golden hash.
 
-use crate::{cycle::DayReport, cycle::run_day, Game};
+use crate::{cycle::DayReport, cycle::run_day, season::CouncilReport, Game};
 use serde::{Deserialize, Serialize};
 
 /// Judge runs: one week and one full season (TW-J-01).
@@ -46,18 +46,25 @@ pub struct FastForwardResult {
 
 /// Run `days` days with no player: their boats stay beached at quay.
 pub fn run(game: &mut Game, days: u64) -> FastForwardResult {
-    for boat in game.port.boats.iter_mut().filter(|boat| boat.owner == rules::state::ActorId::You) {
-        boat.zone = None;
+    if !game.over {
+        for boat in game.port.boats.iter_mut().filter(|boat| boat.owner == rules::state::ActorId::You) {
+            boat.zone = None;
+        }
     }
     let mut history = Vec::new();
     let mut events = Vec::new();
+    let mut days_run = 0u64;
     for _ in 0..days {
+        if game.over {
+            break;
+        }
         let report = run_day(game);
         collect_events(&report, &mut events);
         history.push(snapshot(game));
+        days_run += 1;
     }
     FastForwardResult {
-        days_run: days,
+        days_run,
         seed: game.port.seed,
         history,
         events,
@@ -97,13 +104,7 @@ fn collect_events(report: &DayReport, events: &mut Vec<FfEvent>) {
         events.push(FfEvent {
             day: report.day,
             kind: "council".to_string(),
-            detail: format!(
-                "season {} vote: {} for, {} against, {}",
-                council.season,
-                council.tally.for_votes,
-                council.tally.against_votes,
-                if council.tally.passed { "passed" } else { "failed" }
-            ),
+            detail: council_event_detail(council),
         });
     }
     if !report.invariant_ok {
@@ -113,6 +114,24 @@ fn collect_events(report: &DayReport, events: &mut Vec<FfEvent>) {
             detail: "gold conservation fault".to_string(),
         });
     }
+}
+
+/// Council timeline text: the vote count when a motion was tabled, an
+/// honest no-motion line otherwise (B2).
+fn council_event_detail(council: &CouncilReport) -> String {
+    if !council.tabled {
+        return format!(
+            "season {} council: no motion tabled; the standing rules continue.",
+            council.season
+        );
+    }
+    format!(
+        "season {} vote: {} for, {} against, {}",
+        council.season,
+        council.tally.for_votes,
+        council.tally.against_votes,
+        if council.tally.passed { "passed" } else { "failed" }
+    )
 }
 
 /// One graph point from the live game.

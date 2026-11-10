@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 
 from simclient import (SIM_TIMEOUT, build_assign_argv, build_council_argv, build_day_argv,
                        build_debt_argv, build_licence_argv, build_query_argv, build_survey_argv,
-                       call_sim, run_fastforward_isolated, sim_bin)
+                       call_sim, call_sim_allow_text, run_fastforward_isolated, sim_bin)
 from payloads import (validate_assign_payload, validate_auth_payload, validate_council_payload,
                       validate_day_payload, validate_debt_payload, validate_fastforward_payload,
                       validate_licence_payload, validate_reset_payload, validate_survey_payload)
@@ -341,9 +341,9 @@ class RelayHandler(BaseHTTPRequestHandler):
             self._send_json(400, error_body(err))
             return
         with MUTATION_LOCK:
-            status, resp = call_sim([sim_bin(), "init", "--seed",
-                                     str(clean["seed"]), "--out",
-                                     state_path()], SIM_TIMEOUT)
+            status, resp = call_sim_allow_text(
+                [sim_bin(), "init", "--seed", str(clean["seed"]),
+                 "--out", state_path()], SIM_TIMEOUT)
         if status != 200:
             self._send_json(status, self._envelope(resp))
             return

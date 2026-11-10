@@ -113,12 +113,14 @@ fn player_buys_debt_and_grants_forbearance() {
 #[test]
 fn seasonal_vote_happens_and_indemnity_flips_an_npc_vote() {
     let lean = roll_with_indemnity(0);
+    assert!(lean.tabled);
     let ballot = lean.ballots.iter().find(|(voter, _, _)| *voter == ActorId::Brandt);
     assert_eq!(ballot.map(|(_, vote, _)| *vote), Some(Vote::Against));
     assert!(lean.lines.iter().any(|line| line.contains("votes no")), "{:?}", lean.lines);
     assert!(lean.lines.iter().any(|line| line.contains("costs him")), "{:?}", lean.lines);
 
     let fat = roll_with_indemnity(50_000);
+    assert!(fat.tabled);
     let ballot = fat.ballots.iter().find(|(voter, _, _)| *voter == ActorId::Brandt);
     assert_eq!(ballot.map(|(_, vote, _)| *vote), Some(Vote::For));
     assert!(fat.tally.passed);

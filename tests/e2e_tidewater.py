@@ -53,11 +53,14 @@ STATE = {
          "stock": 180, "target": 150, "buys": "herring"},
     ],
     "landings": [
+        # Landing net "small" while both boats fish "large": the ledger
+        # must read landing.mesh, not the boat's current net.
         {"captain": "You", "crates": 14, "species": "herring",
          "price": 3.6, "total": 50.4, "buyer": "Cannery", "start": 8.0,
-         "mesh": "large"},
+         "mesh": "small"},
     ],
     "reasoning": ["Sold to Cannery: 14 x 3.6 = 50.4."],
+    "seasonOver": False,
 }
 
 STUB = """#!/usr/bin/env python3
@@ -79,7 +82,16 @@ elif cmd in ("graph", "judges"):
         body.update({"history": [], "stocks": [3000, 5000, 2000],
                      "capacity": [3000, 5000, 2000]})
     print(json.dumps(body))
-elif cmd in ("assign", "survey", "licence", "debt", "council", "day"):
+elif cmd == "day":
+    print(json.dumps({"ok": True, "cmd": cmd, "day": 0, "landings": [],
+                      "lines": [], "week_rolled": False,
+                      "council": {"season": 1, "tabled": False,
+                                  "tally": {"for_votes": 0,
+                                            "against_votes": 0,
+                                            "passed": False},
+                                  "lines": ["Council of season 1: no motion tabled; the standing rules continue."]},
+                      "season_over": False, "bilan": None}))
+elif cmd in ("assign", "survey", "licence", "debt", "council"):
     print(json.dumps({"ok": True, "cmd": cmd}))
 elif cmd == "fastforward":
     json.dump([{"day": 1, "kind": "council", "detail": "vote"}],
@@ -204,7 +216,7 @@ def journey(driver, base, notes):
         driver.find_element(By.XPATH, "//button[text()='Fast-forward 7 days']").click()
         time.sleep(5)
         body = driver.find_element(By.TAG_NAME, "body").text
-        notes.append("ff7: hash shown" if "hash " in body else "blocked: no ff hash after 5s")
+        notes.append("ff7: hash shown" if "Deterministic replay signature" in body else "blocked: no ff hash after 5s")
         height = driver.execute_script(
             "return document.querySelector(\"section[aria-label='Judges']\")"
             ".getBoundingClientRect().height;")

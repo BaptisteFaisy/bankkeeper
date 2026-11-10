@@ -106,6 +106,9 @@ pub fn seed_game(seed: u64) -> Game {
         history: Vec::new(),
         next_loan_id: crate::FIRST_LOAN_ID + 1,
         next_boat_id: 10,
+        over: false,
+        bilan: None,
+        last_council: None,
     }
 }
 

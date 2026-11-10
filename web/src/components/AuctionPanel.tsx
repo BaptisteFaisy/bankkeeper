@@ -4,7 +4,7 @@
 // auto-advances unless reduced motion is asked.
 import { useEffect, useState } from 'react';
 import type { AuctionView, BuyerView, LandingView } from '../types';
-import { MESH_LABEL } from '../types';
+import { MESH_LABEL, parseMesh } from '../types';
 import { fmtGold } from '../format';
 
 interface Props {
@@ -78,7 +78,7 @@ function LiveLot({ lot, position, total, onNext, onSkip }: {
   return (
     <>
       <p className="lot-line">
-        Lot {position + 1}/{total}: {lot.crates} crates of {lot.species} ({lot.captain}, {MESH_LABEL[lot.mesh].toLowerCase()})
+        Lot {position + 1}/{total}: {lot.crates} crates of {lot.species} ({lot.captain}, {MESH_LABEL[parseMesh(lot.mesh)].toLowerCase()})
       </p>
       <div className="clock-row">
         <span className="clock-price">{fmtGold(clock)}</span>
@@ -102,10 +102,24 @@ function LiveLot({ lot, position, total, onNext, onSkip }: {
   );
 }
 
+// Closing line once the replay ran past the last lot. Bound to the
+// replay itself (last replayed lot, 1-based), never to lastSale:
+// an unsold final lot must read unsold, not show an earlier hammer.
+function ClosingLine({ lot, position }: { lot: LandingView; position: number }) {
+  if (lot.buyer === null) {
+    return <p className="sale-line">Lot {position} unsold below the floor.</p>;
+  }
+  return (
+    <p className="sale-line">
+      Sold lot {position} to {lot.buyer}: {lot.crates} × {fmtGold(lot.price)} = {fmtGold(lot.total)}g
+    </p>
+  );
+}
+
 export default function AuctionPanel({ auction, buyers, landings, dayKey }: Props) {
   const { index, next, skip } = usePlayback(landings, dayKey);
-  const sale = auction.lastSale;
   const live = index < landings.length ? landings[index] : null;
+  const closed = live === null && landings.length > 0 ? landings[landings.length - 1] : null;
   const hammer = live !== null && live.buyer !== null ? { name: live.buyer, price: live.price } : null;
   return (
     <section className="panel auction" aria-label="Fish auction">
@@ -116,11 +130,7 @@ export default function AuctionPanel({ auction, buyers, landings, dayKey }: Prop
       {live !== null && (
         <LiveLot lot={live} position={index} total={landings.length} onNext={next} onSkip={skip} />
       )}
-      {live === null && landings.length > 0 && sale !== null && (
-        <p className="sale-line">
-          Sold lot {sale.lot} to {sale.buyer}: {sale.crates} × {fmtGold(sale.price)} = {fmtGold(sale.total)}g
-        </p>
-      )}
+      {closed !== null && <ClosingLine lot={closed} position={landings.length} />}
       <ul className="buyer-limits">
         {buyers.map((b) => (
           <BuyerRow key={b.id} buyer={b} hammer={hammer} />

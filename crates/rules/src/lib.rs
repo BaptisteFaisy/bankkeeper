@@ -52,6 +52,19 @@ pub fn format_factor_bps(factor_bps: u64) -> String {
     format!("{}.{:02}", factor_bps / 10_000, (factor_bps % 10_000) / 100)
 }
 
+/// A bps factor shown exactly, trimmed to at least two decimals: 9000 ->
+/// "0.90", 14325 -> "1.4325". Sale lines show this, never the truncated one.
+pub fn format_factor_exact_bps(factor_bps: u64) -> String {
+    let text = format!("{}.{:04}", factor_bps / 10_000, factor_bps % 10_000);
+    let trimmed = text.trim_end_matches('0');
+    let min_len = text.len() - 2;
+    if trimmed.len() < min_len {
+        text[..min_len].to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// Crate counts with a thousands separator: 3000 -> "3,000".
 pub fn format_crates(crates: u64) -> String {
     let digits: Vec<char> = crates.to_string().chars().rev().collect();
@@ -75,6 +88,10 @@ mod tests {
         assert_eq!(format_price(5_040), "50.4");
         assert_eq!(format_price(400), "4.0");
         assert_eq!(format_factor_bps(9_000), "0.90");
+        assert_eq!(format_factor_exact_bps(9_000), "0.90");
+        assert_eq!(format_factor_exact_bps(14_325), "1.4325");
+        assert_eq!(format_factor_exact_bps(10_000), "1.00");
+        assert_eq!(format_factor_exact_bps(14_000), "1.40");
         assert_eq!(format_crates(3_000), "3,000");
         assert_eq!(gold_to_cents(150), Some(15_000));
         assert_eq!(gold_to_cents(u64::MAX), None);
