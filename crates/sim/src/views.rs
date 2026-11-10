@@ -16,6 +16,9 @@ use rules::survey::{is_valid, trend, Trend};
 use rules::trips::quota_left;
 use serde_json::{json, Value};
 
+/// Rung 1 (SEE): who took what, per zone, against the sustainable catch.
+pub use crate::attribution::attribution;
+
 /// Centigold as whole pieces with one decimal: 5040 -> 50.4.
 pub fn gold_pieces(cents: i64) -> f64 {
     cents as f64 / 100.0
@@ -346,6 +349,7 @@ pub fn view_state(game: &Game) -> Value {
         "bilan": game.bilan,
         "lastCouncil": game.last_council,
         "leases": game.leases.iter().map(|lease| json!({"lessor": actor_id(lease.lessor), "lessorName": lease.lessor.name(), "lessee": actor_id(lease.lessee), "lesseeName": lease.lessee.name(), "weeklyRent": gold_pieces(lease.weekly_rent as i64), "weeksLeft": lease.weeks_left})).collect::<Vec<_>>(),
+        "attribution": attribution(game),
     })
 }
 

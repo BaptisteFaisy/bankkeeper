@@ -39,13 +39,14 @@ fn main() -> ExitCode {
         Some("state") => cmd_view(&args, views::view_state),
         Some("graph") => cmd_view(&args, views::view_graph),
         Some("judges") => cmd_view(&args, views::view_judges),
+        Some("attribution") => cmd_view(&args, views::attribution),
         Some("fastforward") => cmd_fastforward(&args),
         Some("licence") => cmd_licence(&args),
         Some("lease") | Some("unlease") => cmd_lease(&args),
         Some("debt") => cmd_debt(&args),
         Some("council") => cmd_council(&args),
         _ => {
-            eprintln!("usage: sim <init|day|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|state|graph|judges|fastforward|licence|lease|debt|council> [flags]");
+            eprintln!("usage: sim <init|day|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|state|graph|judges|attribution|fastforward|licence|lease|debt|council> [flags]");
             ExitCode::from(2)
         }
     }
