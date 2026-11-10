@@ -312,10 +312,30 @@ pub fn view_state(game: &Game) -> Value {
         "auction": auction_view(game),
         "landings": landing_views(game),
         "reasoning": game.last_report.as_ref().map(|report| report.lines.clone()).unwrap_or_default(),
+        "season": displayed_season(game),
+        "campaignSeasons": game.config.campaign_seasons,
+        "campaignOver": closed_seasons(game) >= game.config.campaign_seasons,
+        "campaign": game.campaign,
         "seasonOver": game.over,
         "bilan": game.bilan,
         "lastCouncil": game.last_council,
     })
+}
+
+/// Season number as the player reads it: the one being played, or the one
+/// whose bilan is on screen.
+fn displayed_season(game: &Game) -> u64 {
+    let index = game.port.season(&game.config);
+    if game.over {
+        index.max(1)
+    } else {
+        index + 1
+    }
+}
+
+/// Seasons already closed, counting the one waiting on its bilan screen.
+fn closed_seasons(game: &Game) -> u64 {
+    game.campaign.len() as u64 + u64::from(game.over)
 }
 
 /// Stock and price series for GET /api/graph (TW-J-02).

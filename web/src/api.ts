@@ -138,6 +138,10 @@ export function postEndDay(): Promise<DayReport> {
   return post<DayReport>('/api/day', {});
 }
 
+export function postNextSeason(): Promise<MutationResult> {
+  return post<MutationResult>('/api/next-season', {});
+}
+
 export function postReset(): Promise<MutationResult> {
   return post<MutationResult>('/api/reset', {});
 }

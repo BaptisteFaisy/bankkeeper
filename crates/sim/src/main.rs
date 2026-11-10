@@ -33,6 +33,7 @@ fn main() -> ExitCode {
         Some("buy-boat") => cmd_buy_boat(&args),
         Some("buy-note") => cmd_buy_note(&args),
         Some("defer") => cmd_defer(&args),
+        Some("next-season") => cmd_next_season(&args),
         Some("state") => cmd_view(&args, views::view_state),
         Some("graph") => cmd_view(&args, views::view_graph),
         Some("judges") => cmd_view(&args, views::view_judges),
@@ -311,6 +312,23 @@ fn cmd_defer(args: &[String]) -> ExitCode {
 }
 
 /// Read-only relay query: print one player view as JSON.
+/// Open the next season of the campaign: assets stay, the sea stays where it is.
+fn cmd_next_season(args: &[String]) -> ExitCode {
+    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
+    let mut game = read_game(&path);
+    match sim::season::open_next_season(&mut game) {
+        Ok(season) => {
+            write_json(&path, &game);
+            println!("{}", serde_json::json!({ "ok": true, "season": season }));
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            println!("{}", serde_json::json!({ "error": error }));
+            ExitCode::from(1)
+        }
+    }
+}
+
 fn cmd_view(args: &[String], view: fn(&Game) -> serde_json::Value) -> ExitCode {
     let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
     let game = read_game(&path);

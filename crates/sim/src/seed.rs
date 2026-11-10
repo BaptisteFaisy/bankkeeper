@@ -129,6 +129,7 @@ pub fn seed_game(seed: u64) -> Game {
         over: false,
         bilan: None,
         last_council: None,
+        campaign: Vec::new(),
     }
 }
 

@@ -149,6 +149,11 @@ export interface PortState {
   // Season length in days and weeks (sim view_state), for shareable links.
   seasonDays?: number;
   weeksPerSeason?: number;
+  // Campaign: which season this is, how many, and the bilans already closed.
+  season?: number;
+  campaignSeasons?: number;
+  campaignOver?: boolean;
+  campaign?: unknown[];
 }
 
 export interface FFSummary {
