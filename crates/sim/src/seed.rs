@@ -135,6 +135,7 @@ pub fn seed_game(seed: u64) -> Game {
         lots_landed: 0,
         leases: Vec::new(),
         fund: Fund::default(),
+        payroll: None,
     }
 }
 

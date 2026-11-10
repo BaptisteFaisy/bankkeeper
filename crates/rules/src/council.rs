@@ -10,6 +10,46 @@ use serde::{Deserialize, Serialize};
 
 use crate::state::{ActorId, Zone};
 
+/// Barreau 3: where the gold an indemnity promises actually comes from.
+///
+/// A motion that promises money without saying who pays is a promise, not a
+/// budget. The council votes both at once.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Funding {
+    /// The port fund pays: levy the port has already collected.
+    Fund,
+    /// A further levy on next season's landings pays as they land.
+    Levies,
+}
+
+impl Funding {
+    /// Relay and view slug: "fund" or "levies".
+    pub fn slug(self) -> &'static str {
+        match self {
+            Funding::Fund => "fund",
+            Funding::Levies => "levies",
+        }
+    }
+
+    /// Read a slug back (relay token `pay:fund`, `pay:levies`).
+    pub fn from_slug(value: &str) -> Option<Self> {
+        match value.trim().to_lowercase().as_str() {
+            "fund" | "portfund" | "port-fund" => Some(Funding::Fund),
+            "levies" | "levy" | "extralevy" | "extra-levy" => Some(Funding::Levies),
+            _ => None,
+        }
+    }
+
+    /// The source in a sentence: "the port fund", "an extra levy".
+    pub fn label(self) -> &'static str {
+        match self {
+            Funding::Fund => "the port fund",
+            Funding::Levies => "an extra levy",
+        }
+    }
+}
+
 /// One council motion for next season.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Proposal {
@@ -18,6 +58,11 @@ pub struct Proposal {
     pub ban_small_mesh: bool,
     /// Gold per licence per week paid to yes-voters (TW-C4-03), centigold.
     pub indemnity_per_licence_week: u64,
+    /// Barreau 3: the source that pays that indemnity. `None` on a motion
+    /// that promises nothing; `default` keeps saves written before motions
+    /// had to carry their money.
+    #[serde(default)]
+    pub funding: Option<Funding>,
     /// Landing levy for next season in centigold per crate. `None` means the
     /// motion leaves the levy alone; `default` keeps quota-only motions (and
     /// saves written before the levy) deserialising.
@@ -85,6 +130,48 @@ pub fn licence_price(expected_crate_price: u64, quota_per_licence: u64) -> u64 {
 /// Total indemnity bill for the yes-voters over a season.
 pub fn indemnity_cost(for_licences: u64, per_licence_week: u64, weeks: u64) -> u64 {
     for_licences.saturating_mul(per_licence_week).saturating_mul(weeks)
+}
+
+impl Proposal {
+    /// Barreau 3: the source that pays the indemnity. A motion that promises
+    /// nothing has no source; one that promises carries one — a motion written
+    /// before motions had to say is read as paid by the port fund.
+    pub fn funding(&self) -> Option<Funding> {
+        if self.indemnity_per_licence_week == 0 {
+            None
+        } else {
+            Some(self.funding.unwrap_or(Funding::Fund))
+        }
+    }
+
+    /// Total bill over a season for `licences` paid licence-weeks, centigold.
+    pub fn bill(&self, licences: u64, weeks: u64) -> u64 {
+        indemnity_cost(licences, self.indemnity_per_licence_week, weeks)
+    }
+}
+
+/// Whole crates with a space every three digits: 1800 -> "1 800".
+pub fn crates_count(crates: u64) -> String {
+    let digits = crates.to_string();
+    let mut out = String::new();
+    for (pos, digit) in digits.chars().enumerate() {
+        if pos > 0 && (digits.len() - pos).is_multiple_of(3) {
+            out.push(' ');
+        }
+        out.push(digit);
+    }
+    out
+}
+
+/// Barreau 3, second half of the reasoning line: what the captain took from
+/// the bank this season, from the barreau 1 attribution.
+pub fn took_this_season(crates: u64, zone: Option<&str>) -> String {
+    match zone {
+        Some(place) if crates > 0 => {
+            format!("He took {} crates from {place} this season.", crates_count(crates))
+        }
+        _ => "He took no crates from the bank this season.".to_string(),
+    }
 }
 
 /// Brief section 5.4 reasoning line: "Brandt votes no: a 50-crate quota costs
@@ -188,5 +275,50 @@ mod tests {
     fn licence_price_follows_expected_yield() {
         assert_eq!(licence_price(350, 70), 24_500);
         assert_eq!(licence_price(100, 70), 7_000);
+    }
+
+    fn motion(indemnity: u64, funding: Option<Funding>) -> Proposal {
+        Proposal {
+            quota_per_licence: 50,
+            close_zone: None,
+            ban_small_mesh: false,
+            indemnity_per_licence_week: indemnity,
+            funding,
+            levy_per_crate: None,
+        }
+    }
+
+    #[test]
+    fn a_promise_without_money_has_no_source_and_no_bill() {
+        let free = motion(0, None);
+        assert_eq!(free.funding(), None);
+        assert_eq!(free.bill(15, 4), 0);
+    }
+
+    #[test]
+    fn a_promise_carries_its_source_and_its_season_bill() {
+        let paid = motion(400, Some(Funding::Levies));
+        assert_eq!(paid.funding(), Some(Funding::Levies));
+        // 400 a licence a week, 15 licences paid, four weeks a season.
+        assert_eq!(paid.bill(15, 4), 24_000);
+        // A motion written before the rule existed is read as fund-paid.
+        assert_eq!(motion(400, None).funding(), Some(Funding::Fund));
+        assert_eq!(Funding::from_slug("Fund"), Some(Funding::Fund));
+        assert_eq!(Funding::from_slug(" extra-levy "), Some(Funding::Levies));
+        assert_eq!(Funding::from_slug("sea"), None);
+        assert_eq!(Funding::Levies.slug(), "levies");
+    }
+
+    #[test]
+    fn the_reasoning_line_ends_on_what_the_captain_took() {
+        assert_eq!(crates_count(0), "0");
+        assert_eq!(crates_count(999), "999");
+        assert_eq!(crates_count(1_800), "1 800");
+        assert_eq!(crates_count(1_234_567), "1 234 567");
+        assert_eq!(
+            took_this_season(1_800, Some("Greybank")),
+            "He took 1 800 crates from Greybank this season."
+        );
+        assert!(took_this_season(0, None).contains("took no crates"));
     }
 }

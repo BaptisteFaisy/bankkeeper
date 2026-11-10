@@ -232,6 +232,7 @@ fn cmd_propose(args: &[String]) -> ExitCode {
     game.propose(Proposal {
         quota_per_licence: quota, close_zone: close, ban_small_mesh: has(args, "ban-mesh"),
         indemnity_per_licence_week: indemnity * 100,
+        funding: None,
         levy_per_crate: flag(args, "levy").map(|raw| levy_cents(&raw)),
     });
     write_json(&path, &game);

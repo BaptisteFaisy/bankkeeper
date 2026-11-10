@@ -9,6 +9,7 @@
 
 use std::cmp::Ordering;
 
+use rules::debt::weekly_due;
 use rules::state::{ActorId, Zone};
 
 use crate::seed::draw_below;
@@ -95,4 +96,111 @@ pub(crate) fn best_captain_yesterday(game: &Game) -> Option<ActorId> {
     }
     let pick = draw_below(game.port.seed, game.port.day, TIE_CAPTAIN, 0, tied.len() as u64);
     tied.get(pick as usize).copied()
+}
+
+/// A captain's own reading of next season's catch per trip, in tenths:
+/// Hale her four-week mean, Brandt the best zone last week, Okoro the whole
+/// fleet last week (TW-C1-04).
+pub(crate) fn own_cpt_tenths(game: &Game, captain: ActorId) -> u64 {
+    match captain {
+        ActorId::Hale => {
+            let mut crates = 0u64;
+            let mut trips = 0u64;
+            for record in game.recent(28) {
+                crates += record.captain_crates[captain.idx()];
+                trips += record.captain_trips[captain.idx()];
+            }
+            cpt_or_fallback(game, crates, trips)
+        }
+        ActorId::Brandt => best_zone_cpt(game),
+        _ => fleet_cpt(game),
+    }
+}
+
+/// Mean tenths, falling back to the fleet signal, then to 10 crates a trip.
+fn cpt_or_fallback(game: &Game, crates: u64, trips: u64) -> u64 {
+    if let Some(cpt) = crates.saturating_mul(10).checked_div(trips) {
+        return cpt;
+    }
+    let fleet = fleet_cpt(game);
+    if fleet > 0 {
+        fleet
+    } else {
+        100
+    }
+}
+
+/// Best open-zone weekly catch per trip in tenths (Brandt's reading).
+fn best_zone_cpt(game: &Game) -> u64 {
+    let mut trips = [0u64; 3];
+    let mut crates = [0u64; 3];
+    for record in game.recent(7) {
+        for zone in Zone::all() {
+            trips[zone.idx()] += record.trips[zone.idx()];
+            crates[zone.idx()] += record.crates[zone.idx()];
+        }
+    }
+    let mut best = 0u64;
+    for zone in Zone::all() {
+        if game.closed[zone.idx()] || trips[zone.idx()] == 0 {
+            continue;
+        }
+        best = best.max(crates[zone.idx()].saturating_mul(10) / trips[zone.idx()]);
+    }
+    if best > 0 {
+        best
+    } else {
+        100
+    }
+}
+
+/// Fleet-wide weekly catch per trip in tenths (Okoro's reading).
+fn fleet_cpt(game: &Game) -> u64 {
+    let mut trips = 0u64;
+    let mut crates = 0u64;
+    for record in game.recent(7) {
+        trips += record.trips.iter().sum::<u64>();
+        crates += record.crates.iter().sum::<u64>();
+    }
+    crates.saturating_mul(10).checked_div(trips).unwrap_or(0)
+}
+
+/// Expected season profit under quota/closure/ban rules, on the captain's own
+/// catch reading and last week's crate price.
+/// Barreau 2: `levy` is the landing levy that would apply, centigold a crate.
+pub(crate) fn season_profit(
+    game: &Game,
+    captain: ActorId,
+    quota: u64,
+    close_zone: Option<Zone>,
+    ban_small_mesh: bool,
+    levy: u64,
+) -> i64 {
+    let boats = game.boats_of(captain).len() as u64;
+    let mut cpt = own_cpt_tenths(game, captain);
+    let uses_small = game
+        .boats_of(captain)
+        .into_iter()
+        .any(|index| game.port.boats[index].mesh == rules::state::Mesh::Small);
+    if ban_small_mesh && uses_small {
+        cpt = cpt.saturating_mul(10) / 14;
+    }
+    let price = game.last_week_crate_price().unwrap_or(game.config.base_herring);
+    let (share_num, share_den) = match close_zone {
+        None => (1, 1),
+        Some(_) => (2, 3),
+    };
+    let fishable = boats * 7 * 3 * cpt / 10 * share_num / share_den;
+    let allowance = game.port.licences[captain.idx()] * quota;
+    let crates = fishable.min(allowance);
+    let revenue = crates as i64 * price as i64;
+    let levy_bill = rules::council::levy_week_cost(crates, levy);
+    let wages = rules::debt::daily_charges(boats, &game.config) * 7;
+    let dues: u64 = game
+        .loans
+        .iter()
+        .filter(|loan| loan.borrower == captain)
+        .map(|loan| weekly_due(loan, &game.config))
+        .sum();
+    (revenue - (wages + dues) as i64 - levy_bill) * game.config.weeks_per_season as i64
 }
