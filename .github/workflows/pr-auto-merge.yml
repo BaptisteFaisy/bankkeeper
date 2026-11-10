@@ -334,7 +334,10 @@ jobs:
           # `--jq '…'` ferme le guillemet simple et gh meurt sur « unknown
           # arguments » (vécu le 29/10 : `discover` rendait une matrice vide en
           # silence et plus aucune PR n'était balayée).
-          FILTRE='[.[] | select(.headRepository.nameWithOwner == "BaptisteFaisy/near_tidewater")
+          # Le nom du dépôt vient du contexte (`--arg repo "$GITHUB_REPOSITORY"`
+          # à chaque appel), jamais en dur : le renommage near_tidewater →
+          # bankkeeper a rendu ce filtre aveugle et la file s'est tue.
+          FILTRE='[.[] | select(.headRepository.nameWithOwner == $repo)
             | {pr: .number, sha: .headRefOid, branch: .headRefName,
                state: .mergeStateStatus, draft: (.isDraft | tostring),
                main: .baseRefOid, maj: .updatedAt}]
@@ -395,7 +398,7 @@ jobs:
                     baseRefOid: .base.sha, updatedAt: .updated_at }' 2>/dev/null
                 done | jq -s .
           }
-          if ! MATRIX=$(inventaire | jq -c "$FILTRE"); then
+          if ! MATRIX=$(inventaire | jq -c --arg repo "$GITHUB_REPOSITORY" "$FILTRE"); then
             echo "::error::liste des PR illisible — file en pause (voir le log ci-dessus)"
             exit 1
           fi
@@ -468,7 +471,7 @@ jobs:
           # v28 — `0` rend la réparation d'un test rouge au balayeur (le
           # workflow `triage-rouge` la prend sinon, avec l'indice du triage).
           TRIAGE_TEST: ${{ vars.TRIAGE_TEST }}
-          REPO: BaptisteFaisy/near_tidewater
+          REPO: ${{ github.repository }}
           PR: ${{ matrix.pr }}
           SHA: ${{ matrix.sha }}
           BRANCH: ${{ matrix.branch }}
