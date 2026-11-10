@@ -25,6 +25,7 @@ fn twenty_eight_days_end_the_season_with_council_then_bilan() {
     game.propose(Proposal {
         quota_per_licence: 60,
         close_zone: None,
+        close_weeks: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: 0,
         funding: None,

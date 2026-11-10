@@ -74,9 +74,16 @@ pub fn motion_bill(game: &Game, proposal: &Proposal) -> u64 {
     proposal.bill(paid_licences(game), game.config.weeks_per_season)
 }
 
-/// Barreau 3, recevabilité: a motion without its money does not reach the
-/// floor. Returns the bill it promises, or the reason it is irreceivable.
+/// Barreau 3 & 5, recevabilité: a motion without its money or from a proposer
+/// who has lost standing does not reach the floor. Returns the bill it promises,
+/// or the reason it is irreceivable.
 pub fn admission(game: &Game, proposal: &Proposal) -> Result<u64, String> {
+    if game.credibility < rules::dispute::PROPOSER_CREDIBILITY_FLOOR {
+        return Err(format!(
+            "the proposer has lost credibility ({}), the motion is not admitted",
+            game.credibility
+        ));
+    }
     let Some(funding) = proposal.funding() else {
         return Ok(0);
     };
@@ -296,6 +303,7 @@ mod tests {
         Proposal {
             quota_per_licence: 50,
             close_zone: None,
+            close_weeks: None,
             ban_small_mesh: false,
             indemnity_per_licence_week: indemnity,
             funding,

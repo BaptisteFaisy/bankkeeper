@@ -20,7 +20,7 @@
 
 use crate::attribution::zone_ceiling;
 use crate::{fmt_gold, Game};
-use rules::sea::{fallow_credit, reseed_cost, season_debt};
+use rules::sea::{reseed_cost, season_debt};
 use rules::state::Zone;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -45,10 +45,40 @@ pub fn season_days(game: &Game) -> u64 {
     game.config.days_per_week * game.config.weeks_per_season
 }
 
+/// The days the register reads: the season being played, or — once the
+/// council has sat — the season it just closed.
+///
+/// The journal holds one record a day and the calendar turns on the season
+/// length, so the season in progress is the tail of the journal. A season
+/// that has opened but not yet played reads zero days: nothing taken, no
+/// bill. Reading the window this way is what keeps a season from being
+/// counted twice — the one the council has just written down is already
+/// inside [`Game::sea_debt`].
+fn season_window(game: &Game) -> u64 {
+    let days = season_days(game);
+    if game.over {
+        return days;
+    }
+    game.port.day % days
+}
+
 /// What the season just played owes the sea, without writing anything down.
 /// A fresh game owes nothing: no journal, no bill.
 pub fn season_bill(game: &Game) -> SeaBill {
-    let days = season_days(game);
+    bill_over(game, season_days(game))
+}
+
+/// The bill of the season the register is reading: the one being played, or
+/// the one the council has just closed.
+pub fn window_bill(game: &Game) -> SeaBill {
+    bill_over(game, season_window(game))
+}
+
+/// The bill over the last `days` days of the journal: the crates taken from
+/// each zone, against what that zone could give back over the same days.
+/// The window's length is the yardstick, so a bill read over a fortnight is
+/// measured against a fortnight of regrowth.
+fn bill_over(game: &Game, days: u64) -> SeaBill {
     let mut bill = SeaBill { taken: [0; 3], ceiling: [0; 3], zones: [0; 3], total: 0, carried: game.sea_debt };
     let window = game.recent(days as usize);
     for zone in Zone::all() {
@@ -115,18 +145,13 @@ impl Game {
         if self.sea_debt == 0 {
             return Err("the sea is owed nothing: no fallow needed".to_string());
         }
-        let index = zone.idx();
-        let (stock, capacity, _) = zone_ceiling(self, zone);
-        let rate = self.config.regrow_rate(rules::config::Config::zone_species(zone));
-        let days = weeks.saturating_mul(self.config.days_per_week);
-        let credit = fallow_credit(stock, capacity, rate, days);
+        let credit = fallow_credit_for(self, zone, weeks);
         if credit == 0 {
             return Err(format!("{} grows nothing: resting it pays no debt", zone.name()));
         }
         let paid = credit.min(self.sea_debt);
         self.sea_debt -= paid;
-        self.fallow[index] = self.fallow[index].saturating_add(weeks);
-        self.closed[index] = true;
+        self.close_zone_for(zone, weeks);
         Ok(paid)
     }
 
@@ -174,21 +199,46 @@ impl Game {
     }
 }
 
+/// What a fallow of `weeks` on `zone` pays the debt, in crates: the regrowth
+/// the resting zone performs over those days. One reading, shared by the
+/// payment (barreau 4) and the panel that announces it.
+pub fn fallow_credit_for(game: &Game, zone: Zone, weeks: u64) -> u64 {
+    let (stock, capacity, _) = zone_ceiling(game, zone);
+    let rate = game.config.regrow_rate(rules::config::Config::zone_species(zone));
+    let days = weeks.saturating_mul(game.config.days_per_week);
+    rules::sea::fallow_credit(stock, capacity, rate, days)
+}
+
 /// The sea block of the state: the bill, the liability and the two ways out.
+///
+/// `debt` is what the campaign owes and can pay — the liability the councils
+/// have written down. `season` is the bill of the season the register is
+/// reading: the one being played (still running up) or the one the council
+/// has just closed (already written down, so never counted twice).
 pub fn sea_view(game: &Game) -> Value {
-    let bill = season_bill(game);
+    let bill = window_bill(game);
     let price = game.last_week_crate_price().unwrap_or(game.config.base_herring);
+    let pending = !game.over && season_window(game) > 0;
     json!({
-        "debt": bill.carried,
+        "debt": game.sea_debt,
         "season": bill.total,
+        "pending": pending,
         "zones": Zone::all().iter().map(|zone| json!({
             "zone": crate::views::zone_id(*zone),
             "taken": bill.taken[zone.idx()],
             "ceiling": bill.ceiling[zone.idx()],
             "debt": bill.zones[zone.idx()],
             "fallowWeeks": game.fallow_left(*zone),
+            // What one week of rest would pay the debt, in crates: the
+            // regrowth the closed zone performs (the same figure the debt
+            // is paid with, so the panel never promises what the engine
+            // will not pay).
+            "fallowCredit": fallow_credit_for(game, *zone, 1),
         })).collect::<Vec<_>>(),
         "reseedPrice": crate::views::gold_pieces(price as i64),
         "reseedGold": crate::views::gold_pieces(reseed_cost(1, price) as i64),
+        // What the port fund holds, in gold pieces: the reseed is paid from
+        // it, so the panel can say what it would cost before the click.
+        "fundBalance": crate::views::gold_pieces(game.fund.balance),
     })
 }

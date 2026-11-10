@@ -107,18 +107,13 @@ pub fn seed_game(seed: u64) -> Game {
     seed_game_with(seed, None)
 }
 
-/// Fresh campaign on `seed` under a written charter.
-///
-/// The charter is the institution the previous campaign left behind: it is
-/// applied here, at the founding of a campaign, and never again — a campaign
-/// runs all its seasons under the same rule (see [`crate::charter`]).
-pub fn seed_game_with(seed: u64, charter: Option<Charter>) -> Game {
-    let config = Config::default();
+/// Build the foundation game struct on `config` and `seed`.
+fn foundation_game(config: Config, seed: u64) -> Game {
     let mut port = Harbour::foundation(&config, seed);
     for boat in port.boats.iter_mut() {
         boat.zone = Some(Zone::Greybank);
     }
-    let mut game = Game {
+    Game {
         config,
         port,
         loans: vec![brandt_seed_loan()],
@@ -150,7 +145,17 @@ pub fn seed_game_with(seed: u64, charter: Option<Charter>) -> Game {
         payroll: None,
         sea_debt: 0,
         fallow: [0; 3],
-    };
+        claims_this_season: 0,
+        voted_closure: None,
+        credibility: 0,
+        last_claim: None,
+        fallow_indemnities_paid: 0,
+    }
+}
+
+/// Fresh campaign on `seed` under a written charter.
+pub fn seed_game_with(seed: u64, charter: Option<Charter>) -> Game {
+    let mut game = foundation_game(Config::default(), seed);
     if let Some(written) = charter {
         written.apply(&mut game);
         game.charter = Some(written);

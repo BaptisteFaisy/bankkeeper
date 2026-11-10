@@ -168,6 +168,8 @@ export interface PortState {
   campaign?: unknown[];
   // Barreau 4: the debt owed to the sea, live, in crates.
   sea?: SeaView;
+  // Barreau 5: the collective fallow, the indemnities and the last claim.
+  dispute?: DisputeView;
   // The port's memory: one entry per closed season, oldest first (sim chronicle).
   chronicle?: ChronicleEntryView[];
   // The charter this campaign runs under, when the player wrote one (sim charter).
@@ -269,6 +271,9 @@ export interface LoanView {
 export interface CouncilProposal {
   quota_per_licence: number;
   close_zone: string | null;
+  // Barreau 5: weeks of the closure the council votes; null means the whole
+  // season.
+  close_weeks?: number | null;
   ban_small_mesh: boolean;
   indemnity_per_licence_week: number;
   // Barreau 3: who pays an indemnity — the port fund or a further levy on
@@ -376,15 +381,44 @@ export interface SeaZone {
   ceiling: number;
   debt: number;
   fallowWeeks: number;
+  // What one week of rest on that zone would pay the debt, in crates.
+  fallowCredit?: number;
 }
 
 /** The debt owed to the sea, live: the bill and the two ways to pay it. */
 export interface SeaView {
   debt: number;
   season: number;
+  // True while the season's own bill is still running up: it is not written
+  // down in the carried debt until the council sits.
+  pending?: boolean;
   zones: SeaZone[];
-  reseedPrice: number;
-  reseedGold: number;
+  // Gold a crate costs for a reseed, in gold pieces.
+  reseedPrice?: number;
+  reseedGold?: number;
+  // What the port fund holds, in gold pieces.
+  fundBalance?: number;
+}
+
+/** One claim heard by the council (barreau 5). */
+export interface ClaimView {
+  season: number;
+  plaintiff: string;
+  demanded: number;
+  outcome: 'upheld' | 'dismissed';
+  paid: number;
+  unpaid: number;
+  credibilityDelta: number;
+  summary: string;
+}
+
+/** The dispute and repair ledger (barreau 5). */
+export interface DisputeView {
+  claimsThisSeason: number;
+  maxClaimsPerSeason: number;
+  credibility: number;
+  fallowIndemnitiesPaid: number;
+  lastClaim?: ClaimView | null;
 }
 
 function readStocks(raw: unknown): [number, number, number] | null {

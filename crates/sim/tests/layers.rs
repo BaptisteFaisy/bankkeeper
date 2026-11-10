@@ -138,6 +138,7 @@ fn roll_with_indemnity(per_licence_week: u64) -> sim::season::CouncilReport {
     game.propose(Proposal {
         quota_per_licence: 10,
         close_zone: None,
+        close_weeks: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: per_licence_week,
         funding: Some(Funding::Fund),

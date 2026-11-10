@@ -90,6 +90,25 @@ def build_lease_argv(binary: str, state: str, action: str, lessor: str,
     return argv
 
 
+def build_fallow_argv(binary: str, state: str, zone: str, weeks: int) -> list[str]:
+    """Argv resting a zone for N weeks: the regrowth pays the sea debt."""
+    argv = [binary, "fallow", "--state", state, "--zone", zone]
+    argv += ["--weeks", str(weeks)]
+    return argv
+
+
+def build_reseed_argv(binary: str, state: str, zone: str, crates: int) -> list[str]:
+    """Argv buying juveniles back into a zone out of the port fund."""
+    argv = [binary, "reseed", "--state", state, "--zone", zone]
+    argv += ["--crates", str(crates)]
+    return argv
+
+
+def build_claim_argv(binary: str, state: str, actor: str, gold: float) -> list[str]:
+    """Argv filing a claim against the port fund (barreau 5)."""
+    return [binary, "claim", "--state", state, "--actor", actor, "--gold", str(gold)]
+
+
 def build_debt_argv(binary: str, state: str, action: str,
                     ref: str) -> list[str]:
     return [binary, "debt", "--state", state, "--action", action,

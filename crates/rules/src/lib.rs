@@ -10,6 +10,7 @@ pub mod bankruptcy;
 pub mod config;
 pub mod council;
 pub mod debt;
+pub mod dispute;
 pub mod goldflow;
 pub mod licences;
 pub mod merchant;

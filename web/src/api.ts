@@ -107,6 +107,21 @@ export function postCouncil(action: 'propose' | 'vote', rule: string, indemnity?
   return post<MutationResult>('/api/council', indemnity === undefined ? { action, rule } : { action, rule, indemnity });
 }
 
+/** Barreau 4: rest a zone for N weeks; the regrowth pays the sea debt. */
+export function postFallow(zone: ZoneId, weeks: number): Promise<MutationResult> {
+  return post<MutationResult>('/api/fallow', { zone, weeks });
+}
+
+/** Barreau 4: the port fund buys juveniles back into a zone. */
+export function postReseed(zone: ZoneId, crates: number): Promise<MutationResult> {
+  return post<MutationResult>('/api/reseed', { zone, crates });
+}
+
+/** Barreau 5: file a claim against the port fund (max 1 per season). */
+export function postClaim(actor: string, gold: number): Promise<MutationResult> {
+  return post<MutationResult>('/api/claim', { actor, gold });
+}
+
 export function getJudges(): Promise<JudgesLive> {
   return request<JudgesLive>('/api/judges');
 }

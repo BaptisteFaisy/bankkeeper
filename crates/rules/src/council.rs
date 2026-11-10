@@ -55,6 +55,9 @@ impl Funding {
 pub struct Proposal {
     pub quota_per_licence: u64,
     pub close_zone: Option<Zone>,
+    /// Barreau 5: weeks of closure if closed (default: season length).
+    #[serde(default)]
+    pub close_weeks: Option<u64>,
     pub ban_small_mesh: bool,
     /// Gold per licence per week paid to yes-voters (TW-C4-03), centigold.
     pub indemnity_per_licence_week: u64,
@@ -281,6 +284,7 @@ mod tests {
         Proposal {
             quota_per_licence: 50,
             close_zone: None,
+            close_weeks: None,
             ban_small_mesh: false,
             indemnity_per_licence_week: indemnity,
             funding,

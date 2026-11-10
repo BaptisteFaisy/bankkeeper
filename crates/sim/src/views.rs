@@ -286,6 +286,7 @@ pub fn view_state(game: &Game) -> Value {
         "fund": crate::fund::fund_view(game),
         "council": crate::govern::council_view(game),
         "sea": crate::sea::sea_view(game),
+        "dispute": crate::dispute::dispute_view(game),
     })
 }
 
@@ -373,6 +374,7 @@ pub fn view_judges(game: &Game) -> Value {
         "proposal": game.proposal,
         "loans": loans,
         "fund": crate::fund::fund_view(game),
+        "dispute": crate::dispute::dispute_view(game),
     })
 }
 

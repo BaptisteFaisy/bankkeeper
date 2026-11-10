@@ -61,8 +61,15 @@ fn apply_rule_token(motion: &mut Proposal, token: &str) -> Result<(), String> {
         motion.levy_per_crate = Some(crate::fund::parse_levy_token(levy, token)?);
         return Ok(());
     }
-    if let Some(zone) = flat.strip_prefix("close:").or_else(|| flat.strip_prefix("close")) {
+    if let Some(spec) = flat.strip_prefix("close:").or_else(|| flat.strip_prefix("close")) {
+        // Barreau 5: `close:greybank:2` closes Greybank for two weeks;
+        // `close:greybank` runs the whole season.
+        let mut parts = spec.split(':');
+        let zone = parts.next().unwrap_or_default();
         motion.close_zone = Some(parse_zone_name(zone).ok_or_else(|| format!("unknown zone in {token:?}"))?);
+        if let Some(weeks) = parts.next() {
+            motion.close_weeks = Some(weeks.parse().map_err(|_| format!("bad weeks in {token:?}"))?);
+        }
         return Ok(());
     }
     if flat == "ban-mesh" || flat == "banmesh" || flat == "bansmallmesh" {
@@ -337,6 +344,7 @@ impl Game {
         let mut motion = Proposal {
             quota_per_licence: self.config.quota_per_licence,
             close_zone: None,
+            close_weeks: None,
             ban_small_mesh: false,
             indemnity_per_licence_week: indemnity_gold.saturating_mul(100),
             funding: None,

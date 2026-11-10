@@ -6,7 +6,8 @@ fast-forwards; serves the built web UI when present. Auth is social
 stored in a disposable file next to the live state.
 
 GET:  health, state, graph, judges. POST: auth, assign, survey,
-licence, debt, council, lease, day, fastforward ({days: 7|14|28, seed?}).
+licence, debt, council, lease, fallow, reseed, day, fastforward
+({days: 7|14|28, seed?}).
 Errors are stable {"error": code, "message": text} envelopes; a sim
 rule refusal maps to HTTP 409. Fast-forward runs on a temp copy only.
 """
@@ -23,14 +24,16 @@ from urllib.parse import urlparse
 
 from simclient import (SIM_TIMEOUT, build_assign_argv, build_council_argv, build_day_argv,
                        build_next_season_argv, build_tick_argv,
-                       build_debt_argv, build_lease_argv, build_licence_argv, build_query_argv,
+                       build_claim_argv, build_debt_argv, build_fallow_argv, build_lease_argv,
+                       build_licence_argv, build_query_argv, build_reseed_argv,
                        build_survey_argv,
                        call_sim, call_sim_allow_text, run_fastforward_isolated, sim_bin)
 from payloads import (validate_assign_payload, validate_auth_payload, validate_council_payload,
-                      validate_day_payload, validate_debt_payload, validate_fastforward_payload,
+                      validate_claim_payload, validate_day_payload, validate_debt_payload,
+                      validate_fallow_payload, validate_fastforward_payload,
                       validate_next_season_payload,
                       validate_lease_payload, validate_licence_payload, validate_reset_payload,
-                      validate_survey_payload)
+                      validate_reseed_payload, validate_survey_payload)
 
 DEFAULT_PORT = 8785
 
@@ -42,6 +45,7 @@ _API_METHODS = {"/api/health": "GET", "/api/auth": "POST",
                 "/api/state": "GET", "/api/assign": "POST",
                 "/api/survey": "POST", "/api/licence": "POST",
                 "/api/debt": "POST", "/api/council": "POST", "/api/lease": "POST",
+                "/api/fallow": "POST", "/api/reseed": "POST", "/api/claim": "POST",
                 "/api/fastforward": "POST", "/api/graph": "GET",
                 "/api/judges": "GET", "/api/day": "POST",
                 "/api/next-season": "POST", "/api/tick": "POST", "/api/reset": "POST"}
@@ -61,6 +65,9 @@ _MESSAGES = {
     "E_BAD_DEBT": "A debt move needs buy|forbear|seize and a reference.",
     "E_BAD_LEASE": "A lease move needs lease|unlease, a lessor and a lessee.",
     "E_BAD_COUNCIL": "A council move needs propose|vote and a rule.",
+    "E_BAD_FALLOW": "A fallow needs a zone and 1 to 12 weeks.",
+    "E_BAD_RESEED": "A reseed needs a zone and at least one crate.",
+    "E_BAD_CLAIM": "A claim needs a positive amount in gold.",
     "E_BAD_FASTFORWARD": "Fast-forward plays 7, 14 or 28 days.",
     "E_FASTFORWARD_TIMEOUT": "The fast-forward took too long.",
     "E_NO_JOURNAL": "The fast-forward wrote no journal.",
@@ -216,6 +223,12 @@ _POST_SIM = {
     "council": (validate_council_payload,
                 lambda c: build_council_argv(*_sim_active(), c["action"],
                                              c["rule"], c.get("indemnity"))),
+    "fallow": (validate_fallow_payload,
+               lambda c: build_fallow_argv(*_sim_active(), c["zone"], c["weeks"])),
+    "reseed": (validate_reseed_payload,
+               lambda c: build_reseed_argv(*_sim_active(), c["zone"], c["crates"])),
+    "claim": (validate_claim_payload,
+              lambda c: build_claim_argv(*_sim_active(), c["actor"], c["gold"])),
     "tick": (validate_next_season_payload,
              lambda c: build_tick_argv(*_sim_active())),
     "next-season": (validate_next_season_payload,
