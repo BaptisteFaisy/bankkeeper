@@ -29,6 +29,8 @@ const owner = signer(C);
 
 const log = [];
 const hashes = [];
+/** Every transaction must leave a hash: the count is the proof, not a hope. */
+let transactions = 0;
 
 function say(text) {
   console.log(text);
@@ -48,6 +50,7 @@ function check(label, condition, detail) {
 async function must(action, caller, account, method, args = {}, options = {}) {
   const result = await call(account, C, method, args, options);
   if (!result.ok) throw new Error(`${action} failed from ${caller}: ${result.error ?? JSON.stringify(result.raw).slice(0, 300)}`);
+  transactions += 1;
   if (result.txHash) hashes.push(`${action} · ${result.txHash}`);
   return result;
 }
@@ -223,6 +226,10 @@ async function main() {
   const after = await view(C, "get_day");
   say(`  run_day()`.padEnd(28) + ` ${C.padEnd(34)} ${short(ran.txHash).padEnd(16)} → day ${before.day} → ${after.day}, council ${after.council_open}, quota ${after.quota_per_licence}`);
   check("run_day advances the day", num(after.day) === num(before.day) + 1, `${before.day} -> ${after.day}`);
+
+  // The proof is the point: a scenario that passed but recorded no hash
+  // would write an empty table in docs/deployments.md. It must fail instead.
+  check("every transaction left a hash", hashes.length === transactions, `${hashes.length} hashes for ${transactions} transactions`);
 
   const left = await nearBalance(PLAYER);
   say(`  player gas balance: ${near(left)} · licences held by the player and the captain: ${licencesHeld}`);

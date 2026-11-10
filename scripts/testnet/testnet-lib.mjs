@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { Account, JsonRpcProvider, KeyPair, PublicKey, actions } from "near-api-js";
+import { Account, JsonRpcProvider, KeyPair, PublicKey, actions, nearToYocto } from "near-api-js";
 
 export const RPC = process.env.NEAR_NODE_URL ?? "https://rpc.testnet.fastnear.com";
 export const FAUCET = "https://helper.testnet.near.org/account";
@@ -129,7 +129,7 @@ export async function ensureTopLevel(accountId) {
 export async function ensureRoot(near = 5.6) {
   if (PARENT) {
     const result = await ensureSubaccount(ROOT, PARENT, near);
-    return { ...result, mode: "subaccount", parent: PARENT };
+    return { ...result, mode: "subaccount", parent: PARENT, prefix: PREFIX };
   }
   try {
     const result = await ensureTopLevel(ROOT);
@@ -155,7 +155,7 @@ export async function ensureSubaccount(accountId, parentId, near = 3) {
     receiverId: accountId,
     actions: [
       actions.createAccount(),
-      actions.transfer(BigInt(Math.round(near)) * NEAR),
+      actions.transfer(BigInt(nearToYocto(near))),
       actions.addFullAccessKey(PublicKey.from(keyPair.getPublicKey().toString())),
     ],
     waitUntil: "FINAL",
