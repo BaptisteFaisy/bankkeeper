@@ -18,6 +18,28 @@ Projet pour le hackathon NEAR — track **Games With Real Economies**.
 - 🔍 **Preuves publiques** : [`/proofs.html`](https://tidewater-play.vercel.app/proofs.html) et [`docs/deployments.md`](docs/deployments.md)
 - 📋 **Grille de conformité au track** : [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)
 
+### Voir le jeu en 3 minutes
+
+Sans installation et sans vidéo : un lien, un chronomètre, trois gestes.
+
+1. **90 secondes** — ouvrir **[tidewater-play.vercel.app/?seed=7&weeks=1](https://tidewater-play.vercel.app/?seed=7&weeks=1)**,
+   entrer un email et un pseudo (aucun wallet, aucune phrase de récupération),
+   cliquer **Go live** : un lot toutes les 30 secondes, une journée en
+   5 minutes. Survoler le mot **why** d'un marchand pour lire sa formule de
+   prix ; lire le bloc **Who took what** du registre municipal.
+2. **5 minutes** — bouton **Judges** → **Fast-forward 7 days** puis
+   **28 days** : l'économie tourne sans joueur. Puis **End the day** jusqu'au
+   conseil : on y vote une motion **avec son financement**, on voit chaque
+   vote justifié par le calcul, et on lit le bilan de fin de saison avec la
+   **dette envers la mer**.
+3. **Les preuves** — **[tidewater-play.vercel.app/proofs.html](https://tidewater-play.vercel.app/proofs.html)** :
+   l'état daté du contrat, la graine partageable, la frontière on-chain /
+   hors-chaîne, et les commandes qui rejouent tout.
+
+Le déroulé pas à pas, avec ce qu'on doit voir à l'écran et la phrase que le
+jeu doit pouvoir dire : [`docs/DEMO-JUGES.md`](docs/DEMO-JUGES.md).
+Ce que nous ne montrons pas, et pourquoi : la même page.
+
 ### Démo publique & redéploiement
 
 Le jeu se joue sur un **lien public unique** : **<https://tidewater-play.vercel.app>**
