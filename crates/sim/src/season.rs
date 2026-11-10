@@ -5,12 +5,12 @@
 //! captains lay up and pooled licences go back on the block. Every fourth
 //! Monday the captains vote next season's rules, one vote per licence.
 
-use crate::{favours, fmt_gold, fund, Game};
+use crate::{favours, fmt_gold, fund, govern, Game};
 use rules::bankruptcy::{broke_captains, lay_up};
-use rules::council::{indemnity_cost, npc_vote, tally, Proposal, Tally, Vote};
+use rules::council::{npc_vote, tally, Funding, Proposal, Tally, Vote};
 use rules::licences::{cap_reached, leased_out, sellable_licences, should_buy_licence, should_sell_licence, trade_licences};
 use rules::trips::quota_left;
-use rules::state::{ActorId, Zone};
+use rules::state::ActorId;
 use rules::debt::weekly_due;
 use serde::{Deserialize, Serialize};
 
@@ -19,9 +19,17 @@ use serde::{Deserialize, Serialize};
 pub struct CouncilReport {
     pub season: u64,
     pub proposal: Proposal,
-    /// True only when a real motion was tabled and voted (B2).
+    /// True only when a real motion was tabled and voted (B2). Barreau 3: a
+    /// motion the port cannot pay for is not tabled at all.
     #[serde(default)]
     pub tabled: bool,
+    /// Barreau 3: why the motion never reached the floor, when it did not.
+    #[serde(default)]
+    pub tabled_reason: Option<String>,
+    /// Barreau 3: the bill the motion carries over the season, centigold —
+    /// every licence that could vote yes, so the worst case it promises.
+    #[serde(default)]
+    pub indemnity_cost: u64,
     pub ballots: Vec<(ActorId, Vote, u64)>,
     pub tally: Tally,
     pub lines: Vec<String>,
@@ -48,6 +56,8 @@ pub fn roll_week(game: &mut Game, closures: &mut Vec<ActorId>) -> Vec<String> {
     game.week_small = [0; 3];
     game.week_total = [0; 3];
     lines.extend(game.settle_leases());
+    // Barreau 3: the indemnity a carried motion owes, one week at a time.
+    lines.extend(govern::pay_week(game));
     lines.extend(trade_licences_week(game));
     lines.extend(crate::bots::settle_loans(game));
     for captain in broke_captains(&game.port) {
@@ -194,108 +204,9 @@ fn status_quo(game: &Game) -> Proposal {
         close_zone: None,
         ban_small_mesh: game.small_mesh_banned,
         indemnity_per_licence_week: 0,
+        funding: None,
         levy_per_crate: None,
     }
-}
-
-/// A captain's own reading of next season's catch per trip, in tenths:
-/// Hale her four-week mean, Brandt the best zone last week, Okoro the whole
-/// fleet last week (TW-C1-04).
-fn own_cpt_tenths(game: &Game, captain: ActorId) -> u64 {
-    match captain {
-        ActorId::Hale => {
-            let mut crates = 0u64;
-            let mut trips = 0u64;
-            for record in game.recent(28) {
-                crates += record.captain_crates[captain.idx()];
-                trips += record.captain_trips[captain.idx()];
-            }
-            cpt_or_fallback(game, crates, trips)
-        }
-        ActorId::Brandt => best_zone_cpt(game),
-        _ => fleet_cpt(game),
-    }
-}
-
-/// Mean tenths, falling back to the fleet signal, then to 10 crates a trip.
-fn cpt_or_fallback(game: &Game, crates: u64, trips: u64) -> u64 {
-    if let Some(cpt) = crates.saturating_mul(10).checked_div(trips) {
-        return cpt;
-    }
-    let fleet = fleet_cpt(game);
-    if fleet > 0 {
-        fleet
-    } else {
-        100
-    }
-}
-
-/// Best open-zone weekly catch per trip in tenths (Brandt's reading).
-fn best_zone_cpt(game: &Game) -> u64 {
-    let mut trips = [0u64; 3];
-    let mut crates = [0u64; 3];
-    for record in game.recent(7) {
-        for zone in Zone::all() {
-            trips[zone.idx()] += record.trips[zone.idx()];
-            crates[zone.idx()] += record.crates[zone.idx()];
-        }
-    }
-    let mut best = 0u64;
-    for zone in Zone::all() {
-        if game.closed[zone.idx()] || trips[zone.idx()] == 0 {
-            continue;
-        }
-        best = best.max(crates[zone.idx()].saturating_mul(10) / trips[zone.idx()]);
-    }
-    if best > 0 {
-        best
-    } else {
-        100
-    }
-}
-
-/// Fleet-wide weekly catch per trip in tenths (Okoro's reading).
-fn fleet_cpt(game: &Game) -> u64 {
-    let mut trips = 0u64;
-    let mut crates = 0u64;
-    for record in game.recent(7) {
-        trips += record.trips.iter().sum::<u64>();
-        crates += record.crates.iter().sum::<u64>();
-    }
-    crates.saturating_mul(10).checked_div(trips).unwrap_or(0)
-}
-
-/// Expected season profit under quota/closure/ban rules, on the captain's own
-/// catch reading and last week's crate price.
-/// Barreau 2: `levy` is the landing levy that would apply, centigold a crate.
-fn season_profit(game: &Game, captain: ActorId, quota: u64, close_zone: Option<Zone>, ban_small_mesh: bool, levy: u64) -> i64 {
-    let boats = game.boats_of(captain).len() as u64;
-    let mut cpt = own_cpt_tenths(game, captain);
-    let uses_small = game
-        .boats_of(captain)
-        .into_iter()
-        .any(|index| game.port.boats[index].mesh == rules::state::Mesh::Small);
-    if ban_small_mesh && uses_small {
-        cpt = cpt.saturating_mul(10) / 14;
-    }
-    let price = game.last_week_crate_price().unwrap_or(game.config.base_herring);
-    let (share_num, share_den) = match close_zone {
-        None => (1, 1),
-        Some(_) => (2, 3),
-    };
-    let fishable = boats * 7 * 3 * cpt / 10 * share_num / share_den;
-    let allowance = game.port.licences[captain.idx()] * quota;
-    let crates = fishable.min(allowance);
-    let revenue = crates as i64 * price as i64;
-    let levy_bill = rules::council::levy_week_cost(crates, levy);
-    let wages = rules::debt::daily_charges(boats, &game.config) * 7;
-    let dues: u64 = game
-        .loans
-        .iter()
-        .filter(|loan| loan.borrower == captain)
-        .map(|loan| weekly_due(loan, &game.config))
-        .sum();
-    (revenue - (wages + dues) as i64 - levy_bill) * game.config.weeks_per_season as i64
 }
 
 /// Season-end council (TW-C4): every sailing captain votes its own profit,
@@ -304,6 +215,12 @@ pub fn roll_season(game: &mut Game) -> CouncilReport {
     let season = game.port.season(&game.config);
     let Some(proposal) = game.proposal.take() else {
         return no_motion_report(game, season);
+    };
+    // Barreau 3: a promise the port cannot keep is irreceivable, and the
+    // minutes say so — it is never voted down in silence.
+    let bill = match govern::admission(game, &proposal) {
+        Ok(bill) => bill,
+        Err(reason) => return irreceivable_report(season, proposal, reason),
     };
     let mut ballots = Vec::new();
     let mut lines = Vec::new();
@@ -328,9 +245,28 @@ pub fn roll_season(game: &mut Game) -> CouncilReport {
         season,
         proposal,
         tabled: true,
+        tabled_reason: None,
+        indemnity_cost: bill,
         ballots,
         tally: result,
         lines,
+    }
+}
+
+/// A motion carrying money the port does not have (barreau 3): the council
+/// records it as irreceivable and the standing rules continue.
+fn irreceivable_report(season: u64, proposal: Proposal, reason: String) -> CouncilReport {
+    CouncilReport {
+        season,
+        proposal,
+        tabled: false,
+        tabled_reason: Some(reason.clone()),
+        indemnity_cost: 0,
+        ballots: Vec::new(),
+        tally: tally(&[]),
+        lines: vec![format!(
+            "Council of season {season}: the motion is not tabled — {reason}."
+        )],
     }
 }
 
@@ -341,6 +277,8 @@ fn no_motion_report(game: &Game, season: u64) -> CouncilReport {
         season,
         proposal: status_quo(game),
         tabled: false,
+        tabled_reason: None,
+        indemnity_cost: 0,
         ballots: Vec::new(),
         tally: tally(&[]),
         lines: vec![format!(
@@ -369,8 +307,8 @@ fn poll_captains(
             continue;
         }
         let next_levy = proposal.levy_per_crate.unwrap_or(game.config.levy_per_crate);
-        let pass = season_profit(game, captain, proposal.quota_per_licence, proposal.close_zone, proposal.ban_small_mesh, next_levy);
-        let fail = season_profit(game, captain, game.config.quota_per_licence, None, game.small_mesh_banned, game.config.levy_per_crate);
+        let pass = crate::reading::season_profit(game, captain, proposal.quota_per_licence, proposal.close_zone, proposal.ban_small_mesh, next_levy);
+        let fail = crate::reading::season_profit(game, captain, game.config.quota_per_licence, None, game.small_mesh_banned, game.config.levy_per_crate);
         let base = npc_vote(pass, fail, held, proposal.indemnity_per_licence_week, game.config.weeks_per_season);
         let weekly_cost = (((fail - pass).max(0) / game.config.weeks_per_season as i64) / 100).max(0) as u64;
         let offer = proposal.indemnity_per_licence_week.saturating_mul(held) / 100;
@@ -380,7 +318,9 @@ fn poll_captains(
         let season_offer = offer.saturating_mul(game.config.weeks_per_season).saturating_mul(100) as i64;
         let vote = favours::court_vote(base, book.score, &game.config, pass, fail, season_offer);
         ballots.push((captain, vote, held));
-        lines.push(format!("{}{}", fund::vote_line(captain, vote, proposal, weekly_cost, offer), book.clause(&game.config)));
+        // Barreau 3: the vote carries the proof — what he took this season.
+        let line = govern::with_took(game, captain, fund::vote_line(captain, vote, proposal, weekly_cost, offer));
+        lines.push(format!("{line}{}", book.clause(&game.config)));
     }
 }
 
@@ -420,22 +360,21 @@ fn apply_proposal(game: &mut Game, proposal: &Proposal, ballots: &[(ActorId, Vot
             boat.mesh = rules::state::Mesh::Large;
         }
     }
-    let for_licences: u64 = ballots
-        .iter()
-        .filter(|(voter, vote, _)| *voter != ActorId::You && *vote == Vote::For)
-        .map(|(_, _, held)| held)
-        .sum();
-    let cost = indemnity_cost(for_licences, proposal.indemnity_per_licence_week, game.config.weeks_per_season);
-    if cost > 0 {
-        game.port.gold[ActorId::You.idx()] -= cost as i64;
-        for (voter, vote, held) in ballots {
-            if *voter != ActorId::You && *vote == Vote::For {
-                let share = indemnity_cost(*held, proposal.indemnity_per_licence_week, game.config.weeks_per_season);
-                game.port.gold[voter.idx()] += share as i64;
-            }
+    // Barreau 3: the promise now has a payer. An extra levy pays as the
+    // landings land, so the rate goes up before the payroll starts.
+    if proposal.funding() == Some(Funding::Levies) && proposal.indemnity_per_licence_week > 0 {
+        let bill = govern::motion_bill(game, proposal);
+        let extra = govern::extra_levy_per_crate(game, bill);
+        if extra > 0 {
+            let raised = game.config.levy_per_crate.saturating_add(extra);
+            game.config.levy_per_crate = raised;
+            lines.push(format!(
+                "Levy raised to {} a crate to pay the indemnity.",
+                fmt_gold(raised as i64)
+            ));
         }
-        lines.push(format!("You pay {} in indemnities.", fmt_gold(cost as i64)));
     }
+    govern::open_payroll(game, proposal, ballots, lines);
 }
 
 /// Close the season (B5): after the council has rolled, flag the game over

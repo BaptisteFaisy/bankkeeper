@@ -6,7 +6,7 @@
 mod helpers;
 
 use helpers::week_old;
-use rules::council::Proposal;
+use rules::council::{Funding, Proposal};
 use rules::state::{ActorId, Zone};
 use sim::season::{roll_season, roll_week};
 use sim::seed_game;
@@ -39,11 +39,14 @@ fn fat_indemnity_flips_a_vote_and_pays() {
     let mut game = seed_game(5);
     week_old(&mut game);
     game.port.gold[ActorId::You.idx()] = 10_000_000;
+    // Barreau 3: a promise names its payer, and the fund must hold the bill.
+    game.fund.balance = 10_000_000;
     game.propose(Proposal {
         quota_per_licence: 10,
         close_zone: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: 50_000,
+        funding: Some(Funding::Fund),
         levy_per_crate: None,
     });
     let report = roll_season(&mut game);

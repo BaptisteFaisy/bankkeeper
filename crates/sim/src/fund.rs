@@ -172,6 +172,7 @@ mod tests {
             close_zone: None,
             ban_small_mesh: false,
             indemnity_per_licence_week: 0,
+            funding: None,
             levy_per_crate: levy,
         }
     }

@@ -27,6 +27,7 @@ fn twenty_eight_days_end_the_season_with_council_then_bilan() {
         close_zone: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: 0,
+        funding: None,
         levy_per_crate: None,
     });
     let mut last = None;
