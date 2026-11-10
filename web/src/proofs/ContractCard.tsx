@@ -1,20 +1,24 @@
-// The contract card: id (or "pas encore déployé"), then mt_supply when a
-// contract answers. States are derived from answers, never from hope.
-import { useCallback, useEffect, useState } from 'react';
-import { RPC_URL, answered, readSupplies } from './chain';
+// ContractCard.tsx — contract address, RPC reader, honest absent scene.
+//
+// Shows the configured account, reads mt_supply live when present, or renders
+// the procedural harbour scene when not yet deployed. Never fakes live data.
+import { RPC_URL, answered } from './chain';
 import type { ContractRef, SupplyRow } from './chain';
+import HarborFigure from './HarborFigure';
 
-type Status = 'absent' | 'loading' | 'live' | 'unreachable';
+export type Status = 'absent' | 'loading' | 'live' | 'unreachable';
 
-function statusOf(contract: ContractRef | null, rows: SupplyRow[]): Status {
+export function statusOf(contract: ContractRef | null, rows: SupplyRow[]): Status {
   if (contract === null) return 'absent';
   if (rows.length === 0) return 'loading';
   return answered(rows) ? 'live' : 'unreachable';
 }
 
-function Badge({ status }: { status: Status }) {
-  if (status === 'live') return <span className="pf-badge pf-badge-live">live · lu sur la chaîne</span>;
-  if (status === 'loading') return <span className="pf-badge">lecture du RPC…</span>;
+export function Badge({ status }: { status: Status }) {
+  if (status === 'live') {
+    return <span className="pf-badge pf-badge-live">live &middot; lu sur la chaîne</span>;
+  }
+  if (status === 'loading') return <span className="pf-badge">lecture du RPC&hellip;</span>;
   if (status === 'unreachable') return <span className="pf-badge pf-badge-warn">aucune réponse</span>;
   return <span className="pf-badge pf-badge-warn">pas encore déployé</span>;
 }
@@ -29,6 +33,7 @@ function Absent() {
           <strong> rien </strong>lire on-chain, et nous ne l&rsquo;affichons pas.
         </span>
       </p>
+      <HarborFigure title="En attente de déploiement" status="absent" />
       <p>
         Le contrat NEP-245 (<code>contracts/tidewater</code>, 412 Kio de wasm) est
         écrit, compilé et testé. Il n&rsquo;est pas déployé sur le testnet, au
@@ -38,7 +43,7 @@ function Absent() {
         <li>
           le faucet public NEAR (<code>helper.testnet.near.org</code>) répond
           <code> 429</code> : dix créations de compte par trois heures et par IP, et
-          le seau était vide (fenêtre rouverte vers 14:27 GMT) ;
+          le seau était vide (fenêtre rouverte vers 02:27 GMT) ;
         </li>
         <li>
           les 412 Kio de code coûtent ~4,12 NEAR de storage, et aucun compte de la
@@ -55,6 +60,10 @@ function Absent() {
       </p>
     </div>
   );
+}
+
+function expectedNote(row: SupplyRow): string {
+  return row.expected === null ? '' : `offre fixe attendue : ${row.expected}`;
 }
 
 function SupplyTable({ rows }: { rows: SupplyRow[] }) {
@@ -74,7 +83,7 @@ function SupplyTable({ rows }: { rows: SupplyRow[] }) {
             <td>{row.label}</td>
             <td className="pf-num">{row.id}</td>
             <td className="pf-num" data-testid={'supply-' + row.id}>
-              {row.supply === null ? '—' : row.supply.toLocaleString('fr-FR')}
+              {row.supply === null ? '\u2014' : row.supply.toLocaleString('fr-FR')}
             </td>
             <td className="pf-muted">{row.note === '' ? expectedNote(row) : row.note}</td>
           </tr>
@@ -84,8 +93,10 @@ function SupplyTable({ rows }: { rows: SupplyRow[] }) {
   );
 }
 
-function expectedNote(row: SupplyRow): string {
-  return row.expected === null ? '' : `offre fixe attendue : ${row.expected}`;
+function sourceLabel(source: ContractRef['source']): string {
+  if (source === 'url') return 'l\u2019URL';
+  if (source === 'localStorage') return 'localStorage';
+  return 'la variable de build';
 }
 
 function Live(props: {
@@ -105,54 +116,52 @@ function Live(props: {
         </span>
       </p>
       <p className="pf-muted">
-        <code>mt_supply</code> en lecture seule sur{' '}
-        <code>{RPC_URL}</code>, un appel par jeton, sans clé ni compte.
+        <code>mt_supply</code> en lecture seule sur <code>{RPC_URL}</code>,
+        un appel par jeton, sans clé ni compte.
       </p>
       <p>
         <button type="button" onClick={props.onRefresh} disabled={props.busy}>
-          {props.busy ? 'Lecture…' : 'Rafraîchir'}
+          {props.busy ? 'Lecture\u2026' : 'Rafraîchir'}
         </button>
       </p>
       <SupplyTable rows={props.rows} />
       {props.status === 'unreachable' ? (
-        <p className="pf-warn">
-          Le RPC n&rsquo;a répondu pour aucun jeton : rien n&rsquo;est affiché comme
-          live, et l&rsquo;état réel du contrat reste inconnu de cette page.
-        </p>
+        <div className="pf-unreachable-block">
+          <HarborFigure title="Noeud injoignable" status="unreachable" />
+          <p className="pf-warn">
+            Le RPC n&rsquo;a répondu pour aucun jeton : rien n&rsquo;est affiché comme
+            live, et l&rsquo;état réel du contrat reste inconnu de cette page.
+          </p>
+        </div>
       ) : null}
     </div>
   );
 }
 
-function sourceLabel(source: ContractRef['source']): string {
-  if (source === 'url') return 'l\u2019URL';
-  if (source === 'localStorage') return 'localStorage';
-  return 'la variable de build';
-}
-
-export default function ContractCard({ contract }: { contract: ContractRef | null }) {
-  const [rows, setRows] = useState<SupplyRow[]>([]);
-  const [busy, setBusy] = useState(false);
-  const refresh = useCallback(async () => {
-    if (contract === null) return;
-    setBusy(true);
-    try {
-      setRows(await readSupplies(contract.id));
-    } finally {
-      setBusy(false);
-    }
-  }, [contract]);
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+export default function ContractCard(props: {
+  contract: ContractRef | null;
+  rows: SupplyRow[];
+  busy: boolean;
+  onRefresh: () => void;
+}) {
+  const { contract, rows, busy, onRefresh } = props;
   const status = statusOf(contract, rows);
   return (
     <section className="pf-card" aria-label="1 Le contrat" data-testid="contract-card">
-      <h2>1 · Le contrat</h2>
+      <div className="pf-card-head">
+        <h2>1 &middot; Le contrat</h2>
+        <Badge status={status} />
+      </div>
       {contract === null ? (
         <Absent />
       ) : (
-        <Live contract={contract} rows={rows} status={status} busy={busy} onRefresh={() => void refresh()} />
+        <Live
+          contract={contract}
+          rows={rows}
+          status={status}
+          busy={busy}
+          onRefresh={onRefresh}
+        />
       )}
     </section>
   );
