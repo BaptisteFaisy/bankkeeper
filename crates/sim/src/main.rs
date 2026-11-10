@@ -11,6 +11,7 @@
 //!   sim buy-boat --state state.json --captain you
 //!   sim buy-note --state state.json --buyer you --loan 100
 //!   sim defer --state state.json --holder bank --loan 100
+//!   sim lease --state state.json --lessor hale --lessee you --weeks 2
 
 use rules::council::Proposal;
 use rules::state::{ActorId, Mesh};
@@ -40,10 +41,11 @@ fn main() -> ExitCode {
         Some("judges") => cmd_view(&args, views::view_judges),
         Some("fastforward") => cmd_fastforward(&args),
         Some("licence") => cmd_licence(&args),
+        Some("lease") | Some("unlease") => cmd_lease(&args),
         Some("debt") => cmd_debt(&args),
         Some("council") => cmd_council(&args),
         _ => {
-            eprintln!("usage: sim <init|day|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|state|graph|judges|fastforward|licence|debt|council> [flags]");
+            eprintln!("usage: sim <init|day|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|state|graph|judges|fastforward|licence|lease|debt|council> [flags]");
             ExitCode::from(2)
         }
     }
@@ -429,6 +431,22 @@ fn licence_sell(game: &mut Game, reference: &str) -> Result<String, String> {
     }
     let buyer = relay::parse_actor_name(reference).ok_or_else(|| format!("unknown buyer {reference}"))?;
     game.trade_licence(ActorId::You, buyer)
+}
+
+/// Rent a licence out (`lease`) or end a lease early (`unlease`): the desk
+/// moves the quota, never the title, and the rent falls due every Monday.
+fn cmd_lease(args: &[String]) -> ExitCode {
+    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
+    let mut game = read_game(&path);
+    let (lessor, lessee) = (actor_flag(args, "lessor"), actor_flag(args, "lessee"));
+    let weeks: u64 = flag(args, "weeks").and_then(|v| v.parse().ok()).unwrap_or(2);
+    let action = flag(args, "action").unwrap_or_default().to_lowercase();
+    let outcome = if action == "unlease" || args[1] == "unlease" {
+        game.unlease(lessor, lessee)
+    } else {
+        game.lease(lessor, lessee, weeks)
+    };
+    finish_trade(&path, &game, outcome)
 }
 
 fn cmd_debt(args: &[String]) -> ExitCode {

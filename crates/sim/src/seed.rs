@@ -132,6 +132,7 @@ pub fn seed_game(seed: u64) -> Game {
         campaign: Vec::new(),
         pending: None,
         lots_landed: 0,
+        leases: Vec::new(),
     }
 }
 
