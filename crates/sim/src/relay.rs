@@ -73,6 +73,19 @@ impl Game {
     /// Hand licence trade at the going price (TW-N-22), same economics as
     /// the Monday settlement: purse to purse, licence count conserved.
     pub fn trade_licence(&mut self, seller: ActorId, buyer: ActorId) -> Result<String, String> {
+        let price = self.licence_price_now();
+        self.trade_licence_at(seller, buyer, price)
+    }
+
+    /// Hand trade at a named price in centigold. Below the going price the
+    /// buyer's book opens by one; at the going price it is plain business and
+    /// moves nothing (no commercial grudge either way).
+    pub fn trade_licence_at(
+        &mut self,
+        seller: ActorId,
+        buyer: ActorId,
+        price: u64,
+    ) -> Result<String, String> {
         if seller == buyer {
             return Err("cannot trade with yourself".to_string());
         }
@@ -89,7 +102,7 @@ impl Game {
                 seller.name()
             ));
         }
-        let price = self.licence_price_now();
+        let going = self.licence_price_now();
         let (_, (seller_left, buyer_left, seller_gold, buyer_gold)) = trade_licences(
             self.port.licences[seller.idx()],
             self.port.licences[buyer.idx()],
@@ -103,6 +116,15 @@ impl Game {
         self.port.licences[buyer.idx()] = buyer_left;
         self.port.gold[seller.idx()] = seller_gold;
         self.port.gold[buyer.idx()] = buyer_gold;
+        if seller == ActorId::You && price < going {
+            let reason = format!(
+                "You sold {} a licence under the going price ({} against {}).",
+                buyer.name(),
+                fmt_gold(price as i64),
+                fmt_gold(going as i64)
+            );
+            self.record_favour(buyer, crate::favours::CHEAP_LICENCE, &reason);
+        }
         Ok(format!("{} sells a licence to {} for {}.", seller.name(), buyer.name(), fmt_gold(price as i64)))
     }
 
@@ -312,6 +334,9 @@ impl Game {
         }
         let (borrower, hull) = (loan.borrower, loan.boat);
         self.loans.remove(at);
+        if holder == ActorId::You {
+            self.record_favour(borrower, crate::favours::SEIZE, "You seized his hull.");
+        }
         Ok(crate::bots::seize_boat(self, borrower, holder, hull))
     }
 

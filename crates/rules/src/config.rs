@@ -89,6 +89,53 @@ pub struct Config {
     /// does not buy that species (Cannery target 150 is brief section 4.4;
     /// the other targets are readings).
     pub buyer_targets: [[u64; 2]; 10],
+    /// Score at which a captain's book starts to bend his vote: at or above
+    /// it he leans with the player, at or below its negation he leans against.
+    /// Reading: 3 of the 5 the book holds, so a single rescue is enough.
+    #[serde(default = "favour_vote_threshold")]
+    pub favour_vote_threshold: i32,
+    /// Slack an owed captain gives the player, in bps of the season profit
+    /// the standing rules would have paid him. Reading: 20%.
+    #[serde(default = "favour_owe_slack_bps")]
+    pub favour_owe_slack_bps: u64,
+    /// Share by which the player's indemnity must beat a grudging captain's
+    /// cost to buy his yes, in bps. Reading: 30%.
+    #[serde(default = "favour_grudge_premium_bps")]
+    pub favour_grudge_premium_bps: u64,
+    /// Gap within which an owed captain leaves the player's ground for the
+    /// next best one, in bps of the player's ground catch per trip. Reading:
+    /// 15%.
+    #[serde(default = "favour_zone_slack_bps")]
+    pub favour_zone_slack_bps: u64,
+    /// Bound of a captain's book, plus and minus. Reading: 5, so no captain
+    /// can be bought into a vote his interest refuses outright.
+    #[serde(default = "favour_score_cap")]
+    pub favour_score_cap: i32,
+}
+
+/// Default for [`Config::favour_vote_threshold`] on states saved without it.
+fn favour_vote_threshold() -> i32 {
+    3
+}
+
+/// Default for [`Config::favour_owe_slack_bps`] on states saved without it.
+fn favour_owe_slack_bps() -> u64 {
+    2_000
+}
+
+/// Default for [`Config::favour_grudge_premium_bps`] on states saved without it.
+fn favour_grudge_premium_bps() -> u64 {
+    3_000
+}
+
+/// Default for [`Config::favour_zone_slack_bps`] on states saved without it.
+fn favour_zone_slack_bps() -> u64 {
+    1_500
+}
+
+/// Default for [`Config::favour_score_cap`] on states saved without it.
+fn favour_score_cap() -> i32 {
+    5
 }
 
 /// Starting purses in centigold, indexed by actor (brief section 3).
@@ -165,6 +212,11 @@ impl Default for Config {
             starting_licences: starting_licences(),
             starting_boats: starting_boats(),
             buyer_targets: buyer_targets(),
+            favour_vote_threshold: favour_vote_threshold(),
+            favour_owe_slack_bps: favour_owe_slack_bps(),
+            favour_grudge_premium_bps: favour_grudge_premium_bps(),
+            favour_zone_slack_bps: favour_zone_slack_bps(),
+            favour_score_cap: favour_score_cap(),
         }
     }
 }
