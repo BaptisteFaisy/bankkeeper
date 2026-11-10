@@ -29,9 +29,14 @@ const SHEET = [
   'browser holds no cached copy and the network is silent.</p>',
 ].join('');
 
-/** Fetch a URL past the HTTP cache and keep it only when it is a clean 200. */
+/** Fetch a URL past the HTTP cache and keep it only when it is a clean 200.
+ *
+ * `no-cache` revalidates with the origin instead of letting the browser's own
+ * HTTP cache answer: the versioned cache here is the authority, and a stopped
+ * server must mean a stopped server, not a stale copy from the disk cache.
+ */
 function refill(cache, key, request) {
-  return fetch(request).then(async (response) => {
+  return fetch(request, { cache: 'no-cache' }).then(async (response) => {
     if (response.ok && response.type === 'basic') {
       await cache.put(key, response.clone());
     }
