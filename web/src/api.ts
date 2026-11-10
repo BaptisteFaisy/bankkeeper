@@ -117,6 +117,11 @@ export function postReseed(zone: ZoneId, crates: number): Promise<MutationResult
   return post<MutationResult>('/api/reseed', { zone, crates });
 }
 
+/** Barreau 5: file a claim against the port fund (max 1 per season). */
+export function postClaim(actor: string, gold: number): Promise<MutationResult> {
+  return post<MutationResult>('/api/claim', { actor, gold });
+}
+
 export function getJudges(): Promise<JudgesLive> {
   return request<JudgesLive>('/api/judges');
 }

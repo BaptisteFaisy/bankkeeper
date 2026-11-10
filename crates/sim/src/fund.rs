@@ -170,6 +170,7 @@ mod tests {
         Proposal {
             quota_per_licence: 70,
             close_zone: None,
+            close_weeks: None,
             ban_small_mesh: false,
             indemnity_per_licence_week: 0,
             funding: None,

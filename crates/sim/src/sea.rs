@@ -151,8 +151,7 @@ impl Game {
         }
         let paid = credit.min(self.sea_debt);
         self.sea_debt -= paid;
-        self.fallow[zone.idx()] = self.fallow[zone.idx()].saturating_add(weeks);
-        self.closed[zone.idx()] = true;
+        self.close_zone_for(zone, weeks);
         Ok(paid)
     }
 

@@ -265,6 +265,7 @@ fn vote_quota_cut(game: &mut Game) {
     game.propose(Proposal {
         quota_per_licence: STEWARD_QUOTA.min(game.config.quota_per_licence),
         close_zone: None,
+        close_weeks: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: 0,
         funding: None,

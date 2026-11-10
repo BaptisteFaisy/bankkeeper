@@ -13,6 +13,8 @@ import { MESH_LABEL, ZONE_LABEL, parseMesh } from '../types';
 import { fmtCrates, fmtGold } from '../format';
 import { getState } from '../api';
 import SeaPayBlock from './SeaPayBlock';
+import DisputeBlock from './DisputeBlock';
+import type { DisputeView } from '../types';
 
 /** One captain's line in a zone: crates landed and share in bps. */
 export interface AttributionCaptain {
@@ -43,11 +45,14 @@ interface Props {
   // Barreau 4: the debt owed to the sea, as the port state carries it. The
   // app hands it over so a payment repaints the panel at once.
   sea?: SeaView | null;
+  // Barreau 5: dispute & repair state (claims, credibility, fallow indemnities).
+  dispute?: DisputeView | null;
   // Barreau 4: the two ways out of the debt. The panel is read-only without
   // them; the app wires them to the shared actions.
   busy?: boolean;
   onFallow?: (zone: ZoneId, weeks: number) => void;
   onReseed?: (zone: ZoneId, crates: number) => void;
+  onClaim?: (actor: string, gold: number) => void;
 }
 
 /** "3.1x" for a take of 3.1 times the sustainable catch. */
@@ -168,7 +173,7 @@ function SeaDebtBlock({ sea }: { sea: SeaView | null }) {
   );
 }
 
-export default function LedgerPanel({ landings, reasoning, attribution, sea, busy, onFallow, onReseed }: Props) {
+export default function LedgerPanel({ landings, reasoning, attribution, sea, dispute, busy, onFallow, onReseed, onClaim }: Props) {
   const [rows, setRows] = useState<AttributionRow[]>(attribution ?? []);
 
   useEffect(() => {
@@ -212,6 +217,12 @@ export default function LedgerPanel({ landings, reasoning, attribution, sea, bus
       {onFallow !== undefined && onReseed !== undefined && (
         <SeaPayBlock sea={sea ?? null} busy={busy ?? false} onFallow={onFallow} onReseed={onReseed} />
       )}
+      <DisputeBlock
+        dispute={dispute ?? null}
+        closedZones={sea?.zones ?? []}
+        busy={busy ?? false}
+        onClaim={onClaim}
+      />
     </section>
   );
 }

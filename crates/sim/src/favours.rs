@@ -316,6 +316,7 @@ mod tests {
         game.propose(Proposal {
             quota_per_licence: quota,
             close_zone: None,
+            close_weeks: None,
             ban_small_mesh: false,
             indemnity_per_licence_week: 0,
             funding: None,

@@ -32,7 +32,7 @@ def flag(name):
     return argv[argv.index(name) + 1] if name in argv else None
 if cmd in ("state", "graph", "judges"):
     print(json.dumps({"ok": True, "view": cmd}))
-elif cmd in ("assign", "survey", "licence", "debt", "council", "fallow", "reseed", "day"):
+elif cmd in ("assign", "survey", "licence", "debt", "council", "fallow", "reseed", "claim", "day"):
     if "REFUSE" in argv:
         print(json.dumps({"error": "E_SIM_FAILED"}))
     else:
@@ -204,6 +204,14 @@ class RelayCase(unittest.TestCase):
         status, body = self.call("POST", "/api/fallow", {"weeks": 2})
         self.assertEqual(status, 400)
         self.assert_envelope(body, "E_BAD_FALLOW")
+
+    def test_claim_ok_and_bad(self):
+        status, body = self.call("POST", "/api/claim", {"actor": "you", "gold": 100})
+        self.assertEqual(status, 200)
+        self.assertTrue(body.get("ok"))
+        status, body = self.call("POST", "/api/claim", {"gold": 0})
+        self.assertEqual(status, 400)
+        self.assert_envelope(body, "E_BAD_CLAIM")
 
     def test_reseed_ok_and_bad(self):
         status, body = self.call("POST", "/api/reseed",

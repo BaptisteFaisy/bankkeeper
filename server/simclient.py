@@ -104,6 +104,11 @@ def build_reseed_argv(binary: str, state: str, zone: str, crates: int) -> list[s
     return argv
 
 
+def build_claim_argv(binary: str, state: str, actor: str, gold: float) -> list[str]:
+    """Argv filing a claim against the port fund (barreau 5)."""
+    return [binary, "claim", "--state", state, "--actor", actor, "--gold", str(gold)]
+
+
 def build_debt_argv(binary: str, state: str, action: str,
                     ref: str) -> list[str]:
     return [binary, "debt", "--state", state, "--action", action,

@@ -215,6 +215,7 @@ fn status_quo(game: &Game) -> Proposal {
     Proposal {
         quota_per_licence: game.config.quota_per_licence,
         close_zone: None,
+        close_weeks: None,
         ban_small_mesh: game.small_mesh_banned,
         indemnity_per_licence_week: 0,
         funding: None,
@@ -356,11 +357,18 @@ fn apply_proposal(game: &mut Game, proposal: &Proposal, ballots: &[(ActorId, Vot
         game.apply_levy(levy, lines);
     }
     game.closed = [false; 3];
+    game.voted_closure = None;
     if let Some(zone) = proposal.close_zone {
-        game.closed[zone.idx()] = true;
-        for boat in game.port.boats.iter_mut().filter(|boat| boat.zone == Some(zone)) {
-            boat.zone = None;
-        }
+        let weeks = proposal.close_weeks.unwrap_or(game.config.weeks_per_season);
+        game.close_zone_for(zone, weeks);
+        game.voted_closure = Some((zone, weeks));
+        let indemnified = game.compensate_fallow(zone, weeks, lines);
+        lines.push(format!(
+            "{} closed for {} week(s) of collective fallow ({} compensated by port fund).",
+            zone.name(),
+            weeks,
+            fmt_gold(indemnified as i64)
+        ));
     }
     // Barreau 4: a fallow outlives the council — a resting zone stays shut
     // even when the new season's motion reopens every other ground.
@@ -442,6 +450,7 @@ pub fn open_next_season(game: &mut Game) -> Result<u64, String> {
     game.bilan = None;
     game.proposal = None;
     game.player_vote = None;
+    game.claims_this_season = 0;
     Ok(game.port.season(&game.config) + 1)
 }
 
