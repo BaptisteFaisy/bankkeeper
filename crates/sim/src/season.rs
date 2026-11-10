@@ -5,7 +5,7 @@
 //! captains lay up and pooled licences go back on the block. Every fourth
 //! Monday the captains vote next season's rules, one vote per licence.
 
-use crate::{fmt_gold, Game};
+use crate::{favours, fmt_gold, Game};
 use rules::bankruptcy::{broke_captains, lay_up};
 use rules::council::{indemnity_cost, npc_vote, tally, vote_reasoning, Proposal, Tally, Vote};
 use rules::licences::{
@@ -375,11 +375,20 @@ fn poll_captains(
         }
         let pass = season_profit(game, captain, proposal.quota_per_licence, proposal.close_zone, proposal.ban_small_mesh);
         let fail = season_profit(game, captain, game.config.quota_per_licence, None, game.small_mesh_banned);
-        let vote = npc_vote(pass, fail, held, proposal.indemnity_per_licence_week, game.config.weeks_per_season);
+        let base = npc_vote(pass, fail, held, proposal.indemnity_per_licence_week, game.config.weeks_per_season);
         let weekly_cost = (((fail - pass).max(0) / game.config.weeks_per_season as i64) / 100).max(0) as u64;
         let offer = proposal.indemnity_per_licence_week.saturating_mul(held) / 100;
+        // The moral book bends the economic ballot; the clause says so.
+        let book = game.favour(captain);
+        // Reasons print gold; the vote compares centigold with centigold.
+        let season_offer = offer.saturating_mul(game.config.weeks_per_season).saturating_mul(100) as i64;
+        let vote = favours::court_vote(base, book.score, &game.config, pass, fail, season_offer);
         ballots.push((captain, vote, held));
-        lines.push(vote_reasoning(captain.name(), vote, proposal.quota_per_licence, weekly_cost, offer));
+        lines.push(format!(
+            "{}{}",
+            vote_reasoning(captain.name(), vote, proposal.quota_per_licence, weekly_cost, offer),
+            book.clause(&game.config)
+        ));
     }
 }
 

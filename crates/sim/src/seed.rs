@@ -115,6 +115,7 @@ pub fn seed_game(seed: u64) -> Game {
         mesh: MeshLedger::new(),
         bailouts: Vec::new(),
         surveys: Vec::new(),
+        favours: Vec::new(),
         proposal: None,
         player_vote: None,
         last_report: None,

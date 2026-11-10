@@ -350,6 +350,7 @@ pub fn view_state(game: &Game) -> Value {
         "lastCouncil": game.last_council,
         "leases": game.leases.iter().map(|lease| json!({"lessor": actor_id(lease.lessor), "lessorName": lease.lessor.name(), "lessee": actor_id(lease.lessee), "lesseeName": lease.lessee.name(), "weeklyRent": gold_pieces(lease.weekly_rent as i64), "weeksLeft": lease.weeks_left})).collect::<Vec<_>>(),
         "attribution": attribution(game),
+        "favours": crate::favours::favours_view(game),
     })
 }
 
