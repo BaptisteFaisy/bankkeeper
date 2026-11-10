@@ -91,7 +91,6 @@ fn defect_01_the_gull_is_paid_twice_for_the_same_crates() {
 /// check, so one captain can pass the 8-licence ceiling the council rests on
 /// (brief section 13, question 3: no captain can outvote the port alone).
 #[test]
-#[ignore = "audit defect 2: auction_pool bypasses licence_cap_per_captain"]
 fn defect_02_pool_auction_breaks_the_licence_cap() {
     let mut game = seed_game(7);
     game.port.licence_pool = 6;
