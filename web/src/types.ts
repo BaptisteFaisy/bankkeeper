@@ -146,6 +146,9 @@ export interface PortState {
   bilan?: unknown;
   // Last council report (sim view_state lastCouncil); parsed via parseCouncilOutcome.
   lastCouncil?: unknown;
+  // Season length in days and weeks (sim view_state), for shareable links.
+  seasonDays?: number;
+  weeksPerSeason?: number;
 }
 
 export interface FFSummary {

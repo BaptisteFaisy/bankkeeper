@@ -298,6 +298,8 @@ pub fn view_state(game: &Game) -> Value {
         "day": weekday(game.port.day),
         "tide": tide(game.port.day),
         "seed": game.port.seed.to_string(),
+        "seasonDays": game.config.days_per_week * game.config.weeks_per_season,
+        "weeksPerSeason": game.config.weeks_per_season,
         "playerGold": gold_pieces(game.port.gold[ActorId::You.idx()]),
         "netWorth": gold_pieces(net_worth(game, ActorId::You)),
         "licencePrice": gold_pieces(game.licence_price_now() as i64),
