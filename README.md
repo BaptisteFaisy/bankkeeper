@@ -1,85 +1,208 @@
 # Bankkeeper
 
-**Bankkeeper** : le port de pêche et son stock commun. Tu es capitaine dans un
-port où tous les bateaux puisent dans les mêmes bancs : ce que chacun prend
-aujourd'hui décide de ce qu'il restera demain.
+**Ce que je prends aujourd'hui coûte à quelqu'un d'autre, et à demain.**
 
-> Le nom vient de là : dans ce jeu, *bank* est à la fois le **banc de poissons**
-> que personne ne possède et la **banque** qui pousse à le vider. Le keeper, c'est
-> toi. Voir [`docs/NAMING.md`](docs/NAMING.md).
+Tu es capitaine et armateur à Tidewater. Dix bateaux, trois bancs de pêche, une
+criée néerlandaise où inonder le port fait chuter les cours, et un Conseil du
+port où chaque licence donne une voix.
 
-Jeu du hackathon NEAR, track *Games With Real Economies*. Le brief fait
-foi : [`tidewater.md`](tidewater.md). Docs : [`docs/`](docs).
-Conformité au track, exigence par exigence, avec ce qui manque encore :
-[`docs/COMPLIANCE.md`](docs/COMPLIANCE.md). Les règles de prix des marchands
-vivent dans un seul fichier : [`crates/rules/src/merchant.rs`](crates/rules/src/merchant.rs).
+> *Bank* est à la fois le **banc de poisson** que nul ne possède et la **banque**
+> qui pousse à le vider. Le *keeper*, c'est toi. Voir [`docs/NAMING.md`](docs/NAMING.md).
 
-## Pipeline
+Projet pour le hackathon NEAR — track **Games With Real Economies**.
 
-File de merge Mergify (rebase, historique linéaire) + balayeur `pr-auto-merge` :
-checks requis `ci`, `ci-budget` (jobs ≤ 5 min), `couche0` (garde `## Scope`).
+- 🎮 **Jouer en ligne (0 installation, 0 serveur)** :
+  **[tidewater-play.vercel.app](https://tidewater-play.vercel.app)**
+- 📜 **Contrat NEP-245** : `contracts/tidewater/` (412 Ko wasm, 37 fonctions, ABI embarquée)
+- 🧭 **La colonne vertébrale du jeu (SPINE)** : [`docs/SPINE.md`](docs/SPINE.md)
+- 🔍 **Preuves publiques** : [`/proofs.html`](https://tidewater-play.vercel.app/proofs.html) et [`docs/deployments.md`](docs/deployments.md)
+- 📋 **Grille de conformité au track** : [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)
 
-- Runners self-hosted r630 : `r630-near_tidewater-01..NN` (label `near_tidewater-worker`).
-- Toute PR porte une section `## Scope` (puces `- `fichier``) listant ses
-  fichiers ; les workflows sont des fichiers de garde (`SAMVISION_ALLOW_GUARD_BUMP`).
-- Conflits : agent Fireworks ; tests rouges : agent zeroclaw `fw` via `triage-rouge`.
-- `main` est protégée (ruleset) : tout passe par PR + file, jamais de push direct.
+---
 
-Preuve pipeline : 2026-11-09T22:18:58Z — balayeur attendu.
-Preuve activation Merge Queue : 2026-11-09T23:16:46Z — produit activé sur dashboard, merge par la file attendu.
+## 1. Ce qui a été fait (l'état réel)
 
-## Démarrage local
+### A. Économie & Moteur (100 % déterministe, zéro IO)
 
-Prérequis : Rust (cargo), Python 3 (stdlib uniquement côté relais),
-Node 20+ pour le web.
+- **La boucle de base** : 10 bateaux, 3 zones (The Shallows, Greybank, The Deeps),
+  régénération logistique naturelle, épuisement visible dès la première semaine.
+- **La criée néerlandaise (Dutch auction)** : le prix part haut et descend. Trois
+  marchands NPC (Fishmonger, Cannery, The Gull) avec leur bourse, leur stock et
+  leur cible. Inonder le marché fait chuter le cours ; un marchand ruiné ferme sa
+  boutique jusqu'à renflouement.
+- **Règles de prix en un fichier lisible** : [`crates/rules/src/merchant.rs`](crates/rules/src/merchant.rs)
+  est l'unique source de vérité — le contrat on-chain et le moteur wasm appellent
+  la même formule. Chaque marchand affiche son raisonnement en infobulle (*why*).
+- **Le rythme** : un lot toutes les 30 secondes, une journée en 5 minutes (ou
+  avance rapide à la demande).
+- **Graines splitmix64 sans état** : déterminisme garanti (même graine = même
+  saison au bit près), 3 graines = 3 dynamiques de marché radicalement différentes.
+- **Campagne de 3 saisons** : le capital est reporté, et le handicap est porté
+  par la mer (les stocks ne sont pas réinitialisés magiquement).
+
+### B. La colonne en 5 barreaux ([`docs/SPINE.md`](docs/SPINE.md))
+
+1. **Voir (Attribution)** ✅ : le registre municipal (*HARBOUR LEDGER → Who took what*)
+   chiffre l'externalité exacte de chaque capitaine (`Greybank : toi 46 %, Brandt 31 %`)
+   face à la prise durable (`sustainable catch`).
+2. **Payer (Redevance & Fonds du port)** ✅ : le Conseil vote une redevance au
+   débarquement prélevée sur chaque lot vendu, versée à un **fonds du port** visible
+   qui finance les relevés, les jachères et les indemnisations.
+3. **Gouverner (Motion financée)** ⏳ : toute motion vote son financement (le fonds
+   ou la redevance paie) et chaque vote affiche ce que le capitaine a pris au banc.
+4. **Hériter (Dette envers la mer)** ⏳ : passif accumulé au-dessus de la prise
+   durable, payé en jachère ou en réensemencement, reporté sur la saison suivante.
+5. **Réparer (Jachère & Contentieux)** : fermeture collective d'une zone et recours.
+
+### C. Le Contrat NEAR NEP-245 (`contracts/tidewater/`)
+
+Un contrat multi-token unique qui porte toute l'économie :
+- **Or** (fongible, ID 0), **Poissons** (hareng, cabillaud),
+- **Licences de pêche** (semi-fongibles, cessibles et louables),
+- **Actes de propriété des bateaux** (NFT deeds),
+- **Notes de dette** (prêts émis par la banque, transférables).
+
+31 tests unitaires et d'intégration, 100 % passants. 3 bloquants et 8 majeurs
+d'audit corrigés (pas d'injection dans `EVENT_JSON`, pas de frappe ex-nihilo,
+plafond de 8 licences appliqué, droits du deed rattachés au token).
+
+### D. Client Web & PWA hors-ligne (`web/`)
+
+- **Zéro serveur en production** : le moteur Rust compile en WebAssembly
+  (`engine.wasm`, 347 Ko). Les calculs tournent à 100 % dans le navigateur du joueur.
+  Zéro appel `/api/`, zéro base de données, zéro coût d'hébergement.
+- **PWA installable** : Service Worker (`sw.js`), manifeste, page de secours hors-ligne.
+- **Tutoriel interactif en 3 étapes** pour enseigner la tragédie des biens communs dès
+  la première minute.
+- **Sauvegarde et partage** : persistance `localStorage`, reprise sur rafraîchissement,
+  et graine partageable par URL (`?seed=7&weeks=2`).
+- **Panneau pour les juges** : bouton *Judges* avec avance rapide (7 jours / 28 jours en
+  une seconde) pour voir l'économie réagir immédiatement, et copie de l'empreinte
+  cryptographique (`history_hash`).
+
+---
+
+## 2. Comment ça fonctionne
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Navigateur du joueur                            │
+│                                                                        │
+│   UI React + Vite (web/)                                               │
+│         │                                                              │
+│         ▼                                                              │
+│   Adaptateur ABI sans glue (web/src/actions.ts)                        │
+│         │                                                              │
+│         ▼                                                              │
+│   engine.wasm  ◄──  compilé depuis crates/wasm + crates/sim + rules     │
+│   (347 Ko)          100 % pur Rust, déterministe, zéro IO, zéro réseau │
+└─────────┬──────────────────────────────────────────────────────────────┘
+          │ (actions économiques clés : licences, dettes, vote)
+          ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                     NEAR Testnet (bankkeeper.testnet)                  │
+│                                                                        │
+│   Contrat NEP-245 multi-tokens (contracts/tidewater/)                  │
+│   • Or (0)            • Licences (1)         • Actes bateaux (2-11)    │
+│   • Notes de dette    • Quotas & votes       • Compte Fonds du port    │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### Le cycle d'une journée
+
+1. **Aube (Dawn)** : le Conseil du port applique les quotas votés la veille ; la banque
+   prélève les intérêts des dettes ; les marchands calculent leurs prix selon leurs
+   stocks restants. Le plan du jour est figé.
+2. **Journée (Day)** : un lot arrive toutes les 30 secondes (ou au clic sur *Next lot*).
+   Les bateaux rentrent un par un. À chaque débarquement, la criée s'ouvre : le prix
+   descend jusqu'à ce qu'un marchand achète ou que le lot soit invendu. La redevance
+   du port est prélevée à la source et créditée au fonds.
+3. **Soir (Dusk)** : les pêcheurs paient les salaires des équipages ; le registre
+   municipal met à jour l'attribution (*qui a pris quoi* et *combien la mer a perdu*).
+4. **Fin de saison (Bilan)** : calcul de la valeur nette de chaque armateur et
+   présentation de **la facture laissée à la mer**.
+
+---
+
+## 3. Lancer en local
+
+### Prérequis
+- Rust 1.80+ avec la cible wasm : `rustup target add wasm32-unknown-unknown`
+- Node.js 20+
+- Python 3.10+ (pour la suite de tests E2E Selenium)
+
+### Commandes
 
 ```sh
-# 1. Simu + contrat (vérification Rust)
+# 1. Cloner
+git clone https://github.com/BaptisteFaisy/bankkeeper.git
+cd bankkeeper
+
+# 2. Vérifier toute la simulation et le contrat en Rust (177 tests)
 cargo test --workspace
 
-# 2. Relais : port 8785 en dev, jamais 8775 (live Market Town) ni 8765
-PORT=8785 python3 server/relay.py
+# 3. Compiler le moteur en WebAssembly
+cargo build --target wasm32-unknown-unknown --release -p tidewater_wasm
+cp target/wasm32-unknown-unknown/release/tidewater_wasm.wasm web/public/engine.wasm
 
-# 3. Web : http://localhost:5173 (proxy /api -> 8785)
-cd web && npm install && npm run dev
+# 4. Lancer l'interface web (Vite)
+cd web
+npm install
+npm run dev
+# -> Ouvrir http://localhost:5173
 ```
 
-Tests : ports et états jetables par run, Chrome headless à profil
-séparé sous `/tmp`, aucun processus laissé derrière (brief §8).
-
-## Disposition du dépôt
-
-- `crates/rules/` — règles uniques partagées par la simu et le contrat.
-- `crates/sim/` — moteur de cycles, NPC, fast-forward, graine.
-- `contracts/tidewater/` — contrat NEP-245 (or, poissons, licences,
-  bateaux, dettes, parts).
-- `server/` — relais HTTP Python (stdlib only).
-- `web/` — React + Vite + TS strict, canvas maison.
-- `tests/`, `fixtures/` — garde structurelle CI et graines de référence.
-- `docs/` — architecture, API, économie, boucle, tutoriel, démo juges, décisions.
-- `tidewater.md` — le brief, autorité première.
-
-## Testnet
-
-Le contrat NEP-245 se déploie et se rejoue sur NEAR testnet avec deux
-commandes (détail et état courant : [`docs/deployments.md`](docs/deployments.md)) :
+### Tests E2E complets (hors-ligne et audits)
 
 ```sh
-cd contracts/tidewater && cargo near build non-reproducible-wasm
-cd ../.. && node scripts/testnet/deploy.mjs   # compte racine + sous-comptes + wasm + new(owner, player)
-node scripts/testnet/e2e.mjs                  # rejeu on-chain, hash de transaction imprimés
+# Vérifie que le jeu fonctionne à 100 % hors-ligne (0 appel /api/)
+python3 tests/e2e_offline.py
+
+# Audit d'accessibilité et robustesse client
+python3 tests/audit_web.py
 ```
 
-`make testnet-deploy` et `make testnet-e2e` font exactement cela. Le premier
-appel au faucet public (`helper.testnet.near.org`) est limité à 10 créations de
-compte par 3 h et par IP ; en cas de 429, `TIDEWATER_ROOT_PARENT=<compte financé>`
-crée le compte contrat en sous-compte pour ne pas bloquer la démo. Les clés
-restent dans `~/.near-credentials/testnet/`, jamais dans le dépôt.
+### Construire et tester le contrat NEAR
 
-## Contraintes (brief §8)
+```sh
+cd contracts/tidewater
+cargo near build non-reproducible-wasm
+cargo test
+```
 
-Fichiers < 500 lignes, fonctions < 50 ; code, commentaires et UI en
-anglais, docs en français ; goût (ni violet ni indigo, pas de titre en
-dégradé, etc.) ; `prefers-reduced-motion` partout, DPR ≤ 2 ; zéro
-erreur console sur le parcours de référence. `.github/` est gelé : la
-CI reste docs + gardes.
+---
+
+## 4. Structure du dépôt
+
+```
+bankkeeper/
+├── crates/
+│   ├── rules/          # Règles pures du jeu (zéro IO, formules de prix, conseil)
+│   ├── sim/            # Moteur de simulation (bots, cycle, attribution, fonds)
+│   └── wasm/           # Pont WebAssembly direct (sans wasm-bindgen)
+├── contracts/
+│   └── tidewater/      # Contrat smart-contract NEAR NEP-245 (Rust + near-sdk)
+├── web/                # Interface React + TypeScript + Vite + PWA
+│   ├── src/components/ # SeaMap, FishAuction, HarbourLedger, Council, Tutorial...
+│   └── public/         # sw.js, manifest.webmanifest, engine.wasm
+├── docs/               # Architecture, SPINE (colonne), COMPLIANCE, Audits, Naming
+├── scripts/            # Scripts de déploiement et tests testnet (near-api-js)
+└── tests/              # Tests E2E Selenium (parcours hors-ligne, audit web)
+```
+
+---
+
+## 5. Pipeline CI & Intégrité
+
+- **File de merge Mergify** : rebase strict, historique linéaire garanti, aucun commit
+  de merge dans la branche principale.
+- **3 contrôles requis** sur chaque PR avant fusion :
+  1. `ci` : intégrité des documents UTF-8 et tests automatiques des gardes.
+  2. `ci-budget` : verdict rendu en moins de 5 minutes chrono (règle d'or).
+  3. `couche0` : contrôle strict du périmètre (`## Scope`) et interdiction des régressions.
+
+---
+
+## Licence
+
+Apache-2.0 / MIT.
