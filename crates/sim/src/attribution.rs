@@ -232,8 +232,8 @@ mod tests {
     /// follows the take: over 10,000 when drawing down, under when light.
     #[test]
     fn over_bps_reads_heavy_and_light_seasons() {
-        // Greybank is herring: 5% a day, capacity 5,000. At 2,500 crates the
-        // ceiling is 62 crates a day.
+        // Greybank is herring: 7% a day, capacity 5,000. At 2,500 crates the
+        // ceiling is 87 crates a day.
         let mut heavy = game_on(2500);
         for _ in 0..28 {
             day(&mut heavy, Zone::Greybank, &[(ActorId::You, 100)]);
@@ -241,7 +241,7 @@ mod tests {
         let heavy_row = row(&heavy, "greybank");
         assert_eq!(heavy_row["stock"], 2500);
         assert_eq!(heavy_row["capacity"], 5000);
-        assert_eq!(heavy_row["sustainable"], 62);
+        assert_eq!(heavy_row["sustainable"], 87);
         assert_eq!(heavy_row["window_days"], 28);
         assert_eq!(heavy_row["taken"], 2800);
         assert!(heavy_row["over_bps"].as_u64().expect("bps") > 10_000);
@@ -286,8 +286,8 @@ mod tests {
         let row = row(&game, "greybank");
         assert_eq!(row["window_days"], 5);
         assert_eq!(row["taken"], 100);
-        // 62 crates a day x 5 days = 310: 100 taken is under a third of it.
-        assert_eq!(row["over_bps"], 3_225);
+        // 87 crates a day x 5 days = 435: 100 taken is under a quarter of it.
+        assert_eq!(row["over_bps"], 2_298);
     }
 
     /// Thirty days on the journal: the window keeps the last 28 only.

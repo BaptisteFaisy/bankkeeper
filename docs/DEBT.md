@@ -93,3 +93,28 @@ Le bilan (`Bilan`) porte désormais deux axes :
 Dans l'interface web (`App.tsx`, `EndCardBody`) :
 `Debt to the sea : X,XXX crates`
 sans jugement moral, à côté des stocks restants et de la valeur nette.
+
+---
+
+## 5. Ce que le harnais mesure (50 graines × 4 politiques)
+
+`docs/BALANCE.md` porte les chiffres complets. En résumé, sur une campagne de
+3 saisons :
+
+| politique | dette portée S1 → S2 → S3 | dette finale | fonds du port |
+|---|---|---:|---:|
+| `greedy` | 3 134 → 4 562 → 5 356 | 5 356 | 4 960 or (intact) |
+| `steward` | 3 080 → 2 400 → 1 488 | 1 488 | 2 439 or (dépensé) |
+| `passive` | 2 437 → 3 599 → 4 420 | 4 420 | 5 048 or (intact) |
+
+- **La dette se paie** : dès qu'un joueur met un banc en jachère (le seuil
+  mesuré est 1 000 caisses), la dette **baisse** au lieu de grossir. Le
+  réensemencement (le fonds du port achète des alevins) paie le reste.
+- **Sans paiement, elle est une punition** : avant le réglage, elle grossissait
+  de +1 878 caisses par saison dans *toutes* les politiques, et le fonds du
+  port était à zéro (redevance à 0 dans le harnais), donc le
+  réensemencement était impossible.
+- **La dette est de port, pas de joueur** : le joueur qui ne joue jamais finit
+  quand même avec 4 420 caisses de dette — ce sont les PNJ qui ont pêché.
+  Point de game design ouvert.
+

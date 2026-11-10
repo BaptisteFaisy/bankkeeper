@@ -23,8 +23,12 @@ pub const DEMO_LEVY_PER_CRATE: u64 = 40;
 pub struct Config {
     pub version: u32,
     /// Share of a zone stock taken by one trip, in bps (TW-N-02: 0.4%).
+    /// Kept at the brief's value: 30 bps was measured (docs/BALANCE.md) and
+    /// it erased the collapse signal — the sea stopped punishing greed.
     pub catch_share_bps: u64,
     /// Daily logistic regrowth, in bps (TW-N-03: 5% herring, 2% cod).
+    /// Tuned to 7% and 3% by the balance harness: at the brief's values no
+    /// port could fish its quota out without emptying a bank.
     pub regrow_herring_bps: u64,
     pub regrow_cod_bps: u64,
     /// Max trips per boat per day (TW-N-10: 3).
@@ -187,8 +191,8 @@ impl Default for Config {
         Self {
             version: CONFIG_VERSION,
             catch_share_bps: 40,
-            regrow_herring_bps: 500,
-            regrow_cod_bps: 200,
+            regrow_herring_bps: 700,
+            regrow_cod_bps: 300,
             trips_per_boat_day: 3,
             base_herring: 400,
             base_cod: 1200,
@@ -293,7 +297,10 @@ mod tests {
         let cfg = Config::default();
         assert!(cfg.version_ok());
         assert_eq!(cfg.catch_share_bps, 40);
-        assert_eq!((cfg.regrow_herring_bps, cfg.regrow_cod_bps), (500, 200));
+        // Tuned by the balance harness (docs/BALANCE.md), not the brief's
+        // 5%/2%: at 500/200 the grid showed no port could fish its quota
+        // out without emptying a bank (92% of greedy runs collapsed).
+        assert_eq!((cfg.regrow_herring_bps, cfg.regrow_cod_bps), (700, 300));
         assert_eq!(cfg.trips_per_boat_day, 3);
         assert_eq!((cfg.base_herring, cfg.base_cod), (400, 1200));
         assert_eq!(cfg.stock_gain_bps, 5000);

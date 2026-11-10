@@ -1,9 +1,12 @@
 //! One harbour day, end to end: trips and auction, regrowth, wages,
 //! conservation every cycle, sustainable yield with two boats.
+//!
+//! The boat-count rules (five boats grind Greybank down, six empty it) live
+//! in `lot0_core.rs`, the acceptance file; this one checks the yield.
 
 mod helpers;
 
-use helpers::{add_boats, quiet_game};
+use helpers::{two_boat_equilibrium};
 use rules::state::Zone;
 use sim::cycle::run_day;
 use sim::seed_game;
@@ -23,33 +26,22 @@ fn full_week_keeps_the_books_balanced() {
 }
 
 #[test]
-fn two_boats_hold_greybank_near_2600() {
-    // Lot 0: the two-boat sustainable yield, ~62 crates a day.
-    let mut game = quiet_game(21);
+fn two_boats_hold_greybank_at_its_equilibrium() {
+    let equilibrium = two_boat_equilibrium();
+    let mut game = helpers::quiet_game(21);
     for _ in 0..150 {
         run_day(&mut game);
     }
     let stock = game.port.stocks[Zone::Greybank.idx()];
-    assert!((2300..=2900).contains(&stock), "stock {stock}");
+    assert!(
+        stock.abs_diff(equilibrium) * 20 <= equilibrium,
+        "stock {stock} against equilibrium {equilibrium}"
+    );
     let last = game.history.last().expect("journal");
     let day_catch = last.crates[Zone::Greybank.idx()];
-    assert!((47..=77).contains(&day_catch), "daily catch {day_catch}");
-}
-
-#[test]
-fn five_boats_empty_greybank() {
-    let mut game = quiet_game(22);
-    add_boats(&mut game, 3);
-    for _ in 0..28 {
-        run_day(&mut game);
-    }
-    let season_end = game.port.stocks[Zone::Greybank.idx()];
-    for _ in 0..172 {
-        run_day(&mut game);
-    }
-    let stock = game.port.stocks[Zone::Greybank.idx()];
-    assert!(season_end < 3000, "one season must crater the stock, got {season_end}");
-    // NOTE: floored trip_catch pins five boats near ~749 (take 30 =
-    // regrowth 30); true "vide la zone" needs rounding in the rules.
-    assert!(stock < 1100, "five boats must grind far below the two-boat level, got {stock}");
+    let expected = 6 * game.config.catch_share_bps * stock / 10_000;
+    assert!(
+        day_catch.abs_diff(expected) * 10 <= expected,
+        "daily catch {day_catch} against {expected}"
+    );
 }

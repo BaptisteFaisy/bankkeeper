@@ -21,15 +21,24 @@ use crate::Game;
 
 /// Quota per licence the steward votes for at the season-end council.
 pub const STEWARD_QUOTA: u64 = 50;
-/// Gold (centigold) the steward keeps in hand before buying an idle licence:
-/// two weeks of crew wages for a two-boat fleet.
-pub const STEWARD_RESERVE: i64 = 20_000;
+/// Gold (centigold) a policy keeps in hand before buying a licence: two weeks
+/// of crew wages for a two-boat fleet.
+pub const PURCHASE_RESERVE: i64 = 20_000;
 /// Licences the steward is willing to hold idle (the port cap is 8).
 pub const STEWARD_IDLE_CAP: u64 = 6;
 /// Boats the steward keeps working the threatened bank.
 pub const STEWARD_BOATS: usize = 2;
 /// Days of journal the steward compares to spot a bank in decline.
 pub const STEWARD_WINDOW: usize = 7;
+/// Debt to the sea (crates) above which a policy starts paying the sea back:
+/// the fallow threshold. Below it the bill waits, above it the port buys
+/// juveniles or rests a bank.
+pub const FALLOW_DEBT_TRIGGER: u64 = 1_000;
+/// Weeks of rest a bank gets when the fund cannot buy juveniles.
+pub const FALLOW_WEEKS: u64 = 2;
+/// Share of the port fund one reseed may spend, in bps: the fund keeps a
+/// reserve for the rest of the port's business.
+pub const RESEED_FUND_SHARE_BPS: u64 = 5_000;
 
 /// One way of playing the harbour, as the harness names it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -122,12 +131,19 @@ fn greedy(game: &mut Game) -> Vec<String> {
     for boat in &boats {
         let _ = set_boat(game, *boat, Some(zone), mesh);
     }
-    vec![format!(
+    let mut lines = vec![format!(
         "You send {} boats to {} on {}: {left} crates of quota left this week.",
         boats.len(),
         zone.name(),
         mesh.name()
-    )]
+    )];
+    // A licence is a week of quota: the greedy hand buys one too, and fishes
+    // it out. What separates greedy from steward is not the shopping, it is
+    // what happens to the sea afterwards.
+    if game.port.day.is_multiple_of(game.config.days_per_week.max(1)) {
+        lines.extend(buy_licence(game, game.config.licence_cap_per_captain));
+    }
+    lines
 }
 
 /// Steward: two boats on the bank that is slipping, large mesh, a licence
@@ -142,7 +158,8 @@ fn steward(game: &mut Game) -> Vec<String> {
     }
     lines.push(steward_line(zone, boats.len().min(STEWARD_BOATS)));
     if game.port.day.is_multiple_of(game.config.days_per_week.max(1)) {
-        lines.extend(buy_idle_licence(game));
+        lines.extend(buy_licence(game, STEWARD_IDLE_CAP));
+        lines.extend(pay_sea_debt(game));
     }
     vote_quota_cut(game);
     lines
@@ -159,19 +176,20 @@ fn steward_line(zone: Option<Zone>, boats: usize) -> String {
     }
 }
 
-/// The steward buys one licence a week to leave it unfished: a licence held
-/// and not fished removes 70 crates a week of pressure from the sea (TW-N-23).
-fn buy_idle_licence(game: &mut Game) -> Option<String> {
+/// Buy one licence for the fleet when the price leaves the reserve alone: a
+/// licence held and fished is a week of quota, so it pays for itself in days.
+/// `cap` is the number of licences the policy is willing to hold.
+fn buy_licence(game: &mut Game, cap: u64) -> Option<String> {
     let me = ActorId::You;
     if game.port.stopped[me.idx()] {
         return None;
     }
-    let cap = game.config.licence_cap_per_captain.min(STEWARD_IDLE_CAP.max(1));
-    if game.port.licences[me.idx()] >= cap.max(1) {
+    let cap = cap.min(game.config.licence_cap_per_captain).max(1);
+    if game.port.licences[me.idx()] >= cap {
         return None;
     }
     let price = game.licence_price_now() as i64;
-    if game.port.gold[me.idx()] < price + STEWARD_RESERVE {
+    if game.port.gold[me.idx()] < price + PURCHASE_RESERVE {
         return None;
     }
     if game.port.licence_pool > 0 {
@@ -181,6 +199,64 @@ fn buy_idle_licence(game: &mut Game) -> Option<String> {
         .into_iter()
         .find(|seller| !game.port.stopped[seller.idx()] && game.port.licences[seller.idx()] > 1)?;
     game.trade_licence(seller, me).ok()
+}
+
+/// Pay the sea back once the carried debt crosses the threshold. A resting
+/// bank earns its credit back — the regrowth it performs while it rests pays
+/// the debt, and the cost is the revenue the port gives up — while the fund
+/// buys juveniles when every bank already rests.
+fn pay_sea_debt(game: &mut Game) -> Option<String> {
+    if game.sea_debt < FALLOW_DEBT_TRIGGER {
+        return None;
+    }
+    if !resting(game) {
+        let zone = most_threatened(game)?;
+        let paid = game.pay_in_fallow(zone, FALLOW_WEEKS).ok()?;
+        return Some(format!(
+            "{} rests {FALLOW_WEEKS} weeks: {paid} crates of debt paid by the regrowth.",
+            zone.name()
+        ));
+    }
+    let zone = roomiest_zone(game)?;
+    let crates = reseedable_crates(game, zone);
+    if crates == 0 || game.pay_in_reseed(zone, crates).is_err() {
+        return None;
+    }
+    Some(format!(
+        "The port fund buys {crates} juveniles for {}: the debt to the sea comes down.",
+        zone.name()
+    ))
+}
+
+/// True while a bank is resting: the port cannot rest a second one.
+fn resting(game: &Game) -> bool {
+    Zone::all()
+        .into_iter()
+        .any(|zone| game.fallow_left(zone) > 0)
+}
+
+/// The open bank with the most room for juveniles.
+fn roomiest_zone(game: &Game) -> Option<Zone> {
+    Zone::all()
+        .into_iter()
+        .filter(|zone| !game.closed[zone.idx()])
+        .max_by_key(|zone| {
+            game.config.zone_capacity[zone.idx()].saturating_sub(game.port.stocks[zone.idx()])
+        })
+}
+
+/// Crates the fund can buy for `zone` and the zone can hold, at the price the
+/// market paid last week.
+fn reseedable_crates(game: &Game, zone: Zone) -> u64 {
+    let price = game.last_week_crate_price().unwrap_or(game.config.base_herring);
+    if price == 0 {
+        return 0;
+    }
+    let budget = (game.fund.balance.max(0) as u64)
+        .saturating_mul(RESEED_FUND_SHARE_BPS)
+        / 10_000;
+    let room = game.config.zone_capacity[zone.idx()].saturating_sub(game.port.stocks[zone.idx()]);
+    (budget / price).min(room).min(game.sea_debt)
 }
 
 /// The steward tables a smaller quota every morning: the motion is consumed
