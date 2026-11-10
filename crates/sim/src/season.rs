@@ -8,7 +8,10 @@
 use crate::{fmt_gold, Game};
 use rules::bankruptcy::{broke_captains, lay_up};
 use rules::council::{indemnity_cost, npc_vote, tally, vote_reasoning, Proposal, Tally, Vote};
-use rules::licences::{cap_reached, should_buy_licence, should_sell_licence, trade_licences};
+use rules::licences::{
+    cap_reached, leased_out, sellable_licences, should_buy_licence, should_sell_licence,
+    trade_licences,
+};
 use rules::trips::quota_left;
 use rules::state::{ActorId, Zone};
 use rules::debt::weekly_due;
@@ -47,9 +50,11 @@ pub fn roll_week(game: &mut Game, closures: &mut Vec<ActorId>) -> Vec<String> {
     game.mesh.record_week(game.week_small, game.week_total);
     game.week_small = [0; 3];
     game.week_total = [0; 3];
+    lines.extend(game.settle_leases());
     lines.extend(trade_licences_week(game));
     lines.extend(crate::bots::settle_loans(game));
     for captain in broke_captains(&game.port) {
+        lines.extend(game.drop_leases(captain));
         let pooled = game.port.licences[captain.idx()];
         lay_up(&mut game.port, captain);
         closures.push(captain);
@@ -90,7 +95,9 @@ fn trade_licences_week(game: &mut Game) -> Vec<String> {
     lines
 }
 
-/// Pair off NPC sellers and buyers at the going price (TW-N-22).
+/// Pair off NPC sellers and buyers at the going price (TW-N-22). Ownership
+/// drives the ceiling and the sell trigger; the fishing count drives the buy
+/// trigger, since that is the quota a captain actually works with.
 fn match_licence_traders(game: &Game, price: u64) -> (Vec<ActorId>, Vec<ActorId>) {
     let mut sellers = Vec::new();
     let mut buyers = Vec::new();
@@ -99,10 +106,12 @@ fn match_licence_traders(game: &Game, price: u64) -> (Vec<ActorId>, Vec<ActorId>
             continue;
         }
         let held = game.port.licences[captain.idx()];
+        let owned = game.owned_licences(captain);
         let gold = game.port.gold[captain.idx()];
-        if should_sell_licence(gold, licence_reserve(game, captain), held) {
+        let free = sellable_licences(owned, leased_out(&game.leases, captain));
+        if free > 0 && should_sell_licence(gold, licence_reserve(game, captain), owned) {
             sellers.push(captain);
-        } else if cap_reached(held, game.config.licence_cap_per_captain, 1) {
+        } else if cap_reached(owned, game.config.licence_cap_per_captain, 1) {
             continue;
         } else if should_buy_licence(
             quota_left(held, game.port.weekly_catch[captain.idx()], &game.config),
@@ -351,7 +360,7 @@ fn poll_captains(
         if game.port.stopped[captain.idx()] {
             continue;
         }
-        let held = game.port.licences[captain.idx()];
+        let held = game.owned_licences(captain);
         if captain == ActorId::You {
             let ballot = player_ballot(game.player_vote);
             ballots.push((captain, ballot, held));
@@ -462,7 +471,7 @@ pub fn open_next_season(game: &mut Game) -> Result<u64, String> {
 /// Player net worth at season end: purse + licences at the going price +
 /// hulls at the new-boat price, with the real zone stocks (all centigold).
 fn season_bilan(game: &Game) -> Bilan {
-    let licences = game.port.licences[ActorId::You.idx()];
+    let licences = game.owned_licences(ActorId::You);
     let price = game.licence_price_now();
     let boats = game.boats_of(ActorId::You).len() as i64;
     let gold = game.port.gold[ActorId::You.idx()];

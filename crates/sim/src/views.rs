@@ -188,6 +188,8 @@ fn captain_view(game: &Game, captain: ActorId) -> Value {
         "color": captain_color(captain),
         "gold": gold_pieces(game.port.gold[captain.idx()]),
         "licences": game.port.licences[captain.idx()],
+        "ownedLicences": game.owned_licences(captain),
+        "quotaCrates": game.quota_crates(captain),
         "active": !game.port.stopped[captain.idx()],
     })
 }
@@ -308,7 +310,7 @@ fn last_sold_line(lines: &[String]) -> String {
 /// the seizure-auction price.
 fn net_worth(game: &Game, captain: ActorId) -> i64 {
     let hulls = game.boats_of(captain).len() as i64 * crate::SEIZED_BOAT_PRICE as i64;
-    let paper = game.port.licences[captain.idx()] as i64 * game.licence_price_now() as i64;
+    let paper = game.owned_licences(captain) as i64 * game.licence_price_now() as i64;
     game.port.gold[captain.idx()] + paper + hulls
 }
 
@@ -343,6 +345,7 @@ pub fn view_state(game: &Game) -> Value {
         "seasonOver": game.over,
         "bilan": game.bilan,
         "lastCouncil": game.last_council,
+        "leases": game.leases.iter().map(|lease| json!({"lessor": actor_id(lease.lessor), "lessorName": lease.lessor.name(), "lessee": actor_id(lease.lessee), "lesseeName": lease.lessee.name(), "weeklyRent": gold_pieces(lease.weekly_rent as i64), "weeksLeft": lease.weeks_left})).collect::<Vec<_>>(),
     })
 }
 

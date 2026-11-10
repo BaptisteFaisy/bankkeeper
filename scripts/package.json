@@ -1,0 +1,16 @@
+{
+  "name": "tidewater-chain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local NEAR sandbox bootstrap and sponsored relayer for Tidewater.",
+  "license": "MIT",
+  "scripts": {
+    "sandbox": "node sandbox/start.mjs",
+    "relayer": "node relayer/src/relayer.mjs",
+    "warmup": "node relayer/src/warmup.mjs"
+  },
+  "dependencies": {
+    "near-api-js": "7.4.0"
+  }
+}

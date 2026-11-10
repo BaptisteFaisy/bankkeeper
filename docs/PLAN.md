@@ -18,58 +18,56 @@
 | Conformité au track | 4 exigences sur 6 tenues, 2 à moitié, nommées | `docs/COMPLIANCE.md` |
 | Nom | dépôt **`BaptisteFaisy/bankkeeper`** | GitHub |
 
-## 2. Ce qui reste à faire, dans l'ordre
+## 2. Ce qui reste — état à 15:15
 
-### Bloquant — cette après-midi
+Les trois audits ont rendu leur verdict : **33 défauts prouvés par des tests qui
+échouent**. Le projet est riche en fonctionnalités et pauvre en robustesse ;
+c'est exactement ce qu'un audit sert à corriger avant une démo.
 
-1. **Intégrer 10 branches** (prêtes, commits poussés, arbre propre) :
-   `balance`, `market`, `lease`, `chronicle`, `favours`, `proofs`, `pwa`,
-   `tutorial`, `rung1` (attribution), `rung2` (redevance + fonds).
-   Conflits attendus sur `config.rs`, `views.rs`, `season.rs`, `App.tsx`,
-   `hooks.ts`, `styles.css` : résolution à la main, tests après chaque merge.
-2. **Corriger les défauts trouvés par l'audit** (ci-dessous) — chacun avec un
-   test de non-régression, dans des PR séparées.
-3. **Déployer sur testnet** dès que le faucet rend un slot (job automatique à
-   15:35 ; fenêtre à 15:27). Puis rebrancher `docs/ONCHAIN.md` et la page
-   `/proofs.html` sur l'adresse publique.
-4. **Redéployer la démo** (`tidewater-play.vercel.app`) depuis `main`, vérifier
-   le parcours complet en headless.
+| Source | Bloquants | Majeurs | Mineurs | Rapport |
+|---|---|---|---|---|
+| Contrat NEAR | **3** | 8 | 4 | `docs/AUDIT-CONTRACT.md` |
+| Moteur (règles + sim) | 0 | 5 | 1 | `docs/AUDIT-ENGINE.md` |
+| Client web | **1** | 8 | 3 | `docs/AUDIT-WEB.md` |
 
-### Défauts connus à corriger
+### Étage 0 — avant tout déploiement public (aujourd'hui)
 
-**Contrat (2, bloquants pour une économie réelle)**
-- `mt_transfer` / `mt_batch_transfer` appellent `assert_yocto()` sans `#[payable]`
-  → aucun or ne circule entre comptes. Correctif : `#[payable]` + rembourser
-  l'excédent.
-- `new()` sème 20 licences aux capitaines, **0 à la banque** → `buy_licence` ne
-  peut rien vendre avant une faillite. Correctif : semer quelques licences à
-  `npc:bank`.
+1. **Contrat, 3 bloquants** : `mt_transfer` payable (aucun token ne circule),
+   la banque sans licences (`buy_licence` mort), et `mt_batch_transfer` qui
+   frappe des tokens ex nihilo (même solde de départ pour chaque jambe).
+2. **Web, 1 bloquant** : une sauvegarde d'une version antérieure tue l'écran
+   (`E_IMPORT` non rattrapé) — le jeu ne redémarre plus jamais.
+3. **Moteur, conservation** : l'auberge encaisse deux fois les mêmes caisses
+   (l'or se déplace vers un acteur qui ne l'a pas gagné).
 
-**Moteur (6, dont 5 majeurs — `crates/sim/tests/audit.rs`)**
-- La criée de l'auberge paie **deux fois** les mêmes caisses (`evening.rs:134`) ;
-- l'adjudication du lundi **ignore le plafond de 8 licences** (`season.rs:151`) ;
-- le plan du jour **n'est pas figé à l'aube** : une coque achetée à midi pêche
-  des rondes déjà closes (`cycle.rs:133`) ;
-- une coque saisie en cours de journée **crédite son acheteur** des trajets de
-  l'ancien propriétaire (`cycle.rs:189`) ;
-- `history_hash` **n'incorpore pas les licences** : deux saisons différentes
-  peuvent avoir la même empreinte (`fastforward.rs:152`) ;
-- `open_next_season` archive le bilan **avant** de refuser : appeler deux fois
-  `next-season` duplique une entrée de campagne (`season.rs:448`).
+### Étage 1 — avant la soumission
 
-**Interface** : rapport d'audit en cours (`docs/AUDIT-WEB.md`).
+- **Contrat, 8 majeurs** : événement `mt_batch_transfer` sans `amounts` ; `memo`
+   non échappé (injection dans `EVENT_JSON`) ; la propriété d'un acte de bateau
+  ne suit pas le token (on vend un bateau, l'ancien pêche encore) ; les
+  indemnités sont versées aux votants « non » ; la note de dette transférée ne
+  transfère aucun droit ; le plafond de 8 licences **n'est appliqué nulle part** ;
+  aucun dépôt de storage ; le poids de vote lu au moment du vote (double vote par
+  transfert).
+- **Moteur, 5 majeurs restants** (les correctifs 1-3 et 4-6 sont en cours) :
+  pool de licences sans plafond, plan du jour non figé, coque saisie créditée au
+  mauvais capitaine, `history_hash` incomplet, bilan archivé avant refus.
+- **Web, 8 majeurs** : double-clic qui ferme deux journées ou achète deux
+  licences, `End the day` qui n'arrête pas l'horloge, horloge qui tourne déconnecté,
+  deux onglets qui s'écrasent, `?seed=` qui écrase la partie en cours, carte
+  inaccessible au clavier, toasts non annoncés.
+- **Intégrer les branches restantes** (`chronicle`, `favours`, `balance`,
+  `rung1`, `rung2`, `rung3`) et les 3 PR de docs.
 
-### Ensuite — la semaine
+### Étage 2 — la suite
 
-5. **Barreaux 3, 4, 5** de la colonne (motion financée, dette envers la mer,
-   jachère et contentieux) : 3 à 4 jours, dans cet ordre.
-6. **Équilibrage** avec le harnais (`make balance`) : 50 graines × 4 politiques,
-   puis régler les quatre curseurs qui comptent (repousse, part prise par
-   sortie, redevance, seuil de jachère).
-7. **Soumission** : README de présentation, page `/proofs.html` à jour, script
-   de démonstration en 90 secondes (dont le fast-forward), et la vidéo si elle
-   est demandée. **Date d'échéance à confirmer** — 14/11 18:00 UTC était
-   l'échéance d'un autre track.
+- **Barreaux 4 et 5** de la colonne : la dette envers la mer (en caisses, payée
+  en jachère) puis la jachère collective et le contentieux.
+- **Équilibrage** avec `make balance` (50 graines × 4 politiques) : les quatre
+  curseurs qui comptent — repousse, part prise par sortie, redevance, seuil de
+  jachère.
+- **Soumission** : vidéo de 90 s (dont le fast-forward), page `/proofs.html`
+  branchée sur le contrat, README de présentation.
 
 ## 3. Comment l'idée continue
 
