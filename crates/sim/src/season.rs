@@ -434,6 +434,31 @@ pub fn close_season(game: &mut Game, report: &mut crate::cycle::DayReport) {
     report.bilan = Some(bilan);
 }
 
+/// Open the next season of the campaign (brief section 13, question 4).
+///
+/// The harbour keeps everything the player built — purse, licences, hulls,
+/// notes, standing rules — and the **sea keeps what the season left it**: the
+/// stocks are not reset. That is the handicap: a season fished hard makes the
+/// next one poorer, without a single artificial penalty. Only the season flag,
+/// the pending motion and the ballot are cleared.
+pub fn open_next_season(game: &mut Game) -> Result<u64, String> {
+    if !game.over {
+        return Err("the season is still running".to_string());
+    }
+    if let Some(bilan) = game.bilan.clone() {
+        game.campaign.push(bilan);
+    }
+    if game.campaign.len() >= game.config.campaign_seasons as usize {
+        game.over = true;
+        return Err("campaign over".to_string());
+    }
+    game.over = false;
+    game.bilan = None;
+    game.proposal = None;
+    game.player_vote = None;
+    Ok(game.port.season(&game.config) + 1)
+}
+
 /// Player net worth at season end: purse + licences at the going price +
 /// hulls at the new-boat price, with the real zone stocks (all centigold).
 fn season_bilan(game: &Game) -> Bilan {

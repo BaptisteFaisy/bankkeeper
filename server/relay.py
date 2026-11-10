@@ -22,10 +22,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 from simclient import (SIM_TIMEOUT, build_assign_argv, build_council_argv, build_day_argv,
+                       build_next_season_argv,
                        build_debt_argv, build_licence_argv, build_query_argv, build_survey_argv,
                        call_sim, call_sim_allow_text, run_fastforward_isolated, sim_bin)
 from payloads import (validate_assign_payload, validate_auth_payload, validate_council_payload,
                       validate_day_payload, validate_debt_payload, validate_fastforward_payload,
+                      validate_next_season_payload,
                       validate_licence_payload, validate_reset_payload, validate_survey_payload)
 
 DEFAULT_PORT = 8785
@@ -40,7 +42,7 @@ _API_METHODS = {"/api/health": "GET", "/api/auth": "POST",
                 "/api/debt": "POST", "/api/council": "POST",
                 "/api/fastforward": "POST", "/api/graph": "GET",
                 "/api/judges": "GET", "/api/day": "POST",
-                "/api/reset": "POST"}
+                "/api/next-season": "POST", "/api/reset": "POST"}
 
 _MESSAGES = {
     "E_BAD_JSON": "The request body is not valid JSON.",
@@ -207,6 +209,8 @@ _POST_SIM = {
     "council": (validate_council_payload,
                 lambda c: build_council_argv(*_sim_active(), c["action"],
                                              c["rule"], c.get("indemnity"))),
+    "next-season": (validate_next_season_payload,
+                    lambda c: build_next_season_argv(*_sim_active())),
     "day": (validate_day_payload,
             lambda c: build_day_argv(*_sim_active())),
 }

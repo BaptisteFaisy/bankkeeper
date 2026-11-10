@@ -88,3 +88,44 @@ fn the_bilan_scores_net_worth_and_never_the_sea() {
     let stock_value: i64 = bilan.stocks.iter().map(|crates| *crates as i64 * 400).sum();
     assert!(stock_value > 0 || bilan.net_worth == expected, "the sea is a stat");
 }
+
+#[test]
+fn a_campaign_keeps_what_the_player_built_and_the_sea_keeps_what_it_lost() {
+    use sim::season::open_next_season;
+    let mut game = fortnight();
+    game.port.gold[ActorId::You.idx()] = 90_000;
+    game.port.licences[ActorId::You.idx()] = 6;
+    for _ in 0..14 {
+        run_day(&mut game);
+    }
+    assert!(game.over, "the first season closed");
+    let stocks = game.port.stocks;
+    let boats = game.boats_of(ActorId::You).len();
+    let season = open_next_season(&mut game).expect("the campaign goes on");
+    assert_eq!(season, 2);
+    assert!(!game.over);
+    assert_eq!(game.campaign.len(), 1, "the bilan is archived");
+    assert_eq!(game.port.stocks, stocks, "the sea remembers: no free refill");
+    assert_eq!(game.port.licences[ActorId::You.idx()], 6, "licences carried");
+    assert_eq!(game.boats_of(ActorId::You).len(), boats, "hulls carried");
+}
+
+#[test]
+fn a_campaign_ends_after_three_seasons() {
+    use sim::season::open_next_season;
+    let mut game = fortnight();
+    for closed in 1..=3 {
+        for _ in 0..14 {
+            run_day(&mut game);
+        }
+        match open_next_season(&mut game) {
+            Ok(season) => assert_eq!(season, closed + 1),
+            Err(error) => {
+                assert_eq!(error, "campaign over");
+                assert_eq!(closed, 3, "only the third season closes the campaign");
+                assert!(game.over);
+            }
+        }
+    }
+    assert_eq!(game.campaign.len(), 3);
+}
