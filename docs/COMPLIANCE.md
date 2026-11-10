@@ -87,11 +87,12 @@ plan (licences, notes de dette, vote en tokens ; stocks et criée hors chaîne).
 `docs/GAME-LOOP.md`, section « Rythmes ». Le brief d'origine datait la boucle à
 `~50 s` ; le document donne maintenant les trois échelles demandées.
 
-⚠️ **Une réserve honnête** : le jeu est **au tour par tour**. Le rythme de
-30 secondes existe comme animation de rejeu, pas comme horloge qui tourne sans
-le joueur. Le passage au temps réel est petit techniquement (un tick de 30 s =
-une sortie par bateau, fermeture de journée automatique, pause) mais il change
-le jeu : qui réfléchit trop perd des lots. Décision à prendre.
+✅ **Et la cadence est réelle depuis le 10/11** : le bouton `Go live` lande un
+lot toutes les **30 secondes** ; dix bateaux, une sortie par bateau et par jour
+(dans la limite « au plus trois » de TW-N-10) → **une journée en 5 minutes**,
+puis la soirée (repousse, charges, faillites) et le jour suivant. `Next lot` et
+`End the day` restent disponibles pour jouer au tour par tour, et le
+fast-forward des juges reste hors horloge.
 
 ## Résumé
 
@@ -102,7 +103,7 @@ le jeu : qui réfléchit trop perd des lots. Décision à prendre.
 | Connexion email sans friction | 🟡 expérience sans friction | **authentification réelle** (FastAuth ou relayeur sponsor) |
 | Règles de prix dans un fichier + infobulle | ✅ | — |
 | Fast-forward semaine en une minute | ✅ | — |
-| Boucle sur papier, 30 s / 5 min / session | ✅ | le temps réel est une décision, pas un oubli |
+| Boucle 30 s / 5 min / session | ✅ | — |
 
 Les deux 🟡 se ferment dans cet ordre : **déployer** (faucet, 15:27), puis
 **brancher le jeu sur les tokens**, puis **relayeur sponsor** pour que la

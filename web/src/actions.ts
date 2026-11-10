@@ -1,7 +1,7 @@
 // Relay mutations as small module functions. Each takes the shared
 // action context, runs one mutation, and never throws (errors toast).
 // Mutations return true on success so callers can flash the UI.
-import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postSurvey } from './api';
+import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postSurvey, postTick } from './api';
 import type { AssignBody, MutationResult } from './api';
 import type { DayNote, FFResponse, ToastMsg, ZoneId } from './types';
 import { ZONE_LABEL, parseCouncilOutcome } from './types';
@@ -125,6 +125,19 @@ export async function doReset(actions: GameActions): Promise<boolean> {
   actions.resetFf(null);
   actions.noteDay?.({ council: null, seasonOver: false, bilan: null });
   actions.pushToast('report', 'New harbour seeded. Fair winds.');
+  return true;
+}
+
+/// One lot lands: the live clock's beat, every thirty seconds.
+export async function doTick(actions: GameActions): Promise<boolean> {
+  const r = await mutate(actions.deps, 'tick', () => postTick());
+  if (r === null) return false;
+  if (r.closed === true) {
+    const report = r.report ?? null;
+    const council = report?.council === null || report?.council === undefined ? null : parseCouncilOutcome(report.council);
+    actions.noteDay?.({ council, seasonOver: report?.season_over === true, bilan: report?.bilan ?? null });
+    actions.pushToast('report', `Day ${r.day} closes. ${(r.lines ?? []).length} lines in the ledger.`);
+  }
   return true;
 }
 

@@ -25,6 +25,7 @@ fn main() -> ExitCode {
     match args.get(1).map(|s| s.as_str()) {
         Some("init") => cmd_init(&args),
         Some("day") => cmd_day(&args),
+        Some("tick") => cmd_tick(&args),
         Some("ff") => cmd_ff(&args),
         Some("assign") => cmd_assign(&args),
         Some("survey") => cmd_survey(&args),
@@ -133,6 +134,23 @@ fn cmd_day(args: &[String]) -> ExitCode {
     }
     println!("{}", serde_json::to_string(&report).expect("serialize"));
     ExitCode::SUCCESS
+}
+
+/// One lot of the day: the live build calls this every thirty seconds.
+fn cmd_tick(args: &[String]) -> ExitCode {
+    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
+    let mut game = read_game(&path);
+    match sim::cycle::try_tick(&mut game) {
+        Ok(ticked) => {
+            write_json(&path, &game);
+            println!("{}", serde_json::to_string(&ticked).expect("serialize"));
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            println!("{}", serde_json::json!({ "error": error }));
+            ExitCode::from(1)
+        }
+    }
 }
 
 fn cmd_ff(args: &[String]) -> ExitCode {

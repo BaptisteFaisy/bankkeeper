@@ -2,6 +2,7 @@
 // compose into one GameState object via useGame.
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, getGraph, getJudges, getState } from './api';
+import { doTick } from './actions';
 import { autosave } from './boot';
 import type { FFResponse, GraphLive, JudgesLive, PortState, ToastMsg } from './types';
 import { EMPTY_AUCTION } from './types';
@@ -163,6 +164,11 @@ export function usePortPoll(): { port: PortState | null; offline: boolean; refre
 }
 
 export interface GameState {
+  /** Live clock: one lot every `secondsPerLot`, five minutes a day. */
+  live: boolean;
+  setLive: (on: boolean) => void;
+  secondsLeft: number;
+  nextLot: () => void;
   session: Session | null;
   port: PortState | null;
   offline: boolean;
@@ -201,6 +207,50 @@ export function useJudges(dayKey: string, busy: string | null): { judges: Judges
   return { judges, graph };
 }
 
+/// The live clock: one lot every `secondsPerLot`, a day every five minutes.
+/// Stops on its own when the season closes; `nextLot` lands one lot by hand.
+export function useLiveClock(
+  port: PortState | null,
+  actions: GameActions,
+): { live: boolean; setLive: (on: boolean) => void; secondsLeft: number; nextLot: () => void } {
+  const [live, setLive] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
+  const overNow = port?.seasonOver === true;
+  const periodSecs = Math.max(5, port?.secondsPerLot ?? 30);
+  useEffect(() => {
+    if (!live) return;
+    if (overNow) {
+      setLive(false);
+      return undefined;
+    }
+    const period = periodSecs * 1000;
+    let last = Date.now();
+    const ticker = window.setInterval(() => {
+      setSecondsLeft(Math.max(0, Math.ceil((period - (Date.now() - last)) / 1000)));
+    }, 500);
+    const runner = window.setInterval(() => {
+      last = Date.now();
+      setSecondsLeft(periodSecs);
+      void doTick(actionsRef.current);
+    }, period);
+    setSecondsLeft(periodSecs);
+    return () => {
+      window.clearInterval(ticker);
+      window.clearInterval(runner);
+    };
+  }, [live, overNow, periodSecs]);
+  return {
+    live,
+    setLive,
+    secondsLeft,
+    nextLot: () => {
+      void doTick(actionsRef.current);
+    },
+  };
+}
+
 export function useGame(): GameState {
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [selectedBoat, setSelectedBoat] = useState<string | null>(null);
@@ -225,5 +275,6 @@ export function useGame(): GameState {
     pushToast,
     resetFf: (r: FFResponse | null) => setFf(r),
   };
-  return { session, port, offline, selectedBoat, busy, ff, toasts, actions, judgesOpen, setJudgesOpen, setSelectedBoat, login, logout, dismissToast };
+  const { live, setLive, secondsLeft, nextLot } = useLiveClock(port, actions);
+  return { session, port, offline, selectedBoat, busy, ff, toasts, actions, judgesOpen, setJudgesOpen, setSelectedBoat, login, logout, dismissToast, live, setLive, secondsLeft, nextLot };
 }

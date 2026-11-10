@@ -157,6 +157,9 @@ export interface PortState {
   // Season length in days and weeks (sim view_state), for shareable links.
   seasonDays?: number;
   weeksPerSeason?: number;
+  // Live clock: seconds between two lots, and how many lots are left today.
+  secondsPerLot?: number;
+  lotsLeft?: number;
   // Campaign: which season this is, how many, and the bilans already closed.
   season?: number;
   campaignSeasons?: number;

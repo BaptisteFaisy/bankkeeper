@@ -1,12 +1,12 @@
 //! One harbour day: dawn orders, trips and auction, regrowth, wages, drain,
 //! closures. Buyers close the evening they go broke; captains lay up Monday.
 
-use crate::{
-    bots, fmt_gold, pay_rescuer, season, DayRecord, Game, CANNERY_WAGES_PER_DAY,
-    CHANDLERY_MARGIN_BPS, EXPORT_PRESERVE_MULT_BPS, TRAVELLER_MULT_BPS,
+use crate::evening::{
+    close_broke_buyers, drain_cannery, drain_fishmonger, drain_gull, pay_charges, regrow_all,
+    settle_boundaries, spoil_closed,
 };
+use crate::{bots, pay_rescuer, season, DayRecord, Game, CHANDLERY_MARGIN_BPS};
 use rules::auction::{self, Lot, Outcome};
-use rules::bankruptcy::{broke_buyers, close_buyer};
 use rules::config::Config;
 use rules::goldflow::{check_conservation, Flows};
 use rules::state::{ActorId, Mesh, Species, Zone};
@@ -47,6 +47,57 @@ pub struct DayReport {
     pub bilan: Option<season::Bilan>,
 }
 
+/// What one tick did: one lot, or the whole evening that follows the last one.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TickReport {
+    pub day: u64,
+    /// True when this tick closed the day and the harbour is at the next dawn.
+    pub closed: bool,
+    /// The lot that landed on this tick, if any.
+    pub landing: Option<Landing>,
+    /// The evening's lines, only on the closing tick.
+    pub lines: Vec<String>,
+    /// The whole day, only on the closing tick.
+    pub report: Option<DayReport>,
+}
+
+/// A day in progress: the journal line, the report being built, the flows.
+/// Kept in the game so a browser tab can land one lot every thirty seconds
+/// without losing the day it is in the middle of.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingDay {
+    pub record: DayRecord,
+    pub report: DayReport,
+    pub flows: Flows,
+    /// Port gold at dawn: the conservation baseline for the whole day, not
+    /// for the last lot of it.
+    #[serde(default)]
+    pub gold_at_dawn: i64,
+}
+
+impl PendingDay {
+    fn dawn(day: u64, gold: i64) -> Self {
+        Self {
+            gold_at_dawn: gold,
+            record: DayRecord::new(day),
+            report: DayReport {
+                day,
+                landings: Vec::new(),
+                lines: Vec::new(),
+                closures: Vec::new(),
+                gold_total: 0,
+                flows: Flows::default(),
+                invariant_ok: false,
+                week_rolled: false,
+                council: None,
+                season_over: false,
+                bilan: None,
+            },
+            flows: Flows::default(),
+        }
+    }
+}
+
 /// One harbour day through the season gate: an over game refuses with
 /// "season over" instead of running (B5).
 pub fn try_day(game: &mut Game) -> Result<DayReport, String> {
@@ -56,27 +107,93 @@ pub fn try_day(game: &mut Game) -> Result<DayReport, String> {
     Ok(run_day(game))
 }
 
-/// Run one full day and advance the harbour to dawn.
-pub fn run_day(game: &mut Game) -> DayReport {
+/// One lot of the day through the season gate.
+pub fn try_tick(game: &mut Game) -> Result<TickReport, String> {
+    if game.over {
+        return Err("season over".to_string());
+    }
+    Ok(tick(game))
+}
+
+/// One lot of the day, every thirty seconds in the live build.
+///
+/// Dawn orders run once, on the first lot. The plan of the day is
+/// `boats x trips_per_boat_day` lots, round-major, exactly the order a whole
+/// day used to run in: landing one lot at a time changes the rhythm, never the
+/// result. When the last lot is sold, the harbour settles the evening.
+pub fn tick(game: &mut Game) -> TickReport {
     let config = game.config.clone();
-    let total_before = game.gold_total();
-    let mut day = DayRecord::new(game.port.day);
-    let mut flows = Flows::default();
-    let mut report = DayReport {
-        day: game.port.day,
-        landings: Vec::new(),
-        lines: Vec::new(),
-        closures: Vec::new(),
-        gold_total: 0,
-        flows: Flows::default(),
-        invariant_ok: false,
-        week_rolled: false,
-        council: None,
-        season_over: false,
-        bilan: None,
+    if game.pending.is_none() {
+        game.pending = Some(PendingDay::dawn(game.port.day, game.gold_total()));
+        let orders = bots::decide_all(game);
+        if let Some(pending) = game.pending.as_mut() {
+            pending.report.lines.extend(orders);
+        }
+    }
+    let plan = day_plan(game, &config);
+    let landed = plan.get(game.lots_landed as usize).copied();
+    let Some((index, _round)) = landed else {
+        return close_day(game, None);
     };
-    report.lines.extend(bots::decide_all(game));
-    run_trips(game, &config, &mut day, &mut report, &mut flows);
+    let mut landing = None;
+    if let Some(pending) = game.pending.take() {
+        let mut pending = pending;
+        sail_boat(
+            game,
+            &config,
+            &mut pending.record,
+            &mut pending.report,
+            &mut pending.flows,
+            index,
+        );
+        landing = pending.report.landings.last().cloned();
+        game.pending = Some(pending);
+    }
+    game.lots_landed += 1;
+    if game.lots_landed as usize >= plan.len() {
+        // The last lot of the day lands and the harbour settles in the same
+        // beat: five minutes of trading, then the evening.
+        return close_day(game, landing);
+    }
+    TickReport {
+        day: game.port.day,
+        closed: false,
+        landing,
+        lines: Vec::new(),
+        report: None,
+    }
+}
+
+/// The lots of one day, in order: every boat once per round.
+fn day_plan(game: &Game, config: &Config) -> Vec<(usize, u64)> {
+    let mut plan = Vec::with_capacity(game.port.boats.len() * config.trips_per_boat_day as usize);
+    for round in 0..config.trips_per_boat_day {
+        for index in 0..game.port.boats.len() {
+            plan.push((index, round));
+        }
+    }
+    plan
+}
+
+/// Close the day: regrowth, wages, the buyers' drain, bankruptcies, weeks and
+/// seasons. This is the evening half of the day, unchanged by the clock.
+fn close_day(game: &mut Game, landing: Option<Landing>) -> TickReport {
+    let config = game.config.clone();
+    let Some(mut pending) = game.pending.take() else {
+        return TickReport { day: game.port.day, closed: true, landing, lines: Vec::new(), report: None };
+    };
+    let total_before = pending.gold_at_dawn;
+    let mut day = std::mem::replace(&mut pending.record, DayRecord::new(game.port.day));
+    let mut report = std::mem::replace(&mut pending.report, PendingDay::dawn(game.port.day, 0).report);
+    let mut flows = std::mem::replace(&mut pending.flows, Flows::default());
+    for index in 0..game.port.boats.len() {
+        if game.port.trips_today[index] > 0 {
+            let owner = game.port.boats[index].owner;
+            if owner.is_captain() {
+                day.boats_fished[owner.idx()] += 1;
+            }
+        }
+    }
     regrow_all(game, &mut report);
     pay_charges(game, &mut report);
     drain_cannery(game, &mut report, &mut flows);
@@ -93,51 +210,46 @@ pub fn run_day(game: &mut Game) -> DayReport {
     day.gold_total = report.gold_total;
     game.history.push(day);
     game.port.day += 1;
+    game.lots_landed = 0;
     for trips in game.port.trips_today.iter_mut() {
         *trips = 0;
     }
     settle_boundaries(game, &config, &mut report);
     game.last_report = Some(report.clone());
-    report
-}
-
-/// Week and season boundaries once the day counter has advanced: Monday
-/// settlement first, then the season-end council, then the bilan (B5).
-fn settle_boundaries(game: &mut Game, config: &Config, report: &mut DayReport) {
-    if game.port.day.is_multiple_of(config.days_per_week) {
-        report.week_rolled = true;
-        let mut closures = Vec::new();
-        report.lines.extend(season::roll_week(game, &mut closures));
-        report.closures.extend(closures);
-    }
-    let season_days = config.days_per_week * config.weeks_per_season;
-    if game.port.day.is_multiple_of(season_days) {
-        report.council = Some(season::roll_season(game));
-        game.last_council = report.council.clone();
-        season::close_season(game, report);
+    TickReport {
+        day: report.day,
+        closed: true,
+        landing,
+        lines: report.lines.clone(),
+        report: Some(report),
     }
 }
 
-/// Sail every round of the day, then count the boats that fished per captain.
-fn run_trips(
-    game: &mut Game,
-    config: &Config,
-    day: &mut DayRecord,
-    report: &mut DayReport,
-    flows: &mut Flows,
-) {
-    for _ in 0..config.trips_per_boat_day {
-        for index in 0..game.port.boats.len() {
-            sail_boat(game, config, day, report, flows, index);
-        }
-    }
-    for index in 0..game.port.boats.len() {
-        if game.port.trips_today[index] > 0 {
-            let owner = game.port.boats[index].owner;
-            if owner.is_captain() {
-                day.boats_fished[owner.idx()] += 1;
+/// Run one full day and advance the harbour to dawn: the fast path, used by
+/// the CLI, the fast-forward and the tests. Same lots, same order, no clock.
+pub fn run_day(game: &mut Game) -> DayReport {
+    loop {
+        let ticked = tick(game);
+        if ticked.closed {
+            if let Some(report) = ticked.report {
+                return report;
             }
+            break;
         }
+    }
+    // Unreachable in practice: a day always closes. Kept total for callers.
+    DayReport {
+        day: game.port.day,
+        landings: Vec::new(),
+        lines: Vec::new(),
+        closures: Vec::new(),
+        gold_total: game.gold_total(),
+        flows: Flows::default(),
+        invariant_ok: true,
+        week_rolled: false,
+        council: None,
+        season_over: game.over,
+        bilan: game.bilan.clone(),
     }
 }
 
@@ -312,140 +424,4 @@ fn log_lost_lot(
         rules::format_price(*best_limit),
         rules::format_price(floor)
     ));
-}
-
-/// Overnight regrowth on every zone (TW-N-03, TW-C2-01, TW-C2-03).
-fn regrow_all(game: &mut Game, report: &mut DayReport) {
-    let greybank = game.port.stocks[Zone::Greybank.idx()];
-    for zone in Zone::all() {
-        let species = Config::zone_species(zone);
-        let capacity = if zone == Zone::Deeps {
-            rules::species::cod_capacity(greybank, &game.config)
-        } else {
-            game.config.zone_capacity[zone.idx()]
-        };
-        let rate = game.config.regrow_rate(species);
-        let effective =
-            rules::species::effective_regrow_rate(rate, game.mesh.share_bps(zone), &game.config);
-        let grown = rules::stocks::regrow(game.port.stocks[zone.idx()], capacity, effective);
-        game.port.stocks[zone.idx()] += grown;
-        report.lines.push(format!("{} regrows {grown} crates.", zone.name()));
-    }
-}
-
-/// Daily crew wages, at sea or at quay (TW-C3-01). Laid-up boats carry no crew.
-fn pay_charges(game: &mut Game, report: &mut DayReport) {
-    for captain in ActorId::captains() {
-        if game.port.stopped[captain.idx()] {
-            continue;
-        }
-        let boats = game.boats_of(captain).len() as u64;
-        let due = rules::debt::daily_charges(boats, &game.config);
-        game.port.gold[captain.idx()] -= due as i64;
-        game.port.gold[ActorId::Townsfolk.idx()] += due as i64;
-        let wages = fmt_gold(due as i64);
-        report.lines.push(format!("{} pays {wages} in crew wages.", captain.name()));
-    }
-}
-
-/// Cannery: export every herring crate as preserves, then pay the workers.
-/// Fresh fish clears nightly (sim readings, see the crate root constants).
-fn drain_cannery(game: &mut Game, report: &mut DayReport, flows: &mut Flows) {
-    if game.port.stopped[ActorId::Cannery.idx()] {
-        return;
-    }
-    let crates = game.port.stores[ActorId::Cannery.idx()][Species::Herring.idx()];
-    game.port.stores[ActorId::Cannery.idx()][Species::Herring.idx()] = 0;
-    let revenue = (crates as u128 * game.config.base_herring as u128 * EXPORT_PRESERVE_MULT_BPS as u128 / 10_000).min(u64::MAX as u128) as u64;
-    game.port.gold[ActorId::Cannery.idx()] += revenue as i64;
-    flows.add_exports(revenue);
-    pay_rescuer(game, ActorId::Cannery, revenue);
-    game.port.gold[ActorId::Cannery.idx()] -= CANNERY_WAGES_PER_DAY as i64;
-    game.port.gold[ActorId::Townsfolk.idx()] += CANNERY_WAGES_PER_DAY as i64;
-    report.lines.push(format!(
-        "Cannery exports {crates} crates of preserves for {}.",
-        fmt_gold(revenue as i64)
-    ));
-}
-
-/// Crates the townsfolk can still buy at `base` with tonight's purse.
-fn townsfolk_afford(game: &Game, base: u64) -> u64 {
-    game.port.gold[ActorId::Townsfolk.idx()].max(0) as u64 / base
-}
-
-/// Sell one species to the townsfolk at base price; returns (sold, unsold).
-fn serve_species(game: &mut Game, buyer: ActorId, species: Species) -> (u64, u64) {
-    let store = game.port.stores[buyer.idx()][species.idx()];
-    let base = game.config.base_price(species);
-    let sold = store.min(townsfolk_afford(game, base));
-    game.port.gold[ActorId::Townsfolk.idx()] -= (sold * base) as i64;
-    game.port.gold[buyer.idx()] += (sold * base) as i64;
-    game.port.stores[buyer.idx()][species.idx()] = 0;
-    (sold, store - sold)
-}
-
-/// Fishmonger: serve the townsfolk while they can pay; the rest spoils.
-fn drain_fishmonger(game: &mut Game, report: &mut DayReport) {
-    if game.port.stopped[ActorId::Fishmonger.idx()] {
-        return;
-    }
-    let mut sold = 0u64;
-    let mut revenue = 0u64;
-    let mut spoiled = 0u64;
-    for species in [Species::Herring, Species::Cod] {
-        let (crates, rest) = serve_species(game, ActorId::Fishmonger, species);
-        sold += crates;
-        revenue += crates * game.config.base_price(species);
-        spoiled += rest;
-    }
-    pay_rescuer(game, ActorId::Fishmonger, revenue);
-    report.lines.push(format!(
-        "Fishmonger serves {sold} crates to the townsfolk for {} ({spoiled} spoiled).",
-        fmt_gold(revenue as i64)
-    ));
-}
-
-/// The Gull: locals first at base price, the rest to travellers at 1.5x.
-fn drain_gull(game: &mut Game, report: &mut DayReport, flows: &mut Flows) {
-    if game.port.stopped[ActorId::Gull.idx()] {
-        return;
-    }
-    let base = game.config.base_cod;
-    let (locals, travellers) = serve_species(game, ActorId::Gull, Species::Cod);
-    let local_revenue = locals * base;
-    let travel_revenue = (travellers as u128 * base as u128 * TRAVELLER_MULT_BPS as u128 / 10_000).min(u64::MAX as u128) as u64;
-    game.port.gold[ActorId::Townsfolk.idx()] -= local_revenue as i64;
-    game.port.gold[ActorId::Gull.idx()] += (local_revenue + travel_revenue) as i64;
-    flows.add_travellers(travel_revenue);
-    pay_rescuer(game, ActorId::Gull, local_revenue + travel_revenue);
-    report.lines.push(format!(
-        "The Gull serves {locals} crates to locals and {travellers} to travellers for {}.",
-        fmt_gold((local_revenue + travel_revenue) as i64)
-    ));
-}
-
-/// Closed buyers stop trading; their perishable stores spoil.
-fn spoil_closed(game: &mut Game, report: &mut DayReport) {
-    for buyer in ActorId::buyers() {
-        if !game.port.stopped[buyer.idx()] {
-            continue;
-        }
-        let crates: u64 = game.port.stores[buyer.idx()].iter().sum();
-        game.port.stores[buyer.idx()] = [0; 2];
-        if crates > 0 {
-            report.lines.push(format!(
-                "{} stores spoil ({crates} crates, closed).",
-                buyer.name()
-            ));
-        }
-    }
-}
-
-/// Broke buyers close the same evening (TW-N-51).
-fn close_broke_buyers(game: &mut Game, report: &mut DayReport) {
-    for buyer in broke_buyers(&game.port) {
-        close_buyer(&mut game.port, buyer);
-        report.closures.push(buyer);
-        report.lines.push(format!("{} closes its doors (broke).", buyer.name()));
-    }
 }
