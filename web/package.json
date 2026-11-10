@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/build-sw.mjs",
     "preview": "vite preview",
     "build:wasm": "cargo build -p tidewater-wasm --target wasm32-unknown-unknown --release --manifest-path ../Cargo.toml && mkdir -p public && cp ../target/wasm32-unknown-unknown/release/tidewater_wasm.wasm public/engine.wasm",
     "build:offline": "npm run build:wasm && VITE_ENGINE=wasm npm run build",
-    "build:chain": "npm run build:wasm && VITE_ENGINE=wasm VITE_CHAIN=1 npm run build"
+    "build:chain": "npm run build:wasm && VITE_ENGINE=wasm VITE_CHAIN=1 npm run build",
+    "icons": "python3 scripts/make-icons.py"
   },
   "dependencies": {
     "react": "^18.3.1",
