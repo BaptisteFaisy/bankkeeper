@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f2a30" />
+    <title>Tidewater — offline</title>
+    <style>
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: #0f2a30; color: #e4ede6;
+        font: 16px/1.6 system-ui, -apple-system, Segoe UI, sans-serif;
+        display: flex; align-items: center; justify-content: center;
+        padding: 2rem; box-sizing: border-box;
+      }
+      main { max-width: 34rem; }
+      h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.75rem; color: #c9b083; }
+      p { margin: 0 0 0.75rem; }
+      a { color: #e3b65a; }
+      hr { border: 0; border-top: 1px solid #1b4a54; margin: 1.25rem 0; }
+      small { color: #8fc06f; }
+      @media (prefers-reduced-motion: reduce) { * { transition: none; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>The harbour is not on this device</h1>
+      <p>
+        Tidewater keeps a copy of itself in your browser the first time you open
+        it. This browser has no such copy yet, and the network is out of reach —
+        so there is nothing to play from.
+      </p>
+      <hr />
+      <p><a href="./">Try again</a> once the connection is back; the game is
+      downloaded in one piece, then it plays with no server at all.</p>
+      <p><small>Nothing was lost: a season lives in this browser's local
+      storage, not on a server.</small></p>
+    </main>
+  </body>
+</html>
