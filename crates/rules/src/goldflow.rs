@@ -17,13 +17,18 @@ pub struct Flows {
     pub travellers: u64,
     /// Fuel and bait bought from abroad (outflow).
     pub fuel_bait: u64,
+    /// Juveniles bought abroad to reseed a zone (outflow, barreau 4): the
+    /// port fund spends the gold outside the harbour, the crates come back.
+    #[serde(default)]
+    pub reseed: u64,
 }
 
 impl Flows {
     /// Net outside flow: inflows minus outflows (may be negative).
     pub fn net(&self) -> i64 {
         let inflow = self.exports.saturating_add(self.travellers);
-        (inflow as i128 - self.fuel_bait as i128)
+        let outflow = self.fuel_bait.saturating_add(self.reseed);
+        (inflow as i128 - outflow as i128)
             .clamp(i64::MIN as i128, i64::MAX as i128) as i64
     }
 
@@ -40,6 +45,11 @@ impl Flows {
     /// Record a fuel and bait purchase (outflow).
     pub fn add_fuel_bait(&mut self, amount: u64) {
         self.fuel_bait = self.fuel_bait.saturating_add(amount);
+    }
+
+    /// Record a reseed purchase abroad (outflow, barreau 4).
+    pub fn add_reseed(&mut self, amount: u64) {
+        self.reseed = self.reseed.saturating_add(amount);
     }
 }
 

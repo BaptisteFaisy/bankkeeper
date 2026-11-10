@@ -136,6 +136,8 @@ pub fn seed_game(seed: u64) -> Game {
         leases: Vec::new(),
         fund: Fund::default(),
         payroll: None,
+        sea_debt: 0,
+        fallow: [0; 3],
     }
 }
 
