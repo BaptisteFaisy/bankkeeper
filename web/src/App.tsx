@@ -21,7 +21,7 @@ import { Tutorial, useTutorial } from './components/Tutorial';
 import JudgesPanel from './components/JudgesPanel';
 import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
-import { fmtGold } from './format';
+import { fmtCrates, fmtGold } from './format';
 import { CHAIN_ENABLED } from './near/chain';
 
 function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot, onHowToPlay }: {
@@ -269,6 +269,9 @@ function campagneLine(port: PortState): string | null {
 function EndCardBody({ port, you, bilan, stocks, council, seasonOver, onReset, onNextSeason }: EndProps) {
   const campaign = campagneLine(port);
   const nextSeason = seasonOver && port.campaignOver !== true;
+  // Barreau 4: the second column of the bilan, in crates. The season's own
+  // line when the bilan carries it, the campaign's liability otherwise.
+  const seaDebt = bilan?.seaDebtTotal ?? port.sea?.debt ?? 0;
   return (
     <>
       <h2>{seasonOver ? (port.campaignOver ? 'Campaign over — the last bilan' : 'Season over — the bilan') : 'The harbour lets you go'}</h2>
@@ -281,6 +284,7 @@ function EndCardBody({ port, you, bilan, stocks, council, seasonOver, onReset, o
         <li><span>Gold</span><span className="num">{fmtGold(you.gold)}g</span></li>
         <li><span>Licences</span><span className="num">{bilan?.licences ?? you.licences}</span></li>
         <li><span>Stocks left</span><span className="num">{stocks[0]} · {stocks[1]} · {stocks[2]}</span></li>
+        <li><span>Debt to the sea</span><span className="num">{fmtCrates(seaDebt)} crates</span></li>
         <li><span>Last council</span><span>{councilLine(council)}</span></li>
       </ul>
       {nextSeason ? (

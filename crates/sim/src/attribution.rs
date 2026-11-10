@@ -60,13 +60,21 @@ fn window_days(game: &Game) -> usize {
     game.history.len().min(ATTRIBUTION_WINDOW_DAYS)
 }
 
-/// One zone row: the ceiling, the take, the ratio, and who took it.
-fn zone_row(game: &Game, zone: Zone, days: usize) -> Value {
+/// One zone's own figures, shared by the register (barreau 1) and the debt
+/// (barreau 4) so the two panels can never disagree: the stock held today,
+/// the capacity it grows back to, and the catch that leaves it where it is.
+pub fn zone_ceiling(game: &Game, zone: Zone) -> (u64, u64, u64) {
     let index = zone.idx();
     let capacity = game.config.zone_capacity[index];
     let stock = game.port.stocks[index];
     let rate = game.config.regrow_rate(Config::zone_species(zone));
-    let sustainable = sustainable_catch(stock, capacity, rate);
+    (stock, capacity, sustainable_catch(stock, capacity, rate))
+}
+
+/// One zone row: the ceiling, the take, the ratio, and who took it.
+fn zone_row(game: &Game, zone: Zone, days: usize) -> Value {
+    let index = zone.idx();
+    let (stock, capacity, sustainable) = zone_ceiling(game, zone);
     let taken: u64 = game.recent(days).iter().map(|record| record.crates[index]).sum();
     let takers = takers(game, zone, days);
     json!({

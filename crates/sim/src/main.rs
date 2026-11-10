@@ -14,7 +14,8 @@
 //!   sim lease --state state.json --lessor hale --lessee you --weeks 2
 
 use rules::council::Proposal;
-use rules::state::{ActorId, Mesh};
+use rules::state::ActorId;
+use sim::cli::{actor_flag, current_mesh, finish_trade, flag, has, parse_mesh, read_game, write_json};
 use sim::cycle::try_day;
 use sim::fastforward::{history_hash, run};
 use sim::fund::levy_cents;
@@ -48,61 +49,13 @@ fn main() -> ExitCode {
         Some("debt") => cmd_debt(&args),
         Some("council") => cmd_council(&args),
         Some("favour") => cmd_favour(&args),
+        Some("fallow") => cmd_fallow(&args),
+        Some("reseed") => cmd_reseed(&args),
         _ => {
-            eprintln!("usage: sim <init|day|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|state|graph|judges|attribution|fastforward|licence|lease|debt|council> [flags]");
+            eprintln!("usage: sim <init|day|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|state|graph|judges|attribution|fastforward|licence|lease|debt|council|favour|fallow|reseed> [flags]");
             ExitCode::from(2)
         }
     }
-}
-
-fn flag(args: &[String], name: &str) -> Option<String> {
-    args.windows(2)
-        .find(|w| w[0] == format!("--{name}"))
-        .map(|w| w[1].clone())
-}
-
-fn has(args: &[String], name: &str) -> bool {
-    args.iter().any(|arg| arg == &format!("--{name}"))
-}
-
-fn read_game(path: &str) -> Game {
-    let text = std::fs::read_to_string(path).unwrap_or_else(|e| {
-        eprintln!("cannot read {path}: {e}");
-        std::process::exit(1);
-    });
-    serde_json::from_str(&text).unwrap_or_else(|e| {
-        eprintln!("bad state {path}: {e}");
-        std::process::exit(1);
-    })
-}
-
-fn write_json(path: &str, value: &impl serde::Serialize) {
-    let text = serde_json::to_string_pretty(value).expect("serialize");
-    if let Err(e) = std::fs::write(path, text) {
-        eprintln!("cannot write {path}: {e}");
-        std::process::exit(1);
-    }
-}
-
-fn parse_mesh(value: &str) -> Option<Mesh> {
-    match value.to_lowercase().as_str() {
-        "large" => Some(Mesh::Large),
-        "small" => Some(Mesh::Small),
-        _ => None,
-    }
-}
-
-fn actor_flag(args: &[String], name: &str) -> ActorId {
-    let raw = flag(args, name).unwrap_or_else(|| "you".to_string());
-    relay::parse_actor_name(&raw).unwrap_or_else(|| {
-        eprintln!("unknown actor {raw}");
-        std::process::exit(1);
-    })
-}
-
-/// Net a boat already carries (large when the hull number is unknown).
-fn current_mesh(game: &Game, captain: ActorId, boat: u64) -> Mesh {
-    game.port.boats.iter().find(|hull| hull.id == boat && hull.owner == captain).map(|hull| hull.mesh).unwrap_or(Mesh::Large)
 }
 
 fn cmd_init(args: &[String]) -> ExitCode {
@@ -368,21 +321,6 @@ fn cmd_fastforward(args: &[String]) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// Print a hand-trade outcome and persist the game on success.
-fn finish_trade(path: &str, game: &Game, outcome: Result<String, String>) -> ExitCode {
-    match outcome {
-        Ok(line) => {
-            write_json(path, game);
-            println!("{}", serde_json::json!({"ok": true, "line": line}));
-            ExitCode::SUCCESS
-        }
-        Err(error) => {
-            println!("{}", serde_json::json!({ "error": error }));
-            ExitCode::from(1)
-        }
-    }
-}
-
 fn cmd_licence(args: &[String]) -> ExitCode {
     let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
     let mut game = read_game(&path);
@@ -428,6 +366,60 @@ fn cmd_favour(args: &[String]) -> ExitCode {
     write_json(&path, &game);
     println!("{}", serde_json::json!({"ok": true, "favour": game.favour(captain)}));
     ExitCode::SUCCESS
+}
+
+/// Barreau 4: pay part of the debt owed to the sea by resting a zone for a
+/// number of weeks. The zone stays shut; the regrowth it performs pays down
+/// the debt. `--zone greybank --weeks 2`.
+fn cmd_fallow(args: &[String]) -> ExitCode {
+    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
+    let mut game = read_game(&path);
+    let Some(zone) = flag(args, "zone").and_then(|raw| relay::parse_zone_name(&raw)) else {
+        println!("{{\"error\":\"E_UNKNOWN_ZONE\"}}");
+        return ExitCode::from(1);
+    };
+    let weeks: u64 = flag(args, "weeks").and_then(|v| v.parse().ok()).unwrap_or(1);
+    match game.pay_in_fallow(zone, weeks) {
+        Ok(paid) => {
+            write_json(&path, &game);
+            println!(
+                "{}",
+                serde_json::json!({"ok": true, "paid": paid, "debt": game.sea_debt})
+            );
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            println!("{}", serde_json::json!({ "error": error }));
+            ExitCode::from(1)
+        }
+    }
+}
+
+/// Barreau 4: pay part of the debt by reseeding a zone out of the port fund.
+/// `--zone greybank --crates 200`. The gold leaves the port, the crates go
+/// back into the sea, and the debt comes down by the same crates.
+fn cmd_reseed(args: &[String]) -> ExitCode {
+    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
+    let mut game = read_game(&path);
+    let Some(zone) = flag(args, "zone").and_then(|raw| relay::parse_zone_name(&raw)) else {
+        println!("{{\"error\":\"E_UNKNOWN_ZONE\"}}");
+        return ExitCode::from(1);
+    };
+    let crates: u64 = flag(args, "crates").and_then(|v| v.parse().ok()).unwrap_or(0);
+    match game.pay_in_reseed(zone, crates) {
+        Ok(spent) => {
+            write_json(&path, &game);
+            println!(
+                "{}",
+                serde_json::json!({"ok": true, "spent": spent, "debt": game.sea_debt})
+            );
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            println!("{}", serde_json::json!({ "error": error }));
+            ExitCode::from(1)
+        }
+    }
 }
 
 /// Rent a licence out (`lease`) or end a lease early (`unlease`): the desk

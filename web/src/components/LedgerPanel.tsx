@@ -8,9 +8,9 @@
 // took it. The numbers come from the engine's `attribution` reading of the
 // journal (view_state key "attribution"); the panel only reads them.
 import { useEffect, useState } from 'react';
-import type { LandingView, ZoneId } from '../types';
+import type { LandingView, SeaView, ZoneId } from '../types';
 import { MESH_LABEL, ZONE_LABEL, parseMesh } from '../types';
-import { fmtGold } from '../format';
+import { fmtCrates, fmtGold } from '../format';
 import { getState } from '../api';
 
 /** One captain's line in a zone: crates landed and share in bps. */
@@ -81,21 +81,100 @@ function ZoneShare({ row }: { row: AttributionRow }) {
   );
 }
 
+/** One zone's line of the debt owed to the sea (barreau 4). */
+function SeaRow({ row }: { row: SeaView['zones'][number] }) {
+  return (
+    <li>
+      <strong>{ZONE_LABEL[row.zone]}</strong>{' '}
+      <span>
+        took {fmtCrates(row.taken)} · durable {fmtCrates(row.ceiling)}/day · owes {fmtCrates(row.debt)}
+        {row.fallowWeeks > 0 ? ` · resting ${row.fallowWeeks}w` : ''}
+      </span>
+    </li>
+  );
+}
+
+/** Today's landings, one line per lot. */
+function LandingsBlock({ landings }: { landings: LandingView[] }) {
+  return (
+    <div>
+      <h3>Today landings</h3>
+      {landings.length === 0 ? (
+        <p className="muted">No landings yet today.</p>
+      ) : (
+        <ul className="landing-list">
+          {landings.map((l, i) => (
+            <li key={`${l.captain}-${i}`}>
+              <span>{l.captain}</span>
+              <span>
+                {l.crates} {l.species} @ {fmtGold(l.price)}g ({MESH_LABEL[parseMesh(l.mesh)].toLowerCase()})
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** The reasoning lines behind prices and NPC decisions. */
+function ReasoningBlock({ reasoning }: { reasoning: string[] }) {
+  return (
+    <div>
+      <h3>Reasoning</h3>
+      {reasoning.length === 0 ? (
+        <p className="muted">Captains keep their counsel for now.</p>
+      ) : (
+        <ul className="reason-list">
+          {reasoning.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Barreau 4: the debt owed to the sea, carried and per zone, in crates. */
+function SeaDebtBlock({ sea }: { sea: SeaView | null }) {
+  return (
+    <div>
+      <h3>Debt to the sea</h3>
+      {sea === null ? (
+        <p className="muted">The bill is written at the close of the season.</p>
+      ) : (
+        <>
+          <p className="muted">
+            {fmtCrates(sea.debt)} crates carried{sea.season > 0 ? ` · ${fmtCrates(sea.season)} added this season` : ''}.
+          </p>
+          <ul className="reason-list">
+            {sea.zones.map((zone) => (
+              <SeaRow key={zone.zone} row={zone} />
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function LedgerPanel({ landings, reasoning, attribution }: Props) {
   const [rows, setRows] = useState<AttributionRow[]>(attribution ?? []);
+  const [sea, setSea] = useState<SeaView | null>(null);
 
   useEffect(() => {
     if (attribution !== undefined) {
       setRows(attribution);
-      return;
     }
     let live = true;
-    // The register moves when lots land: read it again with the landings,
-    // not on a timer of its own (one poll is enough for the whole screen).
+    // The register and the debt move when lots land: read them together with
+    // the landings, not on a timer of their own (one poll for the screen).
     getState()
       .then((state) => {
-        const raw = (state as unknown as { attribution?: AttributionRow[] }).attribution;
-        if (live && Array.isArray(raw)) setRows(raw);
+        if (!live) return;
+        const raw = state as unknown as { attribution?: AttributionRow[]; sea?: SeaView };
+        if (attribution === undefined && Array.isArray(raw.attribution)) setRows(raw.attribution);
+        if (raw.sea !== undefined) setSea(raw.sea);
       })
       .catch(() => undefined);
     return () => { live = false; };
@@ -105,35 +184,8 @@ export default function LedgerPanel({ landings, reasoning, attribution }: Props)
     <section className="panel ledger" aria-label="Harbour ledger">
       <h2>Harbour ledger</h2>
       <div className="ledger-cols">
-        <div>
-          <h3>Today landings</h3>
-          {landings.length === 0 ? (
-            <p className="muted">No landings yet today.</p>
-          ) : (
-            <ul className="landing-list">
-              {landings.map((l, i) => (
-                <li key={`${l.captain}-${i}`}>
-                  <span>{l.captain}</span>
-                  <span>
-                    {l.crates} {l.species} @ {fmtGold(l.price)}g ({MESH_LABEL[parseMesh(l.mesh)].toLowerCase()})
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div>
-          <h3>Reasoning</h3>
-          {reasoning.length === 0 ? (
-            <p className="muted">Captains keep their counsel for now.</p>
-          ) : (
-            <ul className="reason-list">
-              {reasoning.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <LandingsBlock landings={landings} />
+        <ReasoningBlock reasoning={reasoning} />
       </div>
       <div>
         <h3>Who took what</h3>
@@ -147,6 +199,7 @@ export default function LedgerPanel({ landings, reasoning, attribution }: Props)
           </ul>
         )}
       </div>
+      <SeaDebtBlock sea={sea} />
     </section>
   );
 }
