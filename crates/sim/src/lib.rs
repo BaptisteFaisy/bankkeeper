@@ -10,12 +10,13 @@ pub mod bots;
 pub mod cycle;
 pub mod fastforward;
 pub mod fleet;
+mod reading;
 pub mod relay;
 pub mod season;
 pub mod seed;
 pub mod views;
 
-pub use seed::{seed_game, Rng};
+pub use seed::{draw, draw_below, seed_game, Rng};
 
 use rules::bankruptcy::{bailout_owed, bailout_payout};
 use rules::config::Config;

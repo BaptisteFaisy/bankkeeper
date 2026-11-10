@@ -64,6 +64,26 @@ impl Rng {
     }
 }
 
+/// Stateless seeded draw: the same `(seed, day, purpose, salt)` always gives
+/// the same number, so a season replays exactly without a mutable stream to
+/// thread through the rules or to serialise with the state.
+pub fn draw(seed: u64, day: u64, purpose: u64, salt: u64) -> u64 {
+    let key = seed
+        ^ day.wrapping_mul(SPLITMIX_GAMMA)
+        ^ purpose.wrapping_mul(SPLITMIX_M1)
+        ^ salt.wrapping_mul(SPLITMIX_M2);
+    let mut rng = Rng::new(key);
+    rng.next_u64()
+}
+
+/// Seeded draw in `[0, n)`. Returns 0 when `n <= 1`.
+pub fn draw_below(seed: u64, day: u64, purpose: u64, salt: u64, n: u64) -> u64 {
+    if n <= 1 {
+        return 0;
+    }
+    (((draw(seed, day, purpose, salt) as u128) * (n as u128)) >> 64) as u64
+}
+
 /// Brandt's opening debt: 738.5 gold at a tenth plus 3% a week, i.e. exactly
 /// 96 gold due every Monday (brief section 2.3). Grandfathered before the
 /// season, above the 300 gold cap on new notes.
