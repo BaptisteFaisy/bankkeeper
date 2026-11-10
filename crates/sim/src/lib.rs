@@ -12,6 +12,8 @@ pub mod cycle;
 mod evening;
 pub mod fastforward;
 pub mod fleet;
+pub mod harness;
+pub mod policies;
 mod reading;
 mod merchant_views;
 pub mod relay;

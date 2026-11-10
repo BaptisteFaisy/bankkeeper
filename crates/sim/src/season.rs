@@ -482,7 +482,7 @@ pub fn open_next_season(game: &mut Game) -> Result<u64, String> {
 
 /// Player net worth at season end: purse + licences at the going price +
 /// hulls at the new-boat price, with the real zone stocks (all centigold).
-fn season_bilan(game: &Game) -> Bilan {
+pub fn season_bilan(game: &Game) -> Bilan {
     let licences = game.owned_licences(ActorId::You);
     let price = game.licence_price_now();
     let boats = game.boats_of(ActorId::You).len() as i64;
