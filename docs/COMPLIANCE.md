@@ -15,10 +15,12 @@
 | Inonder le marché fait chuter le prix | Stock 180 pour une cible de 150 → facteur 0,90 → 3,6 or la caisse au lieu de 4,0. Testé : `merchant::tests::a_flooded_merchant_pays_less` |
 | Un marchand ruiné ferme jusqu'à ce qu'on investisse | Or à zéro → `Closed`, il n'enchérit plus (TW-N-51) ; le joueur peut **renflouer** et toucher une part des bénéfices (TW-N-52, `refloat`) |
 
-⚠️ **La fiction diffère** : le track dit « market-town », nous avons un port.
-Les mécaniques demandées sont toutes là. Si le jury attend une ville, c'est un
-re-thème de libellés, pas un moteur à réécrire — décision à prendre, pas
-correctif à coder.
+✅ **La fiction diffère, et c'est décidé** : le track dit « market-town », nous
+avons un port. Les mécaniques demandées sont toutes là, à l'identique. Le port
+n'est pas un habillage : c'est ce qui rend la ressource commune **non possédée**
+— le banc n'appartient à personne — et donc la tragédie des communs lisible
+sans un mot d'explication. Décision du propriétaire, 10/11 : on reste sur le
+port (voir `docs/DECISIONS.md`).
 
 ## Les quatre exigences
 
@@ -98,7 +100,7 @@ fast-forward des juges reste hors horloge.
 
 | Exigence | État | Ce qui manque |
 |---|---|---|
-| Sujet, marchands agents, prix par stock et demande | ✅ | la fiction « port » vs « ville » est un choix à valider |
+| Sujet, marchands agents, prix par stock et demande | ✅ | — (fiction « port » assumée et documentée) |
 | NEP-245, un contrat | 🟡 contrat écrit et compilé, **pas déployé, pas utilisé par le jeu** | déploiement testnet + branchement du jeu |
 | Connexion email sans friction | 🟡 expérience sans friction | **authentification réelle** (FastAuth ou relayeur sponsor) |
 | Règles de prix dans un fichier + infobulle | ✅ | — |
