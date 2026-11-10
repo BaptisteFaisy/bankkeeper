@@ -25,7 +25,7 @@ export const ROOT_DIR = path.resolve(import.meta.dirname, "../..");
 /// testnet account and the very same contract account is created as one of its
 /// subaccounts instead — nothing else changes, and the deployment is reversible
 /// (deleteAccount refunds the code storage).
-const PREFIX = process.env.TIDEWATER_TESTNET_PREFIX ?? "tidewater26";
+const PREFIX = process.env.TIDEWATER_TESTNET_PREFIX ?? "bankkeeper";
 const PARENT = process.env.TIDEWATER_ROOT_PARENT ?? null;
 const ROOT = PARENT ? `${PREFIX}.${PARENT}` : `${PREFIX}.testnet`;
 
