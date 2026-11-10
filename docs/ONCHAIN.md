@@ -38,12 +38,21 @@ small Node server, which:
 3. answers with the transaction hash and the position read back from the
    contract (`mt_balance_of`).
 
+The account id is derived from the email, not stored:
+`p-<sha256(email)[:20]>.<suffix>` — the same email always gives the same
+account, on every server. The key is the only thing kept, and it never
+leaves the server. The house also sponsors the newcomer: it lends the first
+purse (gold, capped per account) and keeps enough NEAR in the account to pay
+its own gas. The dials that keep this from becoming an open wallet are in
+`scripts/relayer/src/guard.mjs`, and the study of the alternatives
+(FastAuth, NEAR Account Manager) is in `docs/AUTH.md`.
+
 API, all JSON, CORS open for local dev:
 
 ```
 GET  /health                       → chain, contract, day, council flag
 GET  /position?email=...           → accountId, goldMilli, licences, day
-POST /login          {email}       → the same shape (creates nothing on sandbox)
+POST /login          {email}       → the same shape (+ seedTxHash, seedGoldMilli)
 POST /licence/buy    {email}       → buy_licence()
 POST /loan/buy       {email, tokenId?}
 POST /council/vote   {email, approve?, proposalId?}
@@ -74,11 +83,17 @@ Environment, all optional on a sandbox:
 | Variable | Default | Meaning |
 |---|---|---|
 | `NEAR_SANDBOX_BIN` | `~/mandat/.sandbox/near-sandbox` | the node binary, not vendored |
-| `TW_CHAIN_HOME` | `~/.tidewater-chain` | node data, keys, `state.json` |
+| `TW_CHAIN_HOME` | `~/.tidewater-chain` | node data, keys, `state.json`, `ledger.json` |
 | `TW_SANDBOX_PORT` | `3030` | RPC port; the script rewrites `config.json` |
+| `TW_SANDBOX_NETWORK_PORT` | — | p2p port; set it when another sandbox runs on the machine (24567 is taken by default) |
 | `TW_WASM` | `target/near/tidewater/tidewater.wasm` | contract to deploy |
 | `TW_RELAYER_PORT` | `8786` | relayer HTTP port |
 | `TW_SINGLE_CAPTAIN` | `1` | see "What is fragile", item 1 |
+| `TW_SEED_GOLD_MILLI` | `1000000` | the house's purse for a fresh captain (milli-gold), once per account |
+| `TW_SEED_LIMIT_PER_HOUR` | `50` | fresh captains the house funds per hour |
+| `TW_RATE_LIMIT_PER_MIN` | `30` | calls per minute per caller (IP + email) |
+| `TW_ACTION_LIMIT_PER_HOUR` | `200` | sponsored transactions per captain per hour |
+| `TW_NEAR_FLOOR` | `1` | below this many NEAR, the house tops the captain up |
 
 The browser side: `web/build:chain` (`VITE_ENGINE=wasm VITE_CHAIN=1`) builds
 `dist/`; `?chain=http://127.0.0.1:8786` overrides the relayer URL at runtime, so
@@ -105,32 +120,24 @@ that directory is the secret: back it up or you lose every captain.
 
 ## What is fragile — read this before demoing
 
-1. **`mt_transfer` is uncallable, so gold cannot move between accounts.**
-   `nep245.rs` demands `attached_deposit >= 1` (`E_YOCTO_REQUIRED`) but the
-   method is not `#[payable]`, so near-sdk rejects the deposit before the body
-   runs: 0 yocto panics, 1 yocto panics "doesn't accept deposit". Consequences:
-   a fresh account can never be funded with gold, so it can never buy a licence
-   or a note. The sandbox therefore runs **one captain**: every email maps to
-   the seeded captain account (`TW_SINGLE_CAPTAIN=1`). `TW_SINGLE_CAPTAIN=0`
-   creates one account per email, with its own key — useful for the ballot, not
-   for the market. The two-line fix is on the contract side: add `#[payable]`
-   to `mt_transfer` and `mt_batch_transfer`.
-2. **The bank starts with no licence.** The constructor gives all 20 licences to
-   the four captains; `npc:bank` only refills through `settle_bankruptcies`.
-   With gold seeded at 1000× the UI's scale (150 000 gold for the captain,
-   6 gold a day of upkeep) no captain ever goes broke on its own. The warm-up
-   therefore manufactures one bankruptcy with the contract's own entry points:
-   the captain escrows its purse in a council motion (`propose_rule` escrows
-   80 × indemnity), one day of upkeep takes the remainder to exactly zero, the
-   settlement week calls in its four licences, `resolve_council` refunds the
-   untouched escrow to its author, and `invest_in_actor("player", 1000)` reopens
-   the captain. It is honest — nothing is minted — but it is a warm-up, not a
-   market. The right fix is seeding `npc:bank` with a few licences in `new()`.
-3. **Cost per action**: a `buy_licence` call burns ~3 Tgas of the 30 Tgas the
-   relayer attaches; at the sandbox gas price that is a rounding error, on
-   testnet it is ~0.0001 NEAR per action, paid by the house account, not the
-   player. The account needs a NEAR balance to sign at all: 10 NEAR per captain
-   is years of clicks.
+1. **One captain per email works again.** `mt_transfer` is `#[payable]`
+   since commit `7b2c542` ("make `mt_transfer` payable, seed the bank licence
+   pool"), so gold can move between accounts again: the house lends a fresh
+   captain its first purse (`mt_transfer`, 1 yocto attached) and the captain
+   can buy a licence. `TW_SINGLE_CAPTAIN=1` (the default) still maps every
+   email to the seeded captain; `TW_SINGLE_CAPTAIN=0` gives every email its
+   own account, `p-<sha256(email)[:20]>.<suffix>`, with its own key.
+   Proven by `python3 tests/relay_sponsor.py` (sandbox, no network).
+2. **The bank starts with licences.** The constructor gives `npc:bank`
+   `BANK_LICENCE_POOL` (4) licences, so `buy_licence` works from day one and
+   the warm-up no longer has to manufacture a bankruptcy for that. It still
+   walks the clock to the council window (day 21) so "Vote yes" means
+   something.
+3. **Cost per action**: a `buy_licence` call burns **0.31 Tgas** (measured on
+   the sandbox, `tests/relay_sponsor.py`); the relayer attaches 100 Tgas. At
+   the floor gas price (1 Tgas ≈ 0.0001 NEAR) that is about 0.00003 NEAR per
+   action, paid by the captain's own account, which the house tops up
+   (`TW_NEAR_FLOOR`): the player never sees a gas prompt.
 4. **The council window is season days 21..27.** Outside it, `vote` panics
    `E_COUNCIL_CLOSED` and the relayer returns that code; the warm-up leaves the
    chain at day 49 (season day 21) with a motion already tabled.
