@@ -445,10 +445,16 @@ pub fn open_next_season(game: &mut Game) -> Result<u64, String> {
     if !game.over {
         return Err("the season is still running".to_string());
     }
-    if let Some(bilan) = game.bilan.clone() {
-        game.campaign.push(bilan);
+    // Archive the bilan of the season just closed, but never past the number
+    // of seasons the campaign has: the entry is written once, whether the
+    // call goes on or refuses. No click can add a ghost season to the log.
+    let seasons = game.config.campaign_seasons as usize;
+    if game.campaign.len() < seasons {
+        if let Some(bilan) = game.bilan.clone() {
+            game.campaign.push(bilan);
+        }
     }
-    if game.campaign.len() >= game.config.campaign_seasons as usize {
+    if game.campaign.len() >= seasons {
         game.over = true;
         return Err("campaign over".to_string());
     }

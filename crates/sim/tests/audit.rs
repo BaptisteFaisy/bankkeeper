@@ -152,7 +152,6 @@ fn defect_03_hull_bought_at_noon_fishes_finished_rounds() {
 /// pays the credit to `boats[index].owner` — whoever owns the slot at closing
 /// time, not whoever fished. A hull seized at noon makes its buyer "fish".
 #[test]
-#[ignore = "audit defect 4: close_day credits the closing owner with the day's trips"]
 fn defect_04_seized_hull_credits_the_buyer_with_someone_elses_trip() {
     let mut game = seed_game(7);
     game.loans[0].holder = ActorId::You;
@@ -177,7 +176,6 @@ fn defect_04_seized_hull_credits_the_buyer_with_someone_elses_trip() {
 /// DEFECT 5 (minor): `open_next_season` archives the bilan *before* refusing,
 /// so every extra `next-season` at campaign end duplicates an entry.
 #[test]
-#[ignore = "audit defect 5: a refused open_next_season still pushes to campaign"]
 fn defect_05_refused_next_season_duplicates_the_campaign() {
     let mut game = seed_game(7);
     let bilan = Bilan {
@@ -209,7 +207,6 @@ fn defect_05_refused_next_season_duplicates_the_campaign() {
 /// the demo prints — never mixes the licence column of a graph point, so a
 /// season that differs only in who holds the licences hashes the same.
 #[test]
-#[ignore = "audit defect 6: history_hash skips point.licences"]
 fn defect_06_history_hash_ignores_licences() {
     let point = DayPoint {
         day: 1,
