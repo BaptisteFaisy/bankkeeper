@@ -156,3 +156,14 @@ def validate_day_payload(body: object) -> tuple[dict | None, str | None]:
     if data is None:
         return None, "E_BAD_JSON"
     return {}, None
+
+
+def validate_reset_payload(body: object) -> tuple[dict | None, str | None]:
+    """New harbour: optional seed, default 7."""
+    data = _as_dict(body)
+    if data is None:
+        return None, "E_BAD_JSON"
+    seed = _as_nonneg_int(data.get("seed", 7))
+    if seed is None:
+        return None, "E_BAD_JSON"
+    return {"seed": seed}, None

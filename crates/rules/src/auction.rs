@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
 use crate::state::{ActorId, Species};
-use crate::{format_factor_bps, format_price};
+use crate::{format_exact, format_factor_bps, format_price};
 
 /// One bidder for a lot: limit inputs plus solvency inputs.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -103,20 +103,21 @@ pub fn clear(lot: &Lot, buyers: &[Buyer], config: &Config) -> Outcome {
 }
 
 /// Brief section 7 reasoning line, e.g. "Sold to Cannery: 14 x 3.6 = 50.4.
-/// Limit 3.6 = base 4.0 x 0.90 (stock 180 of 150)."
+/// Limit 3.6 = base 4.0 x 0.90." No stock figure: TW-C1-01 forbids showing
+/// the real stock to the player (M1).
 pub fn sale_reasoning(
     buyer: &str,
     crates: u64,
     price: u64,
     base: u64,
     factor_bps: u64,
-    stock: u64,
-    target: u64,
+    _stock: u64,
+    _target: u64,
 ) -> String {
     format!(
-        "Sold to {buyer}: {crates} x {} = {}. Limit {} = base {} x {} (stock {stock} of {target}).",
-        format_price(price),
-        format_price(price.saturating_mul(crates)),
+        "Sold to {buyer}: {crates} x {} = {}. Limit {} = base {} x {}.",
+        format_exact(price),
+        format_exact(price.saturating_mul(crates)),
         format_price(price),
         format_price(base),
         format_factor_bps(factor_bps),
@@ -183,7 +184,7 @@ mod tests {
         assert_eq!(format_price(341), "3.4");
         assert_eq!(
             sale_reasoning("Cannery", 14, 360, 400, 9000, 180, 150),
-            "Sold to Cannery: 14 x 3.6 = 50.4. Limit 3.6 = base 4.0 x 0.90 (stock 180 of 150)."
+            "Sold to Cannery: 14 x 3.6 = 50.4. Limit 3.6 = base 4.0 x 0.90."
         );
     }
 

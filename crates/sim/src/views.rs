@@ -17,7 +17,7 @@ use serde_json::{json, Value};
 
 /// Centigold as whole pieces with one decimal: 5040 -> 50.4.
 pub fn gold_pieces(cents: i64) -> f64 {
-    (cents as f64 / 10.0).round() / 10.0
+    cents as f64 / 100.0
 }
 
 /// Weekday name for a game day (day 0 is a Monday).
@@ -224,18 +224,25 @@ fn landing_views(game: &Game) -> Vec<Value> {
         .unwrap_or_default()
 }
 
-/// One landing: captain, crates, species, hammer price, net fished.
+/// One landing: captain, crates, species, hammer price, buyer, net fished.
 fn landing_view(game: &Game, landing: &Landing) -> Value {
     let species = Config::zone_species(landing.zone);
-    let price = match &landing.outcome {
-        Outcome::Sold { price, .. } => gold_pieces(*price as i64),
-        Outcome::Unsold { .. } => 0.0,
+    let (buyer, price, total) = match &landing.outcome {
+        Outcome::Sold { buyer, price, total } => (
+            Some(buyer.name()),
+            gold_pieces(*price as i64),
+            gold_pieces(*total as i64),
+        ),
+        Outcome::Unsold { .. } => (None, 0.0, 0.0),
     };
     json!({
         "captain": landing.captain.name(),
         "crates": landing.crates,
         "species": species.name(),
         "price": price,
+        "total": total,
+        "buyer": buyer,
+        "start": gold_pieces(game.config.clock_start(species) as i64),
         "mesh": mesh_id(boat_mesh(game, landing.boat)),
     })
 }

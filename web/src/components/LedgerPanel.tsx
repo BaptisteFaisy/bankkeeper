@@ -2,6 +2,7 @@
 // plus the raw reasoning lines behind prices and NPC decisions.
 import type { LandingView } from '../types';
 import { MESH_LABEL } from '../types';
+import { fmtGold } from '../format';
 
 interface Props {
   landings: LandingView[];
@@ -23,7 +24,7 @@ export default function LedgerPanel({ landings, reasoning }: Props) {
                 <li key={`${l.captain}-${i}`}>
                   <span>{l.captain}</span>
                   <span>
-                    {l.crates} {l.species} @ {l.price.toFixed(1)}g ({MESH_LABEL[l.mesh].toLowerCase()})
+                    {l.crates} {l.species} @ {fmtGold(l.price)}g ({MESH_LABEL[l.mesh].toLowerCase()})
                   </span>
                 </li>
               ))}

@@ -95,7 +95,7 @@ fn auction_section_44_example_yields_36_then_34() {
     assert_eq!(rules::format_price(after), "3.4");
     assert_eq!(
         sale_reasoning("Cannery", 14, 360, 400, 9000, 180, 150),
-        "Sold to Cannery: 14 x 3.6 = 50.4. Limit 3.6 = base 4.0 x 0.90 (stock 180 of 150)."
+        "Sold to Cannery: 14 x 3.6 = 50.4. Limit 3.6 = base 4.0 x 0.90."
     );
 }
 

@@ -43,3 +43,12 @@ L'horloge de criée ne défile donc pas en direct ; la criée montre le dernier
 lot, les limites et le prix de vente avec sa ligne de raisonnement. Lecture
 assumée : jouable et démontrable, là où le §2.1 décrit un rythme continu
 (débarquement ~50 s, journée 5 min) que le tour par tour compresse.
+
+## 2026-11-10 — Round 2 : centimes exacts, limites au décime (critic-2 M3)
+
+`gold_pieces` arrondissait au décime, rendant les lignes de vente fausses
+(« 20 × 5.7 = 114.6 »). La vue transmet désormais les centimes exacts et
+l'UI partage `fmtGold` / `format_exact` (2 décimales rognées à 1 si exact) :
+tout produit affiché est juste. Les limites gardent le format 1 décimale
+épinglé par les tests existants (brief §10 : 3,6 puis 3,4 exactement) :
+la limite est la cotation, le marteau est le prix exact.

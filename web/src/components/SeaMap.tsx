@@ -138,6 +138,10 @@ function paintCoast(ctx: CanvasRenderingContext2D): void {
   ctx.strokeStyle = '#8a764f';
   ctx.lineWidth = 2;
   ctx.strokeRect(QUAY.x - 8, QUAY.y - 8, QUAY.w + 16, QUAY.h + 16);
+  ctx.fillStyle = '#6d5b3a';
+  for (const py of [QUAY.y + 8, QUAY.y + QUAY.h / 2, QUAY.y + QUAY.h - 14]) {
+    ctx.fillRect(QUAY.x - 12, py, 6, 6);
+  }
   ctx.fillStyle = INK;
   ctx.font = '12px sans-serif';
   ctx.fillText('QUAY', QUAY.x + 2, QUAY.y + QUAY.h - 8);
@@ -152,9 +156,17 @@ function paintBuyers(ctx: CanvasRenderingContext2D, buyers: BuyerView[]): void {
     const y = 40 + Math.floor(i / 2) * 96;
     ctx.fillStyle = b.open ? '#5d6e5a' : '#3a4238';
     ctx.fillRect(x, y, 56, 40);
+    ctx.beginPath();
+    ctx.moveTo(x - 4, y);
+    ctx.lineTo(x + 28, y - 14);
+    ctx.lineTo(x + 60, y);
+    ctx.closePath();
+    ctx.fill();
     ctx.fillStyle = b.open ? '#e3b65a' : '#23281f';
     ctx.fillRect(x + 8, y + 12, 12, 12);
     ctx.fillRect(x + 36, y + 12, 12, 12);
+    ctx.fillStyle = b.open ? '#3a2f22' : '#1c211b';
+    ctx.fillRect(x + 24, y + 24, 10, 16);
     if (b.id === 'cannery' && b.open) {
       ctx.fillStyle = 'rgba(228, 237, 230, 0.5)';
       ctx.beginPath();
@@ -192,10 +204,20 @@ function paintSchools(ctx: CanvasRenderingContext2D, zone: ZoneView): void {
   }
 }
 
+const ZONE_TINT: Record<ZoneId, string> = {
+  shallows: 'rgba(64, 140, 150, 0.30)',
+  greybank: 'rgba(36, 97, 108, 0.35)',
+  deeps: 'rgba(14, 50, 58, 0.60)',
+};
+
 function paintZoneFrame(ctx: CanvasRenderingContext2D, zone: ZoneView, armed: boolean): void {
   const r = ZONE_RECTS[zone.id];
-  ctx.fillStyle = 'rgba(36, 97, 108, 0.35)';
+  ctx.fillStyle = ZONE_TINT[zone.id];
   roundRect(ctx, r, 10);
+  ctx.fill();
+  ctx.fillStyle = PLAYER;
+  ctx.beginPath();
+  ctx.arc(r.x + r.w - 16, r.y + 16, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = armed ? PLAYER : 'rgba(228, 237, 230, 0.35)';
   ctx.lineWidth = armed ? 3 : 1;
@@ -236,6 +258,22 @@ function paintBoat(ctx: CanvasRenderingContext2D, spot: BoatSpot, color: string,
   ctx.beginPath();
   ctx.ellipse(0, 0, 12, 6, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(12, 0);
+  ctx.lineTo(18, -4);
+  ctx.lineTo(18, 4);
+  ctx.closePath();
+  ctx.fill();
+  if (!boat.disarmed) {
+    ctx.strokeStyle = 'rgba(228, 237, 230, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-14, -3);
+    ctx.lineTo(-22, -5);
+    ctx.moveTo(-14, 3);
+    ctx.lineTo(-22, 5);
+    ctx.stroke();
+  }
   ctx.strokeStyle = boat.disarmed ? '#3a4238' : '#0f2a30';
   ctx.lineWidth = 1;
   ctx.beginPath();

@@ -6,6 +6,7 @@
 // across reloads. No animation anywhere.
 import { useEffect, useState } from 'react';
 import Chart from './Chart';
+import { fmtGold } from '../format';
 import type { JudgeEvent, StockPoint } from './Chart';
 
 export interface ActorStanding {
@@ -125,7 +126,7 @@ function ActorsTable({ actors }: { actors: ActorStanding[] }) {
         {actors.map((a) => (
           <tr key={a.id}>
             <td>{a.name}</td>
-            <td>{a.gold}</td>
+            <td>{fmtGold(a.gold)}</td>
             <td>{a.licences}</td>
             <td>{a.stopped ? 'Stopped' : 'Active'}</td>
           </tr>
@@ -186,8 +187,8 @@ export default function JudgesPanel({ running, run, playerView, live, onRun }: P
           <h4>Run curves</h4>
           <Chart history={shown.history} events={shown.events} live={live} />
           <p className="muted" data-testid="judges-gold">
-            Live gold in port: {shown.goldTotal} · outside in: {shown.outsideIn} · outside out: {shown.outsideOut} ·
-            net {shown.outsideIn - shown.outsideOut}
+            Live gold in port: {fmtGold(shown.goldTotal)} · outside in: {fmtGold(shown.outsideIn)} · outside out: {fmtGold(shown.outsideOut)} ·
+            net {fmtGold(shown.outsideIn - shown.outsideOut)}
           </p>
           <h4>Live standings</h4>
           <ActorsTable actors={shown.actors} />

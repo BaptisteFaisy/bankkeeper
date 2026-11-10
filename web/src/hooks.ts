@@ -183,7 +183,7 @@ function validFf(ff: FFResponse | null): FFResponse | null {
   return ff;
 }
 
-export function useJudges(dayKey: string): { judges: JudgesLive | null; graph: GraphLive | null } {
+export function useJudges(dayKey: string, busy: string | null): { judges: JudgesLive | null; graph: GraphLive | null } {
   const [judges, setJudges] = useState<JudgesLive | null>(null);
   const [graph, setGraph] = useState<GraphLive | null>(null);
   useEffect(() => {
@@ -195,7 +195,7 @@ export function useJudges(dayKey: string): { judges: JudgesLive | null; graph: G
     load();
     const t = window.setInterval(load, 10000);
     return () => { live = false; window.clearInterval(t); };
-  }, [dayKey]);
+  }, [dayKey, busy === null]);
   return { judges, graph };
 }
 

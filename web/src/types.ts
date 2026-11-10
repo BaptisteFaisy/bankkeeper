@@ -106,6 +106,9 @@ export interface LandingView {
   crates: number;
   species: string;
   price: number;
+  total: number;
+  buyer: string | null;
+  start: number;
   mesh: Mesh;
 }
 

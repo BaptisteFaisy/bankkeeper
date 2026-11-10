@@ -55,6 +55,8 @@ de référence.
   rapport de journée (`day`, `landings`, `lines`, `week_rolled`). Le
   bouton « End the day » de l'UI l'appelle ; le temps direct n'avance
   que par cette route.
+- `POST /api/reset` — `{seed?}` (défaut 7) : réinitialise le port
+  (nouvelle partie) et répond `{ok, seed}`.
 
 ## Juges
 
