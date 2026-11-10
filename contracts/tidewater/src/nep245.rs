@@ -9,6 +9,7 @@
 use crate::{log_event, Tidewater, TidewaterExt};
 use near_sdk::json_types::U128;
 use near_sdk::{env, near, require, AccountId, NearToken, Promise};
+use std::collections::BTreeMap;
 
 /// NEP-245 Token view (fungible items: no single owner, no approvals).
 #[near(serializers = [json])]
@@ -86,12 +87,16 @@ impl Tidewater {
         let sender = env::predecessor_account_id();
         let sender_id = sender.to_string();
         require!(sender_id != receiver_id.to_string(), "E_SELF_TRANSFER");
+        // Two legs of the same token draw on one balance: sum the legs per
+        // token first, or ["3","3"] x [4,4] moves 8 out of a 4-licence purse.
+        let mut totals: BTreeMap<&str, u128> = BTreeMap::new();
         for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
             require!(self.token(token_id).is_some(), "E_UNKNOWN_TOKEN");
-            require!(
-                self.balance_of(&sender_id, token_id) >= amount.0,
-                "E_INSUFFICIENT"
-            );
+            let total = totals.entry(token_id.as_str()).or_insert(0);
+            *total = total.saturating_add(amount.0);
+        }
+        for (token_id, total) in &totals {
+            require!(self.balance_of(&sender_id, token_id) >= *total, "E_INSUFFICIENT");
         }
         for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
             self.move_balance(&sender_id, receiver_id.as_str(), token_id, amount.0);

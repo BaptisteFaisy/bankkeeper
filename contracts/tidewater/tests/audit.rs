@@ -184,36 +184,37 @@ fn d02_bank_holds_no_licence_so_buy_licence_can_never_sell() {
 // ---------------------------------------------------------------------------
 
 #[test]
-#[ignore = "bug: D03 mt_batch_transfer checks every leg against the same starting balance"]
 fn d03_duplicate_legs_in_a_batch_mint_tokens() {
     let mut w = setup();
     let player = w.player.clone();
     let bob = acct("bob.testnet");
     as_caller(&player, 1);
     let before = licences(&w, &player.to_string());
-    let sent = ok_or_panic(
-        "a valid batch of 4+4 licences out of a 4-licence balance",
-        outcome(|| {
-            w.game.mt_batch_transfer(
-                bob.clone(),
-                vec!["3".to_string(), "3".to_string()],
-                vec![U128(4), U128(4)],
-                None,
-                None,
-            )
-        }),
-    );
-    let _ = sent;
-    let supply = w.game.mt_supply("3".to_string()).map(|s| s.0).unwrap_or(0);
+    // Two legs of one token draw on one purse: {before} + {before} out of a
+    // {before}-licence balance must be refused, however valid each leg looks
+    // when checked alone against the same starting balance.
+    let sent = outcome(|| {
+        w.game.mt_batch_transfer(
+            bob.clone(),
+            vec!["3".to_string(), "3".to_string()],
+            vec![U128(before), U128(before)],
+            None,
+            None,
+        )
+    });
     let held: u128 = [player.to_string(), bob.to_string(), npc_owner("marta"),
-        npc_owner("brandt"), npc_owner("okoro")]
+        npc_owner("brandt"), npc_owner("okoro"), npc_owner("bank")]
         .iter()
         .map(|owner| licences(&w, owner))
         .sum();
+    let supply = w.game.mt_supply("3".to_string()).map(|s| s.0).unwrap_or(0);
     assert!(
-        held <= supply,
-        "the two legs ({before} + 4 licences from a {before}-licence balance) moved 8: \
-         holders now show {held} against a supply of {supply} — {} licences were minted",
+        sent.is_err() && held == supply && licences(&w, &player.to_string()) == before,
+        "the two legs ({before} + {before} licences out of a {before}-licence balance) were \
+         both accepted: the sender is left with {} and the receiver holds {}, so holders \
+         show {held} against a supply of {supply} — {} licences were minted",
+        licences(&w, &player.to_string()),
+        licences(&w, &bob.to_string()),
         held.saturating_sub(supply)
     );
 }
