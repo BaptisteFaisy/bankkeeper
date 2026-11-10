@@ -44,19 +44,23 @@ plan (licences, notes de dette, vote en tokens ; stocks et criée hors chaîne).
 
 ### 2. Connexion sociale ou email, sans phrase de récupération, sans popup de wallet, sans demande de gas
 
-**L'expérience est conforme ; l'authentification ne l'est pas encore.**
+**Conforme, et prouvé sur le sandbox local.**
 
 - ✅ Aucun wallet, aucune extension, aucune phrase de récupération : il y a un
   champ email et un pseudo (`web/src/session.ts`), et rien d'autre.
-- ✅ Aucune demande de gas, puisqu'il n'y a pas encore d'appel on-chain.
-- ❌ **L'email est une étiquette, pas une authentification** : côté moteur wasm,
-  `/api/auth` répond `{ok: true, token: "local"}` ; côté relais, il fabrique un
-  jeton opaque en mémoire. Personne ne vérifie que l'adresse existe.
-- Pour être conforme pour de vrai, il faut une identité qui signe sans que le
-  joueur le voie : **FastAuth** (email → clé dans un enclave) ou un **relayeur
-  sponsor** qui détient la clé du compte joueur et paie le gas à sa place. Le
-  second est déjà écrit ailleurs dans nos dépôts (`~/mandat/relayer`) et se
-  transpose ; c'est ~1 jour, et ça dépend du déploiement testnet.
+- ✅ Aucune demande de gas : le joueur ne signe jamais lui-même.
+- ✅ **L'email est une identité, pas une étiquette.** Le relais sponsorisé
+  (`scripts/relayer/`) dérive un compte NEAR de l'email
+  (`p-<sha256(email)[:20]>.<suffix>`), garde la clé **côté serveur** (mode
+  `0600`, jamais dans l'arbre), et signe pour le joueur : une transaction
+  part, le joueur ne voit ni popup ni gas.
+  Preuve : `python3 tests/relay_sponsor.py` — email → compte déterministe →
+  `buy_licence` signée et envoyée par le serveur → hash de transaction et
+  `mt_balance_of` lu au RPC qui bouge (licence 0 → 1, or 1 000 000 →
+  720 000 milli). Sandbox local : **aucun faucet, aucun testnet**.
+- L'étude des deux voies possibles (FastAuth / NEAR Account Manager contre
+  relayeur sponsorisé), la recommandation et les garde-fous posés sont dans
+  `docs/AUTH.md`.
 
 ### 3. Les règles de prix des marchands dans un seul fichier lisible, et le raisonnement d'un marchand en infobulle
 
@@ -102,11 +106,12 @@ fast-forward des juges reste hors horloge.
 |---|---|---|
 | Sujet, marchands agents, prix par stock et demande | ✅ | — (fiction « port » assumée et documentée) |
 | NEP-245, un contrat | 🟡 contrat écrit et compilé, **pas déployé, pas utilisé par le jeu** | déploiement testnet + branchement du jeu |
-| Connexion email sans friction | 🟡 expérience sans friction | **authentification réelle** (FastAuth ou relayeur sponsor) |
+| Connexion email sans friction | ✅ identité réelle, prouvée sur sandbox (`docs/AUTH.md`) | lier la session du client au compte NEAR (diff écrit dans `docs/AUTH.md` §7) |
 | Règles de prix dans un fichier + infobulle | ✅ | — |
 | Fast-forward semaine en une minute | ✅ | — |
 | Boucle 30 s / 5 min / session | ✅ | — |
 
-Les deux 🟡 se ferment dans cet ordre : **déployer** (faucet, 15:27), puis
-**brancher le jeu sur les tokens**, puis **relayeur sponsor** pour que la
-connexion soit réelle sans popup.
+Les deux 🟡 se ferment dans cet ordre : **déployer** (faucet), puis
+**brancher le jeu sur les tokens**. La connexion, elle, est réelle et prouvée
+depuis le 10/11 (`docs/AUTH.md`, `tests/relay_sponsor.py`) : il ne reste qu'à
+lier la session du navigateur au compte NEAR.
