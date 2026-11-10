@@ -250,6 +250,10 @@ fn route(op: &str, body: &Value) -> Value {
             Ok(report) => serde_json::to_value(&report).unwrap_or_else(|_| json!({ "error": "E_SIM_FAILED" })),
             Err(error) => json!({ "error": error }),
         }),
+        "next-season" => with_game(|game| match sim::season::open_next_season(game) {
+            Ok(season) => json!({ "ok": true, "season": season, "state": views::view_state(game) }),
+            Err(error) => json!({ "error": error }),
+        }),
         "fastforward" => {
             let days = number(body, "days").unwrap_or(7);
             let seed = number(body, "seed");

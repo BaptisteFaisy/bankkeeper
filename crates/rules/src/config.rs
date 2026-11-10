@@ -37,6 +37,9 @@ pub struct Config {
     /// Licence supply and weekly quota (TW-N-20: 20 x 70).
     pub licence_count: u64,
     pub quota_per_licence: u64,
+    /// Seasons per campaign. The sea keeps what the previous season left,
+    /// so season 2 starts on a leaner bank: that is the handicap.
+    pub campaign_seasons: u64,
     /// Licences one captain may hold at most. Reading (brief section 13,
     /// question 3): 8 of the 20, so no captain can outvote the port alone and
     /// the council keeps its teeth.
@@ -133,6 +136,7 @@ impl Default for Config {
             stock_gain_bps: 5000,
             licence_count: 20,
             quota_per_licence: 70,
+            campaign_seasons: 3,
             licence_cap_per_captain: 8,
             daily_charge: 600,
             new_boat_cost: 40_000,

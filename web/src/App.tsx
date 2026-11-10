@@ -6,7 +6,7 @@ import type { BoatView, CouncilOutcome, DayNote, FFResponse, GraphLive, JudgesLi
 import { EMPTY_AUCTION, ZONE_LABEL, parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
-import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doReset, doRunFF, doSurvey } from './actions';
+import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
 import { shareUrl } from './persistence';
@@ -38,6 +38,9 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
       <span className="tide-stat">Week {port?.week ?? '—'} · {port?.day ?? '—'} · {port?.tide ?? '—'}</span>
       <span className="tide-stat gold">{port === null ? '—' : `${fmtGold(port.playerGold)}g`}</span>
       <span className="tide-stat">Quota left: {port?.quotaLeft ?? '—'}</span>
+      {port !== null && (port.campaignSeasons ?? 1) > 1 ? (
+        <span className="tide-stat">Season {port.season ?? 1} of {port.campaignSeasons}</span>
+      ) : null}
       <span className="muted">{session.name}</span>
       <button type="button" disabled={dayBusy || over} title={over ? 'The season is over' : undefined} onClick={onEndDay}>
         End the day
@@ -259,14 +262,25 @@ interface EndProps {
   council: CouncilOutcome | null;
   seasonOver: boolean;
   onReset: () => void;
+  onNextSeason: () => void;
 }
 
-function EndCardBody({ port, you, bilan, stocks, council, seasonOver, onReset }: EndProps) {
+function campagneLine(port: PortState): string | null {
+  const season = port.season ?? 1;
+  const total = port.campaignSeasons ?? 1;
+  if (total <= 1) return null;
+  return `Season ${season} of ${total}${port.campaignOver ? ' — campaign complete' : ''}`;
+}
+
+function EndCardBody({ port, you, bilan, stocks, council, seasonOver, onReset, onNextSeason }: EndProps) {
+  const campaign = campagneLine(port);
+  const nextSeason = seasonOver && port.campaignOver !== true;
   return (
     <>
-      <h2>{seasonOver ? 'Season over — the bilan' : 'The harbour lets you go'}</h2>
+      <h2>{seasonOver ? (port.campaignOver ? 'Campaign over — the last bilan' : 'Season over — the bilan') : 'The harbour lets you go'}</h2>
       <p className="muted">
         Week {port.week} · {port.day}. {seasonOver ? 'The books are closed.' : 'Your boats are laid up.'}
+        {campaign === null ? null : ` ${campaign}.`}
       </p>
       <ul className="harbour-list">
         <li><span>Net worth</span><span className="num">{fmtGold(bilan?.netWorth ?? port.netWorth)}g</span></li>
@@ -275,9 +289,17 @@ function EndCardBody({ port, you, bilan, stocks, council, seasonOver, onReset }:
         <li><span>Stocks left</span><span className="num">{stocks[0]} · {stocks[1]} · {stocks[2]}</span></li>
         <li><span>Last council</span><span>{councilLine(council)}</span></li>
       </ul>
-      <button type="button" onClick={onReset}>
+      {nextSeason ? (
+        <button type="button" onClick={onNextSeason}>
+          Sail the next season
+        </button>
+      ) : null}
+      <button type="button" className={nextSeason ? 'ghost' : undefined} onClick={onReset}>
         New harbour
       </button>
+      {nextSeason ? (
+        <p className="muted">Your purse, licences and hulls carry over. The sea keeps what this season left it.</p>
+      ) : null}
     </>
   );
 }
@@ -384,7 +406,7 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
   return (
     <>
       {end.seasonOver && you !== null && port !== null && (
-        <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver onReset={() => { void doReset(noted); }} />
+        <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
       <TopBar
         port={port}
@@ -403,7 +425,7 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
       <PlayPanels game={game} port={port} selected={selected} judges={judges} youLicences={you?.licences ?? 0} council={end.council} over={end.over} />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
       {end.bankrupt && you !== null && port !== null && (
-        <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver={false} onReset={() => { void doReset(noted); }} />
+        <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver={false} onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
     </>
   );

@@ -85,6 +85,11 @@ def build_debt_argv(binary: str, state: str, action: str,
             "--ref", ref]
 
 
+def build_next_season_argv(binary: str, state: str) -> list[str]:
+    """Argv opening the next season of the campaign."""
+    return [binary, "next-season", "--state", state]
+
+
 def build_day_argv(binary: str, state: str) -> list[str]:
     """Argv ending the current live day; prints the day report."""
     return [binary, "day", "--state", state]

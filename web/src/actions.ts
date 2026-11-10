@@ -1,7 +1,7 @@
 // Relay mutations as small module functions. Each takes the shared
 // action context, runs one mutation, and never throws (errors toast).
 // Mutations return true on success so callers can flash the UI.
-import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postReset, postSurvey } from './api';
+import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postSurvey } from './api';
 import type { AssignBody, MutationResult } from './api';
 import type { DayNote, FFResponse, ToastMsg, ZoneId } from './types';
 import { ZONE_LABEL, parseCouncilOutcome } from './types';
@@ -104,6 +104,18 @@ export async function doEndDay(actions: GameActions): Promise<boolean> {
     }
   }
   actions.noteDay?.({ council, seasonOver: r.season_over === true, bilan: r.bilan ?? null });
+  return true;
+}
+
+/// Next season of the campaign: the harbour keeps everything, the sea keeps
+/// what the last season left it (section 13, question 4).
+export async function doNextSeason(actions: GameActions): Promise<boolean> {
+  const r = await mutate(actions.deps, 'reset', () => postNextSeason());
+  if (r === null) return false;
+  const season = typeof r.season === 'number' ? r.season : null;
+  actions.resetFf(null);
+  actions.noteDay?.({ council: null, seasonOver: false, bilan: null });
+  actions.pushToast('report', season === null ? 'Next season opens.' : `Season ${season} opens: the sea remembers.`);
   return true;
 }
 
