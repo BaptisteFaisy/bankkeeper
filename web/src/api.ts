@@ -39,6 +39,33 @@ export function getState(): Promise<PortState> {
   return request<PortState>('/api/state');
 }
 
+export interface ExportBody {
+  ok?: boolean;
+  seed: number;
+  weeks: number;
+  game: unknown;
+}
+
+export interface InitBody {
+  seed: number;
+  weeks: number;
+}
+
+/** The whole harbour as JSON, for the browser's own storage. */
+export function getExport(): Promise<ExportBody> {
+  return request<ExportBody>('/api/export');
+}
+
+/** Put a saved harbour back, in place of the one in memory. */
+export function postImport(game: unknown): Promise<MutationResult> {
+  return post<MutationResult>('/api/import', { game });
+}
+
+/** Seed a fresh harbour with an explicit shape (shareable link). */
+export function postInit(body: InitBody): Promise<MutationResult> {
+  return post<MutationResult>('/api/init', body);
+}
+
 export function postLogin(email: string, name: string): Promise<MutationResult> {
   return post<MutationResult>('/api/auth', { email, pseudo: name });
 }

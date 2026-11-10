@@ -9,6 +9,7 @@ import type { GameState } from './hooks';
 import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doReset, doRunFF, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
+import { shareUrl } from './persistence';
 import type { Session } from './session';
 import SeaMap from './components/SeaMap';
 import AuctionPanel from './components/AuctionPanel';
@@ -150,14 +151,38 @@ function livePoint(graph: GraphLive | null, judges: JudgesLive | null): StockPoi
   return { day: judges.day, shallows: graph.stocks[0] ?? 0, greybank: graph.stocks[1] ?? 0, deeps: graph.stocks[2] ?? 0, herringPrice: price };
 }
 
+/** The link that replays this season elsewhere (seed + length in the URL). */
+function CopyLink({ game, port }: { game: GameState; port: PortState | null }) {
+  const [copied, setCopied] = useState(false);
+  async function copy(): Promise<void> {
+    const seed = Number.parseInt(port?.seed ?? '', 10);
+    const url = shareUrl({ seed: Number.isFinite(seed) ? seed : 7, weeks: port?.weeksPerSeason ?? 4 }, window.location.href);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      game.actions.pushToast('info', 'Season link copied.', url);
+    } catch {
+      game.actions.pushToast('error', 'Could not copy. The link is:', url);
+    }
+  }
+  return (
+    <button type="button" className="ghost" onClick={() => { void copy(); }}>
+      {copied ? 'Link copied' : 'Copy season link'}
+    </button>
+  );
+}
+
 function JudgeBench({ game, port, judges, graph }: { game: GameState; port: PortState | null; judges: JudgesLive | null; graph: GraphLive | null }) {
   const seed = port?.seed ?? 'tidewater';
+  const seasonDays = port?.seasonDays ?? 28;
   const run = game.ff === null ? null : ffToRun(game.ff, judges);
   const playerView = (port?.zones ?? []).map((z) => ({ zone: ZONE_LABEL[z.id], catchPerTrip: z.catchPerTrip, trend: z.trend }));
   return (
     <section className="panel judges" aria-label="Judges">
       <h2>Judges</h2>
-      <p className="muted">Seed {seed}: same seed, same season.</p>
+      <p className="muted">
+        Seed {seed}, {seasonDays} days a season: same seed, same season. <CopyLink game={game} port={port} />
+      </p>
       <JudgesPanel
         running={game.busy === 'ff'}
         run={run}
