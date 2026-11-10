@@ -158,6 +158,13 @@ def validate_day_payload(body: object) -> tuple[dict | None, str | None]:
     return {}, None
 
 
+def validate_next_season_payload(body: object) -> tuple[dict | None, str | None]:
+    """Open the next season: no field, the harbour carries its own state."""
+    if _as_dict(body) is None:
+        return None, "E_BAD_JSON"
+    return {}, None
+
+
 def validate_reset_payload(body: object) -> tuple[dict | None, str | None]:
     """New harbour: optional seed, default 7."""
     data = _as_dict(body)

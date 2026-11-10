@@ -160,6 +160,9 @@ pub struct Game {
     /// Last council report, so minutes survive a reload (B5 follow-up).
     #[serde(default)]
     pub last_council: Option<season::CouncilReport>,
+    /// Bilan of every closed season, oldest first: the campaign log.
+    #[serde(default)]
+    pub campaign: Vec<season::Bilan>,
 }
 
 impl Game {
