@@ -52,6 +52,9 @@ pub const FLOOR_DIVISOR: u64 = 4;
 pub const CATCH_SHARE_BPS: u64 = 40;
 pub const TRIPS_PER_DAY: u32 = 3;
 pub const LICENCE_SUPPLY: u64 = 20;
+/// Licences the bank holds to sell: four of the twenty, so `buy_licence`
+/// works on day one instead of waiting for a captain to go bankrupt.
+pub const BANK_LICENCE_POOL: u64 = 4;
 /// Licences one captain may hold (brief section 13, question 3): the council
 /// stays contested, nobody buys the port.
 pub const LICENCE_CAP_PER_CAPTAIN: u64 = 8;
@@ -303,12 +306,15 @@ impl Tidewater {
     fn seed_world(&mut self, player: AccountId) {
         self.seed_captain("player", &player.to_string(), 150_000, 4, &["10", "11"]);
         self.seed_captain("marta", &npc_owner("marta"), 500_000, 4, &["12", "13"]);
-        self.seed_captain("brandt", &npc_owner("brandt"), 200_000, 8, &["14", "15", "16", "17"]);
+        // Brandt held 8 of the 20; he now holds 4 so the bank can sell from
+        // day one while the supply stays exactly LICENCE_SUPPLY.
+        self.seed_captain("brandt", &npc_owner("brandt"), 200_000, 4, &["14", "15", "16", "17"]);
         self.seed_captain("okoro", &npc_owner("okoro"), 300_000, 4, &["18", "19"]);
         self.seed_buyer("fishmonger", "Fishmonger", 600_000, &[("1", 80), ("2", 40)]);
         self.seed_buyer("cannery", "Cannery", 3_000_000, &[("1", 150)]);
         self.seed_buyer("gull", "The Gull", 400_000, &[("2", 60)]);
         self.seed_actor("bank", "Harbour Bank", 3_000_000);
+        self.add_balance(&npc_owner("bank"), LICENCE_TOKEN, BANK_LICENCE_POOL as u128);
         self.seed_actor("chandlery", "Chandlery", 1_000_000);
         self.seed_actor("residents", "Habitants", 1_500_000);
         self.seed_brandt_loan();

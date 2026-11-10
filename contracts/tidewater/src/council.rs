@@ -221,7 +221,8 @@ mod tests {
         game.cast_npc_votes(bare);
         let outcome = game.resolve_council(bare);
         assert!(!outcome.passed);
-        assert_eq!(outcome.no_weight, 16);
+        // 16 of the 20 licences are with captains (4 bank), NPCs hold 12.
+        assert_eq!(outcome.no_weight, 12);
         // A rich offer buys every yes, including Okoro who copies Marta.
         as_caller(player.clone());
         let paid = game.propose_rule(ProposalKind::QuotaPerLicence(50), U128(100_000));
@@ -230,8 +231,8 @@ mod tests {
         game.cast_npc_votes(paid);
         let outcome = game.resolve_council(paid);
         assert!(outcome.passed);
-        assert_eq!((outcome.yes_weight, outcome.no_weight), (20, 0));
-        assert_eq!(outcome.indemnities_milli, 8_000_000);
+        assert_eq!((outcome.yes_weight, outcome.no_weight), (16, 0));
+        assert_eq!(outcome.indemnities_milli, 6_400_000);
         assert_eq!(game.get_day().quota_per_licence, 50);
     }
 }

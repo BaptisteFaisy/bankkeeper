@@ -397,4 +397,21 @@ mod tests {
         assert_eq!(game.get_ledger(npc_owner("residents"), "0".to_string()).0, 1_499_799_000);
     }
 
+    #[test]
+    fn bank_sells_a_licence_on_the_first_day() {
+        let (mut game, _, player) = setup();
+        let bank = npc_owner("bank");
+        as_caller(player.clone());
+        assert_eq!(game.get_ledger(bank.clone(), LICENCE_TOKEN.to_string()).0, 4);
+        let price = game.get_licence_price();
+        let receipt = game.buy_licence();
+        assert_eq!(receipt.price_milli, price);
+        assert_eq!(receipt.species, LICENCE_TOKEN);
+        assert_eq!(game.get_ledger(bank.clone(), LICENCE_TOKEN.to_string()).0, 3);
+        assert_eq!(game.get_ledger(player.to_string(), LICENCE_TOKEN.to_string()).0, 5);
+        assert_eq!(game.mt_supply(LICENCE_TOKEN.to_string()).unwrap().0, 20);
+        assert_eq!(game.get_ledger(player.to_string(), GOLD_TOKEN.to_string()).0, 150_000_000 - price as u128);
+        assert_eq!(game.get_ledger(bank, GOLD_TOKEN.to_string()).0, 3_000_000_000 + price as u128);
+    }
+
 }
