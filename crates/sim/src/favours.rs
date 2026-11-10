@@ -244,8 +244,9 @@ fn spared_zone(game: &Game, captain: ActorId, zone: Option<Zone>) -> Option<(Zon
     if alt_cpt.saturating_mul(10_000) < floor {
         return None;
     }
+    let slack = game.config.favour_zone_slack_bps / 100;
     let clause = format!(
-        "{} leaves {} to you: {} pays {} a trip, within 15% of it.",
+        "{} leaves {} to you: {} pays {} a trip, within {slack}% of it.",
         captain.name(),
         zone.name(),
         alt.name(),
