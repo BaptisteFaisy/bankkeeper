@@ -19,7 +19,10 @@ de référence.
   tendance, bancs — jamais le stock réel, TW-C1-01), bateaux, capitaines,
   acheteurs, criée (dernier marteau, pas de lot en direct : l'horloge
   adjuge chaque débarquement aussitôt), débarquements du jour et lignes
-  de raisonnement brutes.
+  de raisonnement brutes. Chaque capitaine porte aussi
+  `ownedLicences` (propriété) et `quotaCrates` (quota effectif, baux
+  compris) ; `leases` liste les baux en cours (bailleur, preneur,
+  loyer hebdomadaire, semaines restantes).
 - `GET /api/graph` — `{history, stocks, capacity}` : prises et prix du
   hareng par jour, stocks courants (TW-J-02).
 - `GET /api/judges` — `{seed, day, week, actors, gold_total, ext_in,
@@ -38,6 +41,17 @@ de référence.
   (TW-N-20, TW-C4-04). `ref` vaut `pool` (le bassin des licences
   saisies, soldé par la banque) ou un nom de capitaine (`okoro`, …)
   pour un échange direct.
+- `POST /api/lease` — `{action: lease | unlease, lessor, lessee,
+  weeks?}` : bail sur **une** licence (TW-N-24). `lease` prête une
+  licence du bailleur au preneur pour `weeks` semaines (1 à 12, défaut
+  du bouton : 2) au loyer par défaut — 5 % du prix courant de la
+  licence par semaine, plancher 1 or. Le quota de la licence suit le
+  preneur, la propriété ne bouge pas ; le plafond de 8 compte les
+  licences détenues, jamais celles louées. `unlease` met fin au bail
+  entre les deux capitaines, gratuitement, des deux côtés. Le loyer
+  tombe le lundi avant le marché des licences : impayé, le bail tombe
+  et la licence rentre chez le bailleur. Une licence louée ne se vend
+  pas : il faut d'abord reprendre le bail.
 - `POST /api/debt` — `{action: buy | forbear | seize, ref}` : `ref` est
   un numéro de créance (token 100+). Rachat à son porteur, report
   (remise des arriérés à zéro) ou saisie anticipée du bateau dès une
