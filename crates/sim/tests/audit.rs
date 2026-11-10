@@ -61,7 +61,6 @@ fn day_balances(game: &mut Game) -> bool {
 /// `evening::serve_species` already moves `locals x base` from the townsfolk
 /// to the buyer, then `drain_gull` moves that same sum a second time.
 #[test]
-#[ignore = "audit defect 1: the Gull is paid twice for the same crates"]
 fn defect_01_the_gull_is_paid_twice_for_the_same_crates() {
     let mut game = quiet_game(7);
     // Only the Gull trades tonight: no landings, no wages, no other drain.
