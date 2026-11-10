@@ -6,6 +6,7 @@
 //! [`cycle::run_day`]; weeks and seasons settle in [`season`]; judges
 //! fast-forward through [`fastforward`]. Same seed + same orders = same season.
 
+pub mod attribution;
 pub mod bots;
 pub mod cycle;
 mod evening;
