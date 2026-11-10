@@ -12,6 +12,7 @@ import type { LandingView, SeaView, ZoneId } from '../types';
 import { MESH_LABEL, ZONE_LABEL, parseMesh } from '../types';
 import { fmtCrates, fmtGold } from '../format';
 import { getState } from '../api';
+import SeaPayBlock from './SeaPayBlock';
 
 /** One captain's line in a zone: crates landed and share in bps. */
 export interface AttributionCaptain {
@@ -39,6 +40,14 @@ interface Props {
   // Optional: when the screen already holds the register, hand it over and
   // the panel never asks the engine for it.
   attribution?: AttributionRow[];
+  // Barreau 4: the debt owed to the sea, as the port state carries it. The
+  // app hands it over so a payment repaints the panel at once.
+  sea?: SeaView | null;
+  // Barreau 4: the two ways out of the debt. The panel is read-only without
+  // them; the app wires them to the shared actions.
+  busy?: boolean;
+  onFallow?: (zone: ZoneId, weeks: number) => void;
+  onReseed?: (zone: ZoneId, crates: number) => void;
 }
 
 /** "3.1x" for a take of 3.1 times the sustainable catch. */
@@ -145,7 +154,8 @@ function SeaDebtBlock({ sea }: { sea: SeaView | null }) {
       ) : (
         <>
           <p className="muted">
-            {fmtCrates(sea.debt)} crates carried{sea.season > 0 ? ` · ${fmtCrates(sea.season)} added this season` : ''}.
+            {fmtCrates(sea.debt)} crates carried
+            {sea.season > 0 ? ` · ${fmtCrates(sea.season)} added this season${sea.pending ? ', not yet written down' : ''}` : ''}.
           </p>
           <ul className="reason-list">
             {sea.zones.map((zone) => (
@@ -158,23 +168,22 @@ function SeaDebtBlock({ sea }: { sea: SeaView | null }) {
   );
 }
 
-export default function LedgerPanel({ landings, reasoning, attribution }: Props) {
+export default function LedgerPanel({ landings, reasoning, attribution, sea, busy, onFallow, onReseed }: Props) {
   const [rows, setRows] = useState<AttributionRow[]>(attribution ?? []);
-  const [sea, setSea] = useState<SeaView | null>(null);
 
   useEffect(() => {
     if (attribution !== undefined) {
       setRows(attribution);
+      return;
     }
     let live = true;
-    // The register and the debt move when lots land: read them together with
-    // the landings, not on a timer of their own (one poll for the screen).
+    // The register moves when lots land: read it together with the
+    // landings, not on a timer of its own (one poll for the screen).
     getState()
       .then((state) => {
         if (!live) return;
-        const raw = state as unknown as { attribution?: AttributionRow[]; sea?: SeaView };
-        if (attribution === undefined && Array.isArray(raw.attribution)) setRows(raw.attribution);
-        if (raw.sea !== undefined) setSea(raw.sea);
+        const raw = state as unknown as { attribution?: AttributionRow[] };
+        if (Array.isArray(raw.attribution)) setRows(raw.attribution);
       })
       .catch(() => undefined);
     return () => { live = false; };
@@ -199,7 +208,10 @@ export default function LedgerPanel({ landings, reasoning, attribution }: Props)
           </ul>
         )}
       </div>
-      <SeaDebtBlock sea={sea} />
+      <SeaDebtBlock sea={sea ?? null} />
+      {onFallow !== undefined && onReseed !== undefined && (
+        <SeaPayBlock sea={sea ?? null} busy={busy ?? false} onFallow={onFallow} onReseed={onReseed} />
+      )}
     </section>
   );
 }

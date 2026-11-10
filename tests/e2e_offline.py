@@ -116,6 +116,67 @@ def journey(driver, base, notes):
                      else "blocked: no ff hash after 4s")
     except Exception as exc:
         notes.append(f"blocked: fast-forward 7 days ({exc})")
+    pay_debt(driver, wait, notes)
+
+
+def close_season(driver, notes):
+    """Play the days of the season, then sail the next one: the bill is
+    written down at the close of a season, so the debt exists from there."""
+    from selenium.webdriver.common.by import By
+    for _ in range(30):
+        try:
+            button = driver.find_element(By.XPATH, "//button[text()='End the day']")
+        except Exception:
+            break
+        if not button.is_displayed() or not button.is_enabled():
+            break
+        button.click()
+        time.sleep(0.6)
+        if driver.find_elements(By.XPATH, "//button[text()='Sail the next season']"):
+            break
+    sails = driver.find_elements(By.XPATH, "//button[text()='Sail the next season']")
+    if not sails:
+        notes.append("blocked: the season never closed")
+        return False
+    sails[0].click()
+    time.sleep(1.5)
+    return True
+
+
+def pay_debt(driver, wait, notes):
+    """The debt owed to the sea is paid from the browser: a zone rests and the
+    regrowth pays the bill down."""
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as ec
+    if not close_season(driver, notes):
+        return
+    try:
+        wait.until(ec.presence_of_element_located(
+            (By.CSS_SELECTOR, "[data-testid='fallow-preview']")))
+    except Exception as exc:
+        notes.append(f"blocked: no fallow preview ({exc})")
+        return
+    before = debt_of(driver)
+    if before <= 0:
+        notes.append("blocked: no debt to pay after a season")
+        return
+    driver.find_element(By.XPATH, "//button[text()='Rest the zone']").click()
+    time.sleep(2.5)
+    after = debt_of(driver)
+    if after < before:
+        notes.append(f"pay: the debt fell from {before} to {after} crates")
+    else:
+        notes.append(f"blocked: the debt did not fall ({before} -> {after})")
+
+
+def debt_of(driver):
+    """The debt the ledger shows, in crates, read from the panel's text."""
+    from selenium.webdriver.common.by import By
+    for node in driver.find_elements(By.CSS_SELECTOR, "section[aria-label='Harbour ledger'] p"):
+        text = node.text.replace(",", "")
+        if "crates carried" in text:
+            return int(text.split("crates carried")[0].strip().split()[-1])
+    return 0
 
 
 def api_traffic(driver):

@@ -156,6 +156,30 @@ def validate_council_payload(body: object) -> tuple[dict | None, str | None]:
     return clean, None
 
 
+def validate_fallow_payload(body: object) -> tuple[dict | None, str | None]:
+    """Rest a zone for 1..12 weeks; the regrowth pays the sea debt."""
+    data = _as_dict(body)
+    if data is None:
+        return None, "E_BAD_JSON"
+    zone = _as_nonempty_str(data.get("zone"))
+    weeks = _as_nonneg_int(data.get("weeks", 1))
+    if zone is None or weeks is None or not 1 <= weeks <= 12:
+        return None, "E_BAD_FALLOW"
+    return {"zone": zone, "weeks": weeks}, None
+
+
+def validate_reseed_payload(body: object) -> tuple[dict | None, str | None]:
+    """Buy crates back into a zone out of the port fund."""
+    data = _as_dict(body)
+    if data is None:
+        return None, "E_BAD_JSON"
+    zone = _as_nonempty_str(data.get("zone"))
+    crates = _as_nonneg_int(data.get("crates"))
+    if zone is None or crates is None or crates < 1:
+        return None, "E_BAD_RESEED"
+    return {"zone": zone, "crates": crates}, None
+
+
 def validate_fastforward_payload(body: object) -> tuple[dict | None,
                                                        str | None]:
     data = _as_dict(body)
