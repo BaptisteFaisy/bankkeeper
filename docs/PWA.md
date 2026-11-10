@@ -42,7 +42,13 @@ skipped — it costs that file, not the install.
 
 At **runtime**, every same-origin `GET` goes through
 stale-while-revalidate: the cached copy is returned at once and refreshed in
-the background. Three rules hold everywhere:
+the background, and that refresh goes out with `cache: 'no-cache'` — it
+revalidates with the origin instead of letting the browser's own HTTP cache
+answer. The versioned cache is the authority here; a stopped server must mean
+a stopped server, not a copy from the disk cache (this was measured: without
+it, a deleted cache entry came back from the HTTP cache and the test failed).
+
+Three rules hold everywhere:
 
 - a response is stored **only** when `response.ok` and same-origin
   (`response.type === 'basic'`) — a 404 or a 500 is never written;
@@ -95,10 +101,15 @@ and checks, in order:
    reloaded at `/?seed=7&weeks=2`, and it still shows `Tidewater`, a non-empty
    `#root`, still controlled by the worker, with the first screen's text; zero
    SEVERE console entries;
-5. any failure exits 1 with the step that broke.
+5. then it deletes the cached `index.html` and reloads once more — the
+   fallback sheet (`Tidewater — offline`, "The harbour is not on this device")
+   must answer, which is the one path where the network is gone **and** the
+   cache is empty;
+6. any failure exits 1 with the step that broke.
 
-So it proves: **the install path works, and one reload with the network gone
-is served entirely from the browser's own storage.**
+So it proves: **the install path works, a reload with the network gone is
+served entirely from the browser's own storage, and an empty cache still
+lands on a page instead of the browser's error screen.**
 
 It does **not** prove:
 
@@ -126,10 +137,10 @@ It does **not** prove:
   `index.html` once. The assets it names are still cached under the old
   version, so the page works — it is just one navigation behind.
 - **The version hash covers the whole shell** (every name and every file's
-  bytes, hashed once per build, ~870 KiB of reading). A pseudonymous build
-  that emits the same bytes twice yields the same version — that is the
-  intent, and it also means a deploy that only touches the worker's own
-  comments keeps the old cache, which is harmless.
+  bytes, hashed once per build, ~870 KiB of reading). The worker's own bytes
+  are not in that list: a deploy that only changes `sw.js` keeps the cache
+  name, installs the new worker, and refills the same cache — harmless, but
+  worth knowing when you wonder why the version did not move.
 - **`/api/` is bypassed** by prefix; a future endpoint outside `/api/` would be
   cached with a stale-while-revalidate policy and answer from disk.
 - **`http.server` is not a production server**: no `Cache-Control`, so the

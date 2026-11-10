@@ -182,6 +182,45 @@ def cut_server(proc, port):
     return False
 
 
+def drop_cached_index(driver):
+    """Delete the cached shell only, to reach the sheet with no cache at all."""
+    script = """
+    const done = arguments[0];
+    (async () => {
+      const names = await caches.keys();
+      if (!names.length) { done('no cache to drop'); return; }
+      const cache = await caches.open(names[0]);
+      const keys = await cache.keys();
+      const page = keys.find((r) => r.url.indexOf('/index.html') !== -1);
+      if (!page) { done('no cached index.html'); return; }
+      await cache.delete(page);
+      done('dropped ' + page.url);
+    })().catch((error) => done('failed: ' + String(error)));
+    """
+    return driver.execute_async_script(script)
+
+
+def sheet_step(driver, base, notes):
+    """No cache, no network: the fallback sheet, not the browser's error page."""
+    dropped = drop_cached_index(driver)
+    notes.append("sheet: {}".format(dropped))
+    if not str(dropped).startswith("dropped"):
+        return ["could not drop the cached index to test the offline sheet"]
+    try:
+        driver.get(base + "/")
+    except Exception as exc:
+        return [f"reload with neither cache nor server failed: {str(exc)[:200]}"]
+    time.sleep(1.0)
+    state = screen_state(driver)
+    notes.append("sheet: title {!r}, cache entries {}".format(
+        state["title"], cache_report(driver).get("entries")))
+    if "offline" not in state["title"].lower():
+        return [f"offline sheet did not appear (title {state['title']!r})"]
+    if "not on this device" not in state["body"]:
+        return ["offline sheet text missing"]
+    return []
+
+
 def screen_state(driver):
     """Title, rendered children and the first screen word, from the page."""
     script = """
@@ -190,6 +229,7 @@ def screen_state(driver):
       title: document.title,
       children: root ? root.children.length : 0,
       text: root ? root.innerText.slice(0, 120) : '',
+      body: document.body ? document.body.innerText.slice(0, 200) : '',
       controlled: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
     };
     """
@@ -242,6 +282,7 @@ def main():
         failures = online_facts(driver, base, notes)
         cut_port = int(base.rsplit(":", 1)[-1])
         failures += offline_step(driver, base, cut_port, proc, notes)
+        failures += sheet_step(driver, base, notes)
         errors = console_errors(driver)
     finally:
         if driver is not None:
