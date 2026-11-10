@@ -52,6 +52,23 @@ séparé sous `/tmp`, aucun processus laissé derrière (brief §8).
 - `docs/` — architecture, API, économie, boucle, démo juges, décisions.
 - `tidewater.md` — le brief, autorité première.
 
+## Testnet
+
+Le contrat NEP-245 se déploie et se rejoue sur NEAR testnet avec deux
+commandes (détail et état courant : [`docs/deployments.md`](docs/deployments.md)) :
+
+```sh
+cd contracts/tidewater && cargo near build non-reproducible-wasm
+cd ../.. && node scripts/testnet/deploy.mjs   # compte racine + sous-comptes + wasm + new(owner, player)
+node scripts/testnet/e2e.mjs                  # rejeu on-chain, hash de transaction imprimés
+```
+
+`make testnet-deploy` et `make testnet-e2e` font exactement cela. Le premier
+appel au faucet public (`helper.testnet.near.org`) est limité à 10 créations de
+compte par 3 h et par IP ; en cas de 429, `TIDEWATER_ROOT_PARENT=<compte financé>`
+crée le compte contrat en sous-compte pour ne pas bloquer la démo. Les clés
+restent dans `~/.near-credentials/testnet/`, jamais dans le dépôt.
+
 ## Contraintes (brief §8)
 
 Fichiers < 500 lignes, fonctions < 50 ; code, commentaires et UI en
