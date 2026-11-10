@@ -144,7 +144,7 @@ pub fn snapshot(game: &Game) -> DayPoint {
         licences: game.port.licences,
         gold_total: game.gold_total(),
         ext_in: game.flows_total.exports + game.flows_total.travellers,
-        ext_out: game.flows_total.fuel_bait,
+        ext_out: game.flows_total.fuel_bait + game.flows_total.reseed,
     }
 }
 

@@ -165,6 +165,8 @@ export interface PortState {
   campaignSeasons?: number;
   campaignOver?: boolean;
   campaign?: unknown[];
+  // Barreau 4: the debt owed to the sea, live, in crates.
+  sea?: SeaView;
 }
 
 export interface FFSummary {
@@ -339,11 +341,34 @@ export function parseCouncilOutcome(raw: unknown): CouncilOutcome | null {
 }
 
 // Season bilan in UI units: net worth in gold pieces, remaining
-// stock per zone (shallows, greybank, deeps), licences held.
+// stock per zone (shallows, greybank, deeps), licences held, and the
+// debt owed to the sea in crates (barreau 4) — the second column.
 export interface SeasonBilan {
   netWorth: number;
   stocks: [number, number, number];
   licences: number;
+  // What this season alone took above the sustainable catch, in crates.
+  seaDebt?: number;
+  // The liability the campaign carries, this season included, in crates.
+  seaDebtTotal?: number;
+}
+
+/** One zone's line of the sea bill (barreau 4), in crates. */
+export interface SeaZone {
+  zone: ZoneId;
+  taken: number;
+  ceiling: number;
+  debt: number;
+  fallowWeeks: number;
+}
+
+/** The debt owed to the sea, live: the bill and the two ways to pay it. */
+export interface SeaView {
+  debt: number;
+  season: number;
+  zones: SeaZone[];
+  reseedPrice: number;
+  reseedGold: number;
 }
 
 function readStocks(raw: unknown): [number, number, number] | null {
@@ -396,5 +421,13 @@ export function parseBilan(raw: unknown, referenceNetWorth?: number): SeasonBila
     netWorth: worthInPieces(worth, referenceNetWorth),
     stocks,
     licences: Math.round(licences),
+    seaDebt: readCrates(o['sea_debt'] ?? o['seaDebt']),
+    seaDebtTotal: readCrates(o['sea_debt_total'] ?? o['seaDebtTotal']),
   };
+}
+
+/** A crate count from the engine, or undefined when the save predates it. */
+function readCrates(raw: unknown): number | undefined {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return undefined;
+  return Math.round(raw);
 }

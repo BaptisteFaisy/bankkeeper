@@ -8,6 +8,7 @@
 
 pub mod attribution;
 pub mod bots;
+pub mod cli;
 pub mod cycle;
 mod evening;
 pub mod favours;
@@ -20,6 +21,7 @@ pub mod policies;
 mod reading;
 mod merchant_views;
 pub mod relay;
+pub mod sea;
 pub mod season;
 pub mod seed;
 pub mod views;
@@ -190,6 +192,14 @@ pub struct Game {
     /// The indemnity a carried motion still owes, paid on Mondays (barreau 3).
     #[serde(default)]
     pub payroll: Option<govern::Payroll>,
+    /// Barreau 4: the crates the campaign owes the sea, carried from season to
+    /// season until fallow or reseeding pays them down.
+    #[serde(default)]
+    pub sea_debt: u64,
+    /// Barreau 4: weeks of fallow still to run, per zone. A zone rests while
+    /// its counter is above zero and is closed to every boat meanwhile.
+    #[serde(default)]
+    pub fallow: [u64; 3],
 }
 
 impl Game {

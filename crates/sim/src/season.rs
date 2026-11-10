@@ -46,6 +46,14 @@ pub struct Bilan {
     pub boats: u64,
     /// Real zone stocks (judges only; hidden from the player all season).
     pub stocks: [u64; 3],
+    /// Barreau 4: what this season alone took above the sustainable catch,
+    /// in crates. The season's own line of the bill.
+    #[serde(default)]
+    pub sea_debt: u64,
+    /// Barreau 4: the whole liability the campaign carries, this season
+    /// included, in crates. The second column of the bilan.
+    #[serde(default)]
+    pub sea_debt_total: u64,
 }
 
 /// Monday settlement. Order matters: trades and payments can still rescue a
@@ -58,6 +66,8 @@ pub fn roll_week(game: &mut Game, closures: &mut Vec<ActorId>) -> Vec<String> {
     lines.extend(game.settle_leases());
     // Barreau 3: the indemnity a carried motion owes, one week at a time.
     lines.extend(govern::pay_week(game));
+    // Barreau 4: one week of every fallow passes, and the zone stays shut.
+    lines.extend(game.run_fallow_week());
     lines.extend(trade_licences_week(game));
     lines.extend(crate::bots::settle_loans(game));
     for captain in broke_captains(&game.port) {
@@ -354,6 +364,13 @@ fn apply_proposal(game: &mut Game, proposal: &Proposal, ballots: &[(ActorId, Vot
             boat.zone = None;
         }
     }
+    // Barreau 4: a fallow outlives the council — a resting zone stays shut
+    // even when the new season's motion reopens every other ground.
+    for zone in rules::state::Zone::all() {
+        if game.fallow_left(zone) > 0 {
+            game.closed[zone.idx()] = true;
+        }
+    }
     game.small_mesh_banned = proposal.ban_small_mesh;
     if proposal.ban_small_mesh {
         for boat in game.port.boats.iter_mut() {
@@ -378,13 +395,22 @@ fn apply_proposal(game: &mut Game, proposal: &Proposal, ballots: &[(ActorId, Vot
 }
 
 /// Close the season (B5): after the council has rolled, flag the game over
-/// and attach the bilan to both the game and the day report.
+/// and attach the bilan to both the game and the day report. Barreau 4: the
+/// season's debt to the sea is written down once, here, before the bilan.
 pub fn close_season(game: &mut Game, report: &mut crate::cycle::DayReport) {
+    let bill = crate::sea::accrue(game);
     let bilan = season_bilan(game);
     game.over = true;
     game.bilan = Some(bilan.clone());
     report.season_over = true;
     report.bilan = Some(bilan);
+    if bill.total > 0 {
+        report.lines.push(format!(
+            "The season leaves {} crates of debt to the sea ({} carried).",
+            rules::format_crates(bill.total),
+            rules::format_crates(bill.carried)
+        ));
+    }
 }
 
 /// Open the next season of the campaign (brief section 13, question 4).
@@ -426,6 +452,10 @@ pub fn season_bilan(game: &Game) -> Bilan {
     let boats = game.boats_of(ActorId::You).len() as i64;
     let gold = game.port.gold[ActorId::You.idx()];
     let worth = gold + licences as i64 * price as i64 + boats * game.config.new_boat_cost as i64;
+    // Barreau 4: the bill, in crates, beside the net worth in gold. The
+    // liability is whatever `close_season` wrote down; the season's own line
+    // is read from the same journal, never re-accrued here.
+    let bill = crate::sea::season_bill(game);
     Bilan {
         net_worth: worth,
         gold,
@@ -433,5 +463,7 @@ pub fn season_bilan(game: &Game) -> Bilan {
         licence_price: price,
         boats: boats as u64,
         stocks: game.port.stocks,
+        sea_debt: bill.total,
+        sea_debt_total: game.sea_debt,
     }
 }

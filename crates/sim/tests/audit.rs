@@ -182,6 +182,8 @@ fn defect_05_refused_next_season_duplicates_the_campaign() {
         licence_price: 0,
         boats: 0,
         stocks: [0; 3],
+        sea_debt: 0,
+        sea_debt_total: 0,
     };
     game.campaign = vec![bilan.clone(), bilan.clone()]; // seasons 1 and 2 archived
     game.bilan = Some(bilan);
