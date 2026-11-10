@@ -254,7 +254,6 @@ fn d04_batch_transfer_event_has_no_amounts_array() {
 // ---------------------------------------------------------------------------
 
 #[test]
-#[ignore = "bug: D05 memo is interpolated raw into EVENT_JSON: broken JSON, forgeable events"]
 fn d05_memo_with_a_quote_breaks_the_event_json() {
     let mut w = setup();
     let player = w.player.clone();
