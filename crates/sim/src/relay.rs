@@ -257,8 +257,9 @@ impl Game {
             self.port.gold[lessee] -= lease.weekly_rent as i64;
             self.port.gold[lease.lessor.idx()] += lease.weekly_rent as i64;
             lease.weeks_left = lease.weeks_left.saturating_sub(1);
+            let left = if lease.weeks_left == 1 { "week" } else { "weeks" };
             lines.push(format!(
-                "{} pays {} of rent to {}; {} weeks left.",
+                "{} pays {} of rent to {}; {} {left} left.",
                 lease.lessee.name(),
                 fmt_gold(lease.weekly_rent as i64),
                 lease.lessor.name(),
