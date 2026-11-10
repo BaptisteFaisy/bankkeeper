@@ -42,6 +42,9 @@ déploiement et vérifications : [`docs/deployments.md`](docs/deployments.md).
 
 ## 1. Ce qui a été fait (l'état réel)
 
+> État vérifié le 10/11/2026 à 20:35 sur `main` = `b0869ee` :
+> `cargo test --workspace` → **236 tests verts, 0 échec**.
+
 ### A. Économie & Moteur (100 % déterministe, zéro IO)
 
 - **La boucle de base** : 10 bateaux, 3 zones (The Shallows, Greybank, The Deeps),
@@ -68,11 +71,14 @@ déploiement et vérifications : [`docs/deployments.md`](docs/deployments.md).
 2. **Payer (Redevance & Fonds du port)** ✅ : le Conseil vote une redevance au
    débarquement prélevée sur chaque lot vendu, versée à un **fonds du port** visible
    qui finance les relevés, les jachères et les indemnisations.
-3. **Gouverner (Motion financée)** ⏳ : toute motion vote son financement (le fonds
+3. **Gouverner (Motion financée)** ✅ (PR #56) : toute motion vote son financement (le fonds
    ou la redevance paie) et chaque vote affiche ce que le capitaine a pris au banc.
-4. **Hériter (Dette envers la mer)** ⏳ : passif accumulé au-dessus de la prise
-   durable, payé en jachère ou en réensemencement, reporté sur la saison suivante.
-5. **Réparer (Jachère & Contentieux)** : fermeture collective d'une zone et recours.
+4. **Hériter (Dette envers la mer)** ✅ (PR #61, [`docs/DEBT.md`](docs/DEBT.md)) :
+   passif accumulé au-dessus de la prise durable, payé en jachère ou en
+   réensemencement, reporté sur la saison suivante. Le bilan a désormais deux
+   colonnes : valeur nette **et** dette envers la mer — sans jugement.
+5. **Réparer (Jachère & Contentieux)** ⏳ en cours : fermeture collective d'une
+   zone indemnisée par le fonds, et un recours par saison contre une règle qui lèse.
 
 ### C. Le Contrat NEAR NEP-245 (`contracts/tidewater/`)
 
@@ -82,14 +88,18 @@ Un contrat multi-token unique qui porte toute l'économie :
 - **Actes de propriété des bateaux** (NFT deeds),
 - **Notes de dette** (prêts émis par la banque, transférables).
 
-31 tests unitaires et d'intégration, 100 % passants. 3 bloquants et 8 majeurs
-d'audit corrigés (pas d'injection dans `EVENT_JSON`, pas de frappe ex-nihilo,
-plafond de 8 licences appliqué, droits du deed rattachés au token).
+31 tests contrat verts. **Les 3 bloquants de l'audit sont corrigés et mergés**
+(PR #42 : `mt_transfer` payable avec remboursement de l'excédent, licences semées
+à la banque, plus aucune frappe ex-nihilo dans `mt_batch_transfer`). Trois majeurs
+sont corrigés et les six autres sont en cours (plafond de 8 licences, droits de
+l'acte de bateau rattachés au token, note de dette transférable, dépôt de storage,
+poids de vote figé, indemnités aux bons votants) — le détail, défaut par défaut,
+est dans [`docs/AUDIT-CONTRACT.md`](docs/AUDIT-CONTRACT.md).
 
 ### D. Client Web & PWA hors-ligne (`web/`)
 
 - **Zéro serveur en production** : le moteur Rust compile en WebAssembly
-  (`engine.wasm`, 347 Ko). Les calculs tournent à 100 % dans le navigateur du joueur.
+  (`engine.wasm`, 868 Ko servis en production). Les calculs tournent à 100 % dans le navigateur du joueur.
   Zéro appel `/api/`, zéro base de données, zéro coût d'hébergement.
 - **PWA installable** : Service Worker (`sw.js`), manifeste, page de secours hors-ligne.
 - **Tutoriel interactif en 3 étapes** pour enseigner la tragédie des biens communs dès
@@ -115,7 +125,7 @@ plafond de 8 licences appliqué, droits du deed rattachés au token).
 │         │                                                              │
 │         ▼                                                              │
 │   engine.wasm  ◄──  compilé depuis crates/wasm + crates/sim + rules     │
-│   (347 Ko)          100 % pur Rust, déterministe, zéro IO, zéro réseau │
+│   (868 Ko)          100 % pur Rust, déterministe, zéro IO, zéro réseau │
 └─────────┬──────────────────────────────────────────────────────────────┘
           │ (actions économiques clés : licences, dettes, vote)
           ▼
@@ -158,7 +168,7 @@ plafond de 8 licences appliqué, droits du deed rattachés au token).
 git clone https://github.com/BaptisteFaisy/bankkeeper.git
 cd bankkeeper
 
-# 2. Vérifier toute la simulation et le contrat en Rust (177 tests)
+# 2. Vérifier toute la simulation et le contrat en Rust (236 tests)
 cargo test --workspace
 
 # 3. Compiler le moteur en WebAssembly
