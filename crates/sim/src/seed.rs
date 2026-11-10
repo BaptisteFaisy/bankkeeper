@@ -130,6 +130,8 @@ pub fn seed_game(seed: u64) -> Game {
         bilan: None,
         last_council: None,
         campaign: Vec::new(),
+        pending: None,
+        lots_landed: 0,
     }
 }
 

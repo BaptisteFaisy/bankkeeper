@@ -18,20 +18,27 @@ une session**. Les voici, avec ce que le joueur fait à chacune.
 But : la plus grande valeur nette au bout de la campagne, avec une mer encore
 vivante. Le jeu ne juge pas : une mer vide ne rapporte simplement plus rien.
 
-### Cadence réelle dans le build actuel (à lire avant de juger)
+### La cadence, telle qu'elle tourne
 
-Le jeu est **au tour par tour**, pas en temps réel : le lot suivant part quand
-le joueur clique, et la journée se ferme sur `End the day`. Le rythme de
-30 secondes existe donc comme *animation* — un lot toutes les 1,4 s en rejeu,
-soit ~30 s pour une journée de trois sorties avec deux bateaux — et non comme
-une horloge qui tourne sans le joueur.
+Le bouton **`Go live`** lance l'horloge : **un lot toutes les 30 secondes**,
+dix bateaux, donc **une journée en 5 minutes** puis l'evening (repousse,
+charges, faillites) et le jour suivant. Le bouton affiche le compte à rebours
+(`Live · next lot 12s`) ; `End the day` reste là pour sauter le reste du jour.
 
-C'est un écart assumé avec le brief §2.1 (« toutes les 50 secondes environ »),
-et c'est le seul endroit où l'implémentation ne suit pas le papier. Le passage
-au temps réel demande trois choses, toutes petites séparément : un tick de
-30 secondes côté moteur (`sim tick` = une sortie par bateau), une fermeture de
-journée automatique à la 10ᵉ sortie, et une pause. Décision à prendre, pas
-détail technique : en temps réel, le joueur qui réfléchit trop perd des lots.
+Le moteur suit lot par lot : `sim tick` (= `/api/tick` = `tick` du moteur wasm)
+lande **un** lot, et le dernier lot de la journée ferme le jour dans le même
+battement. Un jour = `bateaux × sorties par bateau` lots ; la démo joue **une
+sortie par bateau et par jour** (TW-N-10 dit « au plus trois », donc c'est dans
+la règle), ce qui donne exactement 10 lots × 30 s = 5 minutes.
+
+Deux façons de jouer, même moteur :
+
+- **live** : le temps passe tout seul, le joueur qui réfléchit trop perd des lots ;
+- **au tour par tour** : `Next lot` pour avancer d'un lot, `End the day` pour
+  finir la journée. Utile pour lire, filmer, ou expliquer.
+
+Le fast-forward des juges reste hors de cette horloge : sept jours d'un coup,
+en une seconde, sans joueur.
 
 ### Le fast-forward des juges
 

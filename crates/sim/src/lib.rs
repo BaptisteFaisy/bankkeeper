@@ -8,9 +8,11 @@
 
 pub mod bots;
 pub mod cycle;
+mod evening;
 pub mod fastforward;
 pub mod fleet;
 mod reading;
+mod merchant_views;
 pub mod relay;
 pub mod season;
 pub mod seed;
@@ -163,6 +165,12 @@ pub struct Game {
     /// Bilan of every closed season, oldest first: the campaign log.
     #[serde(default)]
     pub campaign: Vec<season::Bilan>,
+    /// The day in progress, when the build lands one lot at a time.
+    #[serde(default)]
+    pub pending: Option<cycle::PendingDay>,
+    /// Lots already landed today: the cursor into the day's plan.
+    #[serde(default)]
+    pub lots_landed: u64,
 }
 
 impl Game {

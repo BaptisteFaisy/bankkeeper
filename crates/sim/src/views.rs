@@ -6,6 +6,7 @@
 //! sees a real stock here (TW-C1-01): zones show catch per trip and trend.
 
 use crate::cycle::Landing;
+use crate::merchant_views::buyer_limits;
 use crate::fastforward::{DayPoint, FfEvent};
 use crate::Game;
 use rules::auction::Outcome;
@@ -207,27 +208,6 @@ fn buyer_view(game: &Game, buyer: ActorId) -> Value {
     })
 }
 
-/// Every price this merchant would pay right now, with its reasoning line.
-/// One source of truth: `rules::merchant`, the pricing file.
-fn buyer_limits(game: &Game, buyer: ActorId) -> Value {
-    let targets = game.config.buyer_targets[buyer.idx()];
-    let rows: Vec<Value> = [rules::state::Species::Herring, rules::state::Species::Cod]
-        .into_iter()
-        .filter(|species| targets[species.idx()] > 0)
-        .map(|species| {
-            let stock = game.port.stores[buyer.idx()][species.idx()];
-            let target = targets[species.idx()];
-            let base = game.config.base_price(species);
-            json!({
-                "species": species.name(),
-                "limit": rules::merchant::limit(base, stock, target, game.config.stock_gain_bps) as f64 / 100.0,
-                "reasoning": rules::merchant::reasoning(buyer.name(), base, stock, target, game.config.stock_gain_bps),
-            })
-        })
-        .collect();
-    Value::Array(rows)
-}
-
 /// "herring", "cod", or "herring + cod" from the buyer targets.
 fn buyer_diet(targets: [u64; 2]) -> &'static str {
     match (targets[0] > 0, targets[1] > 0) {
@@ -239,7 +219,27 @@ fn buyer_diet(targets: [u64; 2]) -> &'static str {
 }
 
 /// Yesterday's landings for the ledger, oldest first.
+/// The lines of the day being played, else of the last closed day.
+fn current_lines(game: &Game) -> Vec<String> {
+    if let Some(pending) = game.pending.as_ref() {
+        if !pending.report.lines.is_empty() {
+            return pending.report.lines.clone();
+        }
+    }
+    game.last_report.as_ref().map(|report| report.lines.clone()).unwrap_or_default()
+}
+
 fn landing_views(game: &Game) -> Vec<Value> {
+    // A day in progress owns the landings of the day: in the live build the
+    // evening has not happened yet, and the panel must still show the lots.
+    if let Some(pending) = game.pending.as_ref() {
+        return pending
+            .report
+            .landings
+            .iter()
+            .map(|landing| landing_view(game, landing))
+            .collect();
+    }
     game.last_report
         .as_ref()
         .map(|report| report.landings.iter().map(|landing| landing_view(game, landing)).collect())
@@ -333,8 +333,10 @@ pub fn view_state(game: &Game) -> Value {
         "buyers": ActorId::buyers().iter().map(|buyer| buyer_view(game, *buyer)).collect::<Vec<_>>(),
         "auction": auction_view(game),
         "landings": landing_views(game),
-        "reasoning": game.last_report.as_ref().map(|report| report.lines.clone()).unwrap_or_default(),
+        "reasoning": current_lines(game),
         "season": displayed_season(game),
+        "secondsPerLot": game.config.seconds_per_lot,
+        "lotsLeft": lots_left(game),
         "campaignSeasons": game.config.campaign_seasons,
         "campaignOver": closed_seasons(game) >= game.config.campaign_seasons,
         "campaign": game.campaign,
@@ -342,6 +344,13 @@ pub fn view_state(game: &Game) -> Value {
         "bilan": game.bilan,
         "lastCouncil": game.last_council,
     })
+}
+
+/// Lots still to land today: the plan minus the cursor.
+fn lots_left(game: &Game) -> u64 {
+    let trips = game.config.trips_per_boat_day;
+    let total = trips.saturating_mul(game.port.boats.len() as u64);
+    total.saturating_sub(game.lots_landed)
 }
 
 /// Season number as the player reads it: the one being played, or the one

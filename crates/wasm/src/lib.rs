@@ -23,6 +23,10 @@ thread_local! {
 /// Default harbour: seed 7, a fortnight (the demo length, brief section 13).
 const DEFAULT_SEED: u64 = 7;
 const DEFAULT_WEEKS: u64 = 2;
+/// One trip per boat per day in the browser build: ten boats, ten lots, five
+/// minutes at thirty seconds a lot. TW-N-10 says *at most* three trips, so
+/// this is inside the rule, and it makes the track's two numbers exact.
+const DEMO_TRIPS: u64 = 1;
 
 /// Run `body` against the harbour, creating it on first use.
 fn with_game<T>(body: impl FnOnce(&mut Game) -> T) -> T {
@@ -31,6 +35,7 @@ fn with_game<T>(body: impl FnOnce(&mut Game) -> T) -> T {
         if slot.is_none() {
             let mut fresh = seed_game(DEFAULT_SEED);
             fresh.config.weeks_per_season = DEFAULT_WEEKS;
+            fresh.config.trips_per_boat_day = DEMO_TRIPS;
             *slot = Some(fresh);
         }
         body(slot.as_mut().expect("harbour exists"))
@@ -41,6 +46,7 @@ fn with_game<T>(body: impl FnOnce(&mut Game) -> T) -> T {
 fn reset(seed: u64, weeks: u64) -> Value {
     let mut fresh = seed_game(seed);
     fresh.config.weeks_per_season = weeks.clamp(1, 12);
+    fresh.config.trips_per_boat_day = DEMO_TRIPS;
     SHAPE.with(|shape| *shape.borrow_mut() = (seed, fresh.config.weeks_per_season));
     let state = views::view_state(&fresh);
     GAME.with(|slot| *slot.borrow_mut() = Some(fresh));
@@ -248,6 +254,10 @@ fn route(op: &str, body: &Value) -> Value {
         "council" => with_game(|game| council(game, body)),
         "day" => with_game(|game| match try_day(game) {
             Ok(report) => serde_json::to_value(&report).unwrap_or_else(|_| json!({ "error": "E_SIM_FAILED" })),
+            Err(error) => json!({ "error": error }),
+        }),
+        "tick" => with_game(|game| match sim::cycle::try_tick(game) {
+            Ok(ticked) => serde_json::to_value(&ticked).unwrap_or_else(|_| json!({ "closed": false })),
             Err(error) => json!({ "error": error }),
         }),
         "next-season" => with_game(|game| match sim::season::open_next_season(game) {

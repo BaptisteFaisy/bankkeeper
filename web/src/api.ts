@@ -138,6 +138,19 @@ export function postEndDay(): Promise<DayReport> {
   return post<DayReport>('/api/day', {});
 }
 
+export interface TickResult {
+  day: number;
+  closed: boolean;
+  landing?: { crates: number; captain: string; zone: string } | null;
+  lines: string[];
+  report?: DayReport | null;
+}
+
+/** One lot of the day: the live clock calls this every thirty seconds. */
+export function postTick(): Promise<TickResult> {
+  return post<TickResult>('/api/tick', {});
+}
+
 export function postNextSeason(): Promise<MutationResult> {
   return post<MutationResult>('/api/next-season', {});
 }

@@ -37,6 +37,10 @@ pub struct Config {
     /// Licence supply and weekly quota (TW-N-20: 20 x 70).
     pub licence_count: u64,
     pub quota_per_licence: u64,
+    /// Seconds between two lots in the live build. The track asks for a beat
+    /// every thirty seconds; with `trips_per_boat_day = 1` and ten boats, a day
+    /// lasts five minutes, exactly as the track describes.
+    pub seconds_per_lot: u64,
     /// Seasons per campaign. The sea keeps what the previous season left,
     /// so season 2 starts on a leaner bank: that is the handicap.
     pub campaign_seasons: u64,
@@ -136,6 +140,7 @@ impl Default for Config {
             stock_gain_bps: 5000,
             licence_count: 20,
             quota_per_licence: 70,
+            seconds_per_lot: 30,
             campaign_seasons: 3,
             licence_cap_per_captain: 8,
             daily_charge: 600,

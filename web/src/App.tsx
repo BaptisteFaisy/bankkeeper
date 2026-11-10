@@ -9,19 +9,19 @@ import type { GameState } from './hooks';
 import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
-import { shareUrl } from './persistence';
 import type { Session } from './session';
 import SeaMap from './components/SeaMap';
 import AuctionPanel from './components/AuctionPanel';
 import BoatsPanel from './components/BoatsPanel';
 import LedgerPanel from './components/LedgerPanel';
 import HarbourPanel from './components/HarbourPanel';
+import { ClockControls, CopyLink } from './components/HeaderControls';
 import JudgesPanel from './components/JudgesPanel';
 import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
 import { fmtGold } from './format';
 
-function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset }: {
+function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot }: {
   port: PortState | null;
   session: Session;
   onLogout: () => void;
@@ -31,6 +31,10 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
   dayBusy: boolean;
   over: boolean;
   onReset: () => void;
+  live: boolean;
+  setLive: (on: boolean) => void;
+  secondsLeft: number;
+  nextLot: () => void;
 }) {
   return (
     <header className="topbar">
@@ -42,9 +46,15 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
         <span className="tide-stat">Season {port.season ?? 1} of {port.campaignSeasons}</span>
       ) : null}
       <span className="muted">{session.name}</span>
-      <button type="button" disabled={dayBusy || over} title={over ? 'The season is over' : undefined} onClick={onEndDay}>
-        End the day
-      </button>
+      <ClockControls
+        live={live}
+        setLive={setLive}
+        secondsLeft={secondsLeft}
+        nextLot={nextLot}
+        onEndDay={onEndDay}
+        busy={dayBusy}
+        over={over}
+      />
       <button type="button" className="ghost" disabled={dayBusy} onClick={onReset}>
         New harbour
       </button>
@@ -152,27 +162,6 @@ function livePoint(graph: GraphLive | null, judges: JudgesLive | null): StockPoi
   const last = graph.history[graph.history.length - 1] as { herring_price?: unknown } | undefined;
   const price = typeof last?.herring_price === 'number' ? (last.herring_price as number) : 0;
   return { day: judges.day, shallows: graph.stocks[0] ?? 0, greybank: graph.stocks[1] ?? 0, deeps: graph.stocks[2] ?? 0, herringPrice: price };
-}
-
-/** The link that replays this season elsewhere (seed + length in the URL). */
-function CopyLink({ game, port }: { game: GameState; port: PortState | null }) {
-  const [copied, setCopied] = useState(false);
-  async function copy(): Promise<void> {
-    const seed = Number.parseInt(port?.seed ?? '', 10);
-    const url = shareUrl({ seed: Number.isFinite(seed) ? seed : 7, weeks: port?.weeksPerSeason ?? 4 }, window.location.href);
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      game.actions.pushToast('info', 'Season link copied.', url);
-    } catch {
-      game.actions.pushToast('error', 'Could not copy. The link is:', url);
-    }
-  }
-  return (
-    <button type="button" className="ghost" onClick={() => { void copy(); }}>
-      {copied ? 'Link copied' : 'Copy season link'}
-    </button>
-  );
 }
 
 function JudgeBench({ game, port, judges, graph }: { game: GameState; port: PortState | null; judges: JudgesLive | null; graph: GraphLive | null }) {
@@ -418,6 +407,10 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
         dayBusy={game.busy !== null}
         over={end.over}
         onReset={() => { void doReset(noted); }}
+        live={game.live}
+        setLive={game.setLive}
+        secondsLeft={game.secondsLeft}
+        nextLot={game.nextLot}
       />
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
