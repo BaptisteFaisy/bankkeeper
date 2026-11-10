@@ -34,12 +34,13 @@ fn decide(game: &mut Game, captain: ActorId) -> Vec<String> {
     if game.boats_of(captain).is_empty() {
         return vec![format!("{} has no boats left.", captain.name())];
     }
-    let (zone, mesh, line) = match captain {
+    let plan = match captain {
         ActorId::Hale => hale_plan(game),
         ActorId::Brandt => brandt_plan(game),
         ActorId::Okoro => okoro_plan(game),
         _ => return Vec::new(),
     };
+    let (zone, mesh, line) = crate::favours::book_kept(game, captain, plan);
     for index in game.boats_of(captain) {
         game.port.boats[index].zone = zone;
         game.port.boats[index].mesh = mesh;
