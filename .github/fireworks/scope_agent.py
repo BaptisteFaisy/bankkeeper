@@ -16,7 +16,7 @@ manquante qui est écrite, avec une raison tirée du diff.
 Bibliothèque standard uniquement. Usage :
 
   FIREWORKS_API_KEY=... python3 scope_agent.py fix \\
-      --repo BaptisteFaisy/near_tidewater --pr 215 --sha <tête> \\
+      --repo BaptisteFaisy/bankkeeper --pr 215 --sha <tête> \\
       --guard /tmp/check_couche0.py
 
 Codes de sortie : 0 = corps complété ; 1 = échec avec compte rendu ;

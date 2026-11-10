@@ -1,6 +1,6 @@
 # Tidewater — Architecture
 
-> Dépôt `BaptisteFaisy/near_tidewater`, track NEAR *Games With Real Economies*.
+> Dépôt `BaptisteFaisy/bankkeeper`, track NEAR *Games With Real Economies*.
 > Autorités : `tidewater.md` (le brief, §8) puis `/tmp/tidewater-game/spec.md`.
 
 ## Vue d'ensemble
