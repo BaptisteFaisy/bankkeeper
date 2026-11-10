@@ -6,9 +6,9 @@ import type { ContractRef, SupplyRow } from './chain';
 
 type Status = 'absent' | 'loading' | 'live' | 'unreachable';
 
-function statusOf(contract: ContractRef | null, rows: SupplyRow[], busy: boolean): Status {
+function statusOf(contract: ContractRef | null, rows: SupplyRow[]): Status {
   if (contract === null) return 'absent';
-  if (rows.length === 0) return busy ? 'loading' : 'absent';
+  if (rows.length === 0) return 'loading';
   return answered(rows) ? 'live' : 'unreachable';
 }
 
@@ -145,7 +145,7 @@ export default function ContractCard({ contract }: { contract: ContractRef | nul
   useEffect(() => {
     void refresh();
   }, [refresh]);
-  const status = statusOf(contract, rows, busy);
+  const status = statusOf(contract, rows);
   return (
     <section className="pf-card" aria-label="1 Le contrat" data-testid="contract-card">
       <h2>1 · Le contrat</h2>
