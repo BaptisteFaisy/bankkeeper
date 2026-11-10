@@ -47,6 +47,26 @@ achètent quand le quota les limite (TW-N-22). Une licence détenue mais
 non pêchée retire 70 caisses par semaine de la pression (TW-N-23).
 Le prix d'une licence suit le revenu qu'elle laisse espérer (TW-C4-04).
 
+### La licence comme actif louable (TW-N-24)
+
+Une licence s'achète, se vend — et se loue. Un bail porte sur une
+licence, pour un nombre de semaines fixé (1 à 12) : le preneur pêche le
+quota (70 caisses par semaine), le bailleur encaisse un loyer le lundi.
+Loyer par défaut : 5 % du prix courant de la licence et par semaine
+(arrondi au cent, plancher 1 or) — une licence à 200 or se loue 10 or
+la semaine, soit un sixième environ du revenu qu'elle laisse espérer.
+
+Le bail déplace le quota, jamais la propriété : le quota d'un capitaine
+vaut `(licences détenues − louées à d'autres + louées à soi) × 70`. Le
+plafond de 8 compte les licences détenues, pas celles louées : on peut
+pêcher plus que 8 licences, on n'en possède jamais plus de 8. Le loyer
+tombe le lundi, avant les achats de licences des NPC ; impayé, le bail
+tombe sur-le-champ et la licence rentre chez le bailleur. Un bail en
+cours bloque la vente : il faut le reprendre d'abord (fin anticipée
+gratuite, sans pénalité pour le preneur). Comme une licence vaut une
+voix au conseil, la voix reste au propriétaire : le marché du droit de
+pêcher n'est pas encore tout à fait le marché du pouvoir.
+
 ## Le circuit de l'or
 
 L'or n'entre que par les conserves exportées (Cannery) et les voyageurs

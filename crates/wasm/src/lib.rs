@@ -143,6 +143,20 @@ fn licence(game: &mut Game, body: &Value) -> Value {
     outcome(result)
 }
 
+/// `lease`: rent a licence out, or end a lease early (TW-N-24). The quota
+/// follows the lessee every Monday the rent is paid.
+fn lease_op(game: &mut Game, body: &Value) -> Value {
+    let (Some(lessor), Some(lessee)) = (text(body, "lessor"), text(body, "lessee")) else {
+        return json!({ "error": "E_BAD_LEASE" });
+    };
+    let (Ok(lessor), Ok(lessee)) = (actor(Some(lessor)), actor(Some(lessee))) else {
+        return json!({ "error": "E_BAD_LEASE" });
+    };
+    let weeks = number(body, "weeks").unwrap_or(2);
+    let ending = text(body, "action").is_some_and(|a| a.eq_ignore_ascii_case("unlease"));
+    outcome(if ending { game.unlease(lessor, lessee) } else { game.lease(lessor, lessee, weeks) })
+}
+
 /// `debt`: buy the note, grant a delay, or call the default (TW-C3-05).
 fn debt(game: &mut Game, body: &Value) -> Value {
     use rules::state::ActorId;
@@ -250,6 +264,7 @@ fn route(op: &str, body: &Value) -> Value {
         "assign" => with_game(|game| assign(game, body)),
         "survey" => with_game(|game| survey(game, body)),
         "licence" => with_game(|game| licence(game, body)),
+        "lease" => with_game(|game| lease_op(game, body)),
         "debt" => with_game(|game| debt(game, body)),
         "council" => with_game(|game| council(game, body)),
         "day" => with_game(|game| match try_day(game) {
@@ -371,6 +386,19 @@ mod tests {
         assert_eq!(restored["seed"], 7);
         let after = call(r#"{"op":"state"}"#);
         assert_eq!(after["seasonDays"], 14, "the saved fortnight came back");
+    }
+
+    #[test]
+    fn a_licence_can_be_rented_from_the_engine() {
+        call(r#"{"op":"init","body":{"seed":7,"weeks":2}}"#);
+        let leased = call(r#"{"op":"lease","body":{"action":"lease","lessor":"hale","lessee":"you","weeks":2}}"#);
+        assert_eq!(leased["ok"], true);
+        let state = call(r#"{"op":"state"}"#);
+        assert_eq!(state["leases"].as_array().map(Vec::len), Some(1));
+        assert_eq!(state["captains"][0]["quotaCrates"], 350);
+        let ended = call(r#"{"op":"lease","body":{"action":"unlease","lessor":"hale","lessee":"you"}}"#);
+        assert_eq!(ended["ok"], true);
+        assert_eq!(call(r#"{"op":"lease","body":{"lessor":"hale"}}"#)["error"], "E_BAD_LEASE");
     }
 
     #[test]
