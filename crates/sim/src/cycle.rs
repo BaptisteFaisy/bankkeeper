@@ -208,6 +208,24 @@ fn plan_from_fleet(fleet: usize, trips: u64) -> Vec<(usize, u64)> {
     plan
 }
 
+/// Credit every hull that sailed today to the captain who **sailed** her.
+///
+/// The landing log is the day's own record of who left the quay: reading the
+/// owner of the hull slot at closing time credited the buyer of a hull seized
+/// at noon with a trip the seller had already fished. A hull that sailed for
+/// two captains counts once for each of them, and once per day only.
+fn credit_boats_sailed(report: &DayReport, day: &mut DayRecord) {
+    let mut credited: Vec<(u64, ActorId)> = Vec::new();
+    for landing in &report.landings {
+        let captain = landing.captain;
+        if !captain.is_captain() || credited.contains(&(landing.boat, captain)) {
+            continue;
+        }
+        credited.push((landing.boat, captain));
+        day.boats_fished[captain.idx()] += 1;
+    }
+}
+
 /// Close the day: regrowth, wages, the buyers' drain, bankruptcies, weeks and
 /// seasons. This is the evening half of the day, unchanged by the clock.
 fn close_day(game: &mut Game, landing: Option<Landing>) -> TickReport {
@@ -219,14 +237,7 @@ fn close_day(game: &mut Game, landing: Option<Landing>) -> TickReport {
     let mut day = std::mem::replace(&mut pending.record, DayRecord::new(game.port.day));
     let mut report = std::mem::replace(&mut pending.report, DayReport::blank(game.port.day));
     let mut flows = std::mem::replace(&mut pending.flows, Flows::default());
-    for index in 0..game.port.boats.len() {
-        if game.port.trips_today[index] > 0 {
-            let owner = game.port.boats[index].owner;
-            if owner.is_captain() {
-                day.boats_fished[owner.idx()] += 1;
-            }
-        }
-    }
+    credit_boats_sailed(&report, &mut day);
     regrow_all(game, &mut report);
     pay_charges(game, &mut report);
     drain_cannery(game, &mut report, &mut flows);

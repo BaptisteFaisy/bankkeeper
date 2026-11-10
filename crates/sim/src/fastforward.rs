@@ -149,6 +149,10 @@ pub fn snapshot(game: &Game) -> DayPoint {
 }
 
 /// FNV-1a hash of the graph series: the determinism fingerprint.
+///
+/// Every column a season can differ in must go in, or a regression in that
+/// column passes the golden hash unseen: stocks, prices, purses, the licence
+/// map and the outer flows (exports, travellers, fuel and bait).
 pub fn history_hash(history: &[DayPoint]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
     for point in history {
@@ -161,6 +165,11 @@ pub fn history_hash(history: &[DayPoint]) -> u64 {
         for purse in point.gold {
             hash = mix(hash, purse as u64);
         }
+        for licences in point.licences {
+            hash = mix(hash, licences);
+        }
+        hash = mix(hash, point.ext_in);
+        hash = mix(hash, point.ext_out);
     }
     hash
 }
