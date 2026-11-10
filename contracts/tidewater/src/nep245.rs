@@ -96,14 +96,16 @@ impl Tidewater {
         for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
             self.move_balance(&sender_id, receiver_id.as_str(), token_id, amount.0);
         }
+        let amounts_json: Vec<String> = amounts.iter().map(|a| a.0.to_string()).collect();
         log_event(
             "nep245",
             "mt_batch_transfer",
             &format!(
-                "[{{\"old_owner_id\":\"{}\",\"new_owner_id\":\"{}\",\"token_ids\":{:?},\"memo\":{}}}]",
+                "[{{\"old_owner_id\":\"{}\",\"new_owner_id\":\"{}\",\"token_ids\":{},\"amounts\":{},\"memo\":{}}}]",
                 sender_id,
                 receiver_id,
-                token_ids,
+                Self::json_array(&token_ids),
+                Self::json_array(&amounts_json),
                 Self::memo_json(&memo),
             ),
         );
@@ -176,6 +178,12 @@ impl Tidewater {
 
     fn memo_json(memo: &Option<String>) -> String {
         memo.as_ref().map(|m| format!("\"{}\"", m)).unwrap_or("null".to_string())
+    }
+
+    /// A JSON array of strings. NEP-245 indexes `token_ids` and `amounts` in
+    /// parallel, so the batch event carries both arrays.
+    fn json_array(items: &[String]) -> String {
+        near_sdk::serde_json::to_string(items).expect("array of strings")
     }
 
     fn view_token(&self, token_id: &str) -> Option<Token> {

@@ -223,7 +223,6 @@ fn d03_duplicate_legs_in_a_batch_mint_tokens() {
 // ---------------------------------------------------------------------------
 
 #[test]
-#[ignore = "bug: D04 mt_batch_transfer emits token_ids without amounts (NEP-245 event)"]
 fn d04_batch_transfer_event_has_no_amounts_array() {
     let mut w = setup();
     let player = w.player.clone();
