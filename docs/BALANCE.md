@@ -152,9 +152,11 @@ semaine tombe). C'est le seul chemin vers la perte que le harnais trouve.
 Toute politique active : **0 faillite sur 50 graines**, et le pire run actif
 (`greedy`, 13 779,7 or) vaut encore **92 fois la mise de départ**. Le quota
 bloque la pêche à 280 caisses par semaine (4 licences × 70), soit 40 caisses par
-jour ; à 4–8 or la caisse contre 12 or de salaires et 12 or de sorties par jour,
-la marge du joueur est d'un facteur ~16. **Le risque est à sens unique** : le
-jeu punit brutalement l'inaction et jamais l'action.
+jour ; à 4–8 or la caisse, cela fait 160 à 320 or de recettes quotidiennes pour
+12 or de salaires (2 coques × 6) et 12 à 42 or de sorties (6 sorties à 2–7 or),
+soit une marge brute d'un facteur 3 à 13. Mesuré sur la campagne : +170 or nets
+par jour en médiane. **Le risque est à sens unique** : le jeu punit brutalement
+l'inaction et jamais l'action.
 
 ## Ce qui reste fragile
 
@@ -184,6 +186,7 @@ jeu punit brutalement l'inaction et jamais l'action.
 - **Le harnais n'observe rien d'autre** : il ne dit pas *pourquoi* la mer
   s'effondre (quota, maillage, cibles d'achat), seulement *qu'elle s'effondre*.
   Les leviers candidats, dans l'ordre où les chiffres les désignent, sont le
-  quota par licence (il ne mord que sur le joueur, pas sur les PNJ), le prix de
-  la caisse (4–8 or contre 12 or de charges) et la cible de stock de la
-  conserverie. **Aucune constante n'a été touchée dans ce lot.**
+  quota par licence (il mord sur tout le monde, mais Brandt en porte 8 et les
+  autres 4), le prix de la caisse (4–8 or contre 12 or de salaires quotidiens)
+  et la cible de stock de la conserverie. **Aucune constante n'a été touchée
+  dans ce lot.**
