@@ -370,3 +370,29 @@ section.judges {
 @media (prefers-reduced-motion: reduce) {
   .tip-body { transition: none; }
 }
+
+/* On-chain strip (VITE_CHAIN=1): one status line, three sponsored actions. */
+.chain-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.chain-bar button { font-size: 13px; padding: 3px 10px; }
+
+.chain-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--kelp);
+  flex: none;
+}
+
+.chain-tx { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chain-error { color: var(--red); font-size: 12px; }
