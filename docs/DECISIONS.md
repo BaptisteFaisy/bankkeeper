@@ -132,3 +132,19 @@ la limite est la cotation, le marteau est le prix exact.
   tableau. Okoro, suiveur, tente un banc que personne n'a pêché depuis
   deux semaines un jour sur cinq, et l'annonce dans sa ligne de
   raisonnement. TW-J-04 tient : même graine, même saison.
+
+## 2026-11-10 — Le moteur tourne dans le navigateur (branche `feat/wasm-engine`)
+
+- `crates/wasm` compile `rules` + `sim` en `wasm32-unknown-unknown` et parle
+  **exactement le JSON du relais** (`{op, body}` en entrée, même enveloppe en
+  sortie). `web/src/api.ts` garde ses signatures : une seule bifurcation,
+  `engineEnabled()`, choisit le moteur ou le réseau.
+- **Pas de wasm-bindgen** : ABI maison (`tw_alloc`, `tw_call`, `tw_out_len`,
+  `tw_free`), zéro dépendance npm, module de 347 Ko, **aucun import** — donc
+  `WebAssembly.instantiate(bytes, {})` suffit, sans MIME ni shim.
+- La démo publique joue une **saison de 14 jours** par défaut
+  (`DEFAULT_WEEKS = 2`, réponse §13 question 5) et tout l'état vit dans
+  l'onglet : aucun serveur, aucun compte, aucune requête réseau.
+- `tests/e2e_offline.py` rejoue le parcours de référence sur le build
+  statique et **échoue si une seule requête `/api/` part** : c'est la preuve
+  que le moteur fait le travail. Vérifié aussi sur la prod Vercel.

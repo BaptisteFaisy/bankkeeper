@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:wasm": "cargo build -p tidewater-wasm --target wasm32-unknown-unknown --release --manifest-path ../Cargo.toml && mkdir -p public && cp ../target/wasm32-unknown-unknown/release/tidewater_wasm.wasm public/engine.wasm",
+    "build:offline": "npm run build:wasm && VITE_ENGINE=wasm npm run build"
   },
   "dependencies": {
     "react": "^18.3.1",
