@@ -27,6 +27,9 @@ const DEFAULT_WEEKS: u64 = 2;
 /// minutes at thirty seconds a lot. TW-N-10 says *at most* three trips, so
 /// this is inside the rule, and it makes the track's two numbers exact.
 const DEMO_TRIPS: u64 = 1;
+/// The browser demo runs barreau 2 with the levy on: 0.4 gold a crate, so the
+/// port fund fills from the first sale instead of waiting for a council vote.
+const DEMO_LEVY: u64 = rules::config::DEMO_LEVY_PER_CRATE;
 
 /// Run `body` against the harbour, creating it on first use.
 fn with_game<T>(body: impl FnOnce(&mut Game) -> T) -> T {
@@ -36,6 +39,7 @@ fn with_game<T>(body: impl FnOnce(&mut Game) -> T) -> T {
             let mut fresh = seed_game(DEFAULT_SEED);
             fresh.config.weeks_per_season = DEFAULT_WEEKS;
             fresh.config.trips_per_boat_day = DEMO_TRIPS;
+            fresh.config.levy_per_crate = DEMO_LEVY;
             *slot = Some(fresh);
         }
         body(slot.as_mut().expect("harbour exists"))
@@ -47,6 +51,7 @@ fn reset(seed: u64, weeks: u64) -> Value {
     let mut fresh = seed_game(seed);
     fresh.config.weeks_per_season = weeks.clamp(1, 12);
     fresh.config.trips_per_boat_day = DEMO_TRIPS;
+    fresh.config.levy_per_crate = DEMO_LEVY;
     SHAPE.with(|shape| *shape.borrow_mut() = (seed, fresh.config.weeks_per_season));
     let state = views::view_state(&fresh);
     GAME.with(|slot| *slot.borrow_mut() = Some(fresh));

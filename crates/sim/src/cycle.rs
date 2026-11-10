@@ -5,7 +5,7 @@ use crate::evening::{
     close_broke_buyers, drain_cannery, drain_fishmonger, drain_gull, pay_charges, regrow_all,
     settle_boundaries, spoil_closed,
 };
-use crate::{bots, pay_rescuer, season, DayRecord, Game, CHANDLERY_MARGIN_BPS};
+use crate::{bots, fmt_gold, pay_rescuer, season, DayRecord, Game, CHANDLERY_MARGIN_BPS};
 use rules::auction::{self, Lot, Outcome};
 use rules::config::Config;
 use rules::goldflow::{check_conservation, Flows};
@@ -434,6 +434,16 @@ fn settle_sale(
         day.add_herring_sale(*price, meta.crates);
     }
     pay_rescuer(game, meta.captain, *total);
+    // Barreau 2: the landing levy, out of this sale and into the port fund.
+    // One line per sold lot, so the ledger shows the price as it is paid.
+    let levy = game.levy_on_sale(meta.captain, meta.crates, *total as i64);
+    if levy > 0 {
+        report.lines.push(format!(
+            "Levy: {} on {} crates to the port fund.",
+            fmt_gold(levy),
+            meta.crates
+        ));
+    }
     let base = config.base_price(species);
     let target = config.buyer_target(*buyer, species);
     let factor = auction::stock_factor_bps(stock_before, target, config);

@@ -156,8 +156,22 @@ function proposalText(proposal: CouncilProposal): string {
   const parts = [`quota ${proposal.quota_per_licence}`];
   if (proposal.close_zone !== null) parts.push(`close ${proposal.close_zone}`);
   if (proposal.ban_small_mesh) parts.push('ban small mesh');
+  // Barreau 2: the levy a crate the motion would set for next season.
+  if (proposal.levy_per_crate !== null && proposal.levy_per_crate !== undefined) {
+    parts.push(`levy ${(proposal.levy_per_crate / 100).toFixed(1)}g a crate`);
+  }
   parts.push(`indemnity ${(proposal.indemnity_per_licence_week / 100).toFixed(2)}g`);
   return parts.join(' · ');
+}
+
+// Barreau 2: the levy a crate, a plain numeric field (0 to 1.2 gold).
+function LevyInput({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  return (
+    <label>
+      Levy a crate
+      <input value={value} onChange={(e) => onChange(e.target.value)} inputMode="decimal" maxLength={4} placeholder="0 to 1.2" aria-label="Landing levy in gold per crate" />
+    </label>
+  );
 }
 
 function ProposeForm({ busy, onPropose }: Pick<Props, 'busy' | 'onPropose'>) {
@@ -165,10 +179,15 @@ function ProposeForm({ busy, onPropose }: Pick<Props, 'busy' | 'onPropose'>) {
   const [closeZone, setCloseZone] = useState('');
   const [banMesh, setBanMesh] = useState(false);
   const [indemnity, setIndemnity] = useState('0');
+  const [levy, setLevy] = useState('');
   function propose(): void {
     const tokens = [`quota${quota.trim() === '' ? '50' : quota.trim()}`];
     if (closeZone !== '') tokens.push(`close:${closeZone}`);
     if (banMesh) tokens.push('ban-mesh');
+    const rate = Number(levy);
+    if (levy.trim() !== '' && Number.isFinite(rate) && rate >= 0 && rate <= 1.2) {
+      tokens.push(`levy:${rate}`);
+    }
     const pay = Number(indemnity);
     onPropose(tokens.join(','), Number.isFinite(pay) && pay > 0 ? pay : 0);
   }
@@ -195,6 +214,7 @@ function ProposeForm({ busy, onPropose }: Pick<Props, 'busy' | 'onPropose'>) {
         Indemnity
         <input value={indemnity} onChange={(e) => setIndemnity(e.target.value)} inputMode="decimal" maxLength={6} aria-label="Indemnity in gold" />
       </label>
+      <LevyInput value={levy} onChange={setLevy} />
       <button type="button" disabled={busy} onClick={propose}>
         Propose
       </button>

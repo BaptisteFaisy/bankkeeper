@@ -138,6 +138,7 @@ fn roll_with_indemnity(per_licence_week: u64) -> sim::season::CouncilReport {
         close_zone: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: per_licence_week,
+        levy_per_crate: None,
     });
     roll_season(&mut game)
 }

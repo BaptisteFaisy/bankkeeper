@@ -318,6 +318,7 @@ mod tests {
             close_zone: None,
             ban_small_mesh: false,
             indemnity_per_licence_week: 0,
+            levy_per_crate: None,
         });
         game
     }

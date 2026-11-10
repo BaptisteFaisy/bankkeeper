@@ -6,7 +6,7 @@
 //! rules (notably [`buy_estimate`](rules::survey::buy_estimate)); [`Rng`] is
 //! the sim's splitmix64 stream for seeded draws on top of the rules.
 
-use crate::Game;
+use crate::{Fund, Game};
 use rules::config::Config;
 use rules::debt::Loan;
 use rules::goldflow::Flows;
@@ -134,6 +134,7 @@ pub fn seed_game(seed: u64) -> Game {
         pending: None,
         lots_landed: 0,
         leases: Vec::new(),
+        fund: Fund::default(),
     }
 }
 

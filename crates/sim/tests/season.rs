@@ -44,6 +44,7 @@ fn fat_indemnity_flips_a_vote_and_pays() {
         close_zone: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: 50_000,
+        levy_per_crate: None,
     });
     let report = roll_season(&mut game);
     assert!(report.tabled);

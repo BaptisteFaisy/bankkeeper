@@ -191,6 +191,7 @@ fn vote_quota_cut(game: &mut Game) {
         close_zone: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: 0,
+        levy_per_crate: None,
     });
     game.cast_vote(true);
 }

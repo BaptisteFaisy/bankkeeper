@@ -18,6 +18,11 @@ pub struct Proposal {
     pub ban_small_mesh: bool,
     /// Gold per licence per week paid to yes-voters (TW-C4-03), centigold.
     pub indemnity_per_licence_week: u64,
+    /// Landing levy for next season in centigold per crate. `None` means the
+    /// motion leaves the levy alone; `default` keeps quota-only motions (and
+    /// saves written before the levy) deserialising.
+    #[serde(default)]
+    pub levy_per_crate: Option<u64>,
 }
 
 /// A ballot on a proposal.
@@ -98,6 +103,31 @@ pub fn vote_reasoning(
     format!("{name} votes {word}: a {quota}-crate quota costs him {weekly_cost} a week, your offer pays {offer}.")
 }
 
+/// Levy reasoning line (barreau 2): "Brandt votes no: a 0.8 levy costs him
+/// 640 a week, your offer pays 400." Same shape as [`vote_reasoning`], with the
+/// levy in the place the quota takes there.
+pub fn vote_reasoning_levy(
+    name: &str,
+    vote: Vote,
+    levy: u64,
+    weekly_cost: u64,
+    offer: u64,
+) -> String {
+    let word = match vote {
+        Vote::For => "yes",
+        Vote::Against => "no",
+    };
+    format!(
+        "{name} votes {word}: a {} levy costs him {weekly_cost} a week, your offer pays {offer}.",
+        crate::format_price(levy)
+    )
+}
+
+/// What a captain's season costs in levy: crates x rate per week, centigold.
+pub fn levy_week_cost(crates_per_week: u64, levy_per_crate: u64) -> i64 {
+    crates_per_week.saturating_mul(levy_per_crate) as i64
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,6 +149,18 @@ mod tests {
             vote_reasoning("Brandt", Vote::Against, 50, 640, 400),
             "Brandt votes no: a 50-crate quota costs him 640 a week, your offer pays 400."
         );
+    }
+
+    #[test]
+    fn levy_reasoning_names_the_levy_and_its_weekly_bill() {
+        // Barreau 2, brief section 5.4 shape: the instrument first, the weekly
+        // cost second, the offer last.
+        assert_eq!(
+            vote_reasoning_levy("Brandt", Vote::Against, 80, 640, 400),
+            "Brandt votes no: a 0.8 levy costs him 640 a week, your offer pays 400."
+        );
+        assert_eq!(levy_week_cost(800, 80), 64_000);
+        assert_eq!(levy_week_cost(0, 80), 0);
     }
 
     #[test]
