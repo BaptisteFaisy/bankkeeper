@@ -11,6 +11,7 @@ CLI contract (implemented by `crates/sim`, binary `sim`):
   sim assign --state F --boat ID [--zone Z | --quay] [--mesh large|small]
   sim survey --state F --zone Z
   sim licence --state F --action buy|sell --ref R
+  sim lease  --state F --action lease|unlease --lessor L --lessee X [--weeks N]
   sim debt   --state F --action buy|forbear|seize --ref R
   sim council --state F --action propose|vote --rule R [--indemnity N]
   sim day --state F                                    -> day report
@@ -77,6 +78,16 @@ def build_licence_argv(binary: str, state: str, action: str,
                        ref: str) -> list[str]:
     return [binary, "licence", "--state", state, "--action", action,
             "--ref", ref]
+
+
+def build_lease_argv(binary: str, state: str, action: str, lessor: str,
+                     lessee: str, weeks: int | None = None) -> list[str]:
+    """Argv for the lease desk: rent a licence out, or end a lease early."""
+    argv = [binary, "lease", "--state", state, "--action", action,
+            "--lessor", lessor, "--lessee", lessee]
+    if weeks is not None:
+        argv += ["--weeks", str(weeks)]
+    return argv
 
 
 def build_debt_argv(binary: str, state: str, action: str,

@@ -1,10 +1,21 @@
 // Harbour office: the player levers from brief section 2.3.
-// Surveys per zone, licence trade (pool and captains), loan notes
+// Surveys per zone, licence trade (pool and captains), the lease desk
+// (rent a licence from a captain, end one of your own leases), loan notes
 // (buy/forbear/seize) and council motions (propose + vote yes/no).
 import { useState } from 'react';
 import type { CaptainView, CouncilOutcome, CouncilProposal, LoanView, ZoneId } from '../types';
 import { ZONE_LABEL } from '../types';
 import { fmtGold } from '../format';
+
+// One lease in force: a licence lent for a term, the quota going with it.
+interface LeaseRow {
+  lessor: string;
+  lessorName: string;
+  lessee: string;
+  lesseeName: string;
+  weeklyRent: number;
+  weeksLeft: number;
+}
 
 interface Props {
   captains: CaptainView[];
@@ -18,12 +29,17 @@ interface Props {
   busy: boolean;
   onSurvey: (zone: ZoneId) => void;
   onLicence: (action: 'buy' | 'sell', ref: string) => void;
+  // Rent a licence out (own default: two weeks), or end one of your leases.
+  leases?: LeaseRow[];
+  onLease?: (action: 'lease' | 'unlease', lessor: string, lessee: string, weeks: number) => void;
   onDebt: (action: 'buy' | 'forbear' | 'seize', ref: string) => void;
   onPropose: (rule: string, indemnity: number) => void;
   onVote: (yes: boolean) => void;
 }
 
 const ZONES: ZoneId[] = ['shallows', 'greybank', 'deeps'];
+// The Rent button asks for a fortnight at the default weekly rent.
+const RENT_WEEKS = 2;
 
 function SurveyRow({ busy, playerGold, onSurvey }: Pick<Props, 'busy' | 'playerGold' | 'onSurvey'>) {
   const short = playerGold < 80;
@@ -41,7 +57,33 @@ function SurveyRow({ busy, playerGold, onSurvey }: Pick<Props, 'busy' | 'playerG
   );
 }
 
-function LicenceRow({ captains, licencePool, youLicences, busy, playerGold, licencePrice, onLicence }: Pick<Props, 'captains' | 'licencePool' | 'youLicences' | 'busy' | 'playerGold' | 'licencePrice' | 'onLicence'>) {
+function leaseText(lease: LeaseRow): string {
+  const term = `${lease.weeksLeft} week${lease.weeksLeft === 1 ? '' : 's'} left`;
+  const rent = `${fmtGold(lease.weeklyRent)}g a week, ${term}`;
+  if (lease.lessee === 'you') return `You rent a licence from ${lease.lessorName}: ${rent}.`;
+  return `${lease.lesseeName} rents a licence from you: ${rent}.`;
+}
+
+function LeaseList({ leases, busy, onLease }: Pick<Props, 'leases' | 'busy' | 'onLease'>) {
+  const mine = (leases ?? []).filter((lease) => lease.lessor === 'you' || lease.lessee === 'you');
+  if (mine.length === 0) return null;
+  return (
+    <ul className="harbour-list">
+      {mine.map((lease, i) => (
+        <li key={`${lease.lessor}-${lease.lessee}-${i}`}>
+          <span>{leaseText(lease)}</span>
+          <span className="harbour-row">
+            <button type="button" disabled={busy || onLease === undefined} title={onLease === undefined ? 'Lease desk not wired' : undefined} onClick={() => onLease?.('unlease', lease.lessor, lease.lessee, 0)}>
+              End lease
+            </button>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function LicenceRow({ captains, licencePool, youLicences, busy, playerGold, licencePrice, leases, onLicence, onLease }: Pick<Props, 'captains' | 'licencePool' | 'youLicences' | 'busy' | 'playerGold' | 'licencePrice' | 'leases' | 'onLicence' | 'onLease'>) {
   const others = captains.filter((c) => c.id !== 'you');
   // Same pattern as the loan-note pool buy: no request fires when the
   // purse cannot cover the known price. Unknown price: stay enabled.
@@ -66,9 +108,13 @@ function LicenceRow({ captains, licencePool, youLicences, busy, playerGold, lice
             <button type="button" disabled={busy || youLicences === 0} title={youLicences === 0 ? 'You hold none' : undefined} onClick={() => onLicence('sell', c.id)}>
               Sell
             </button>
+            <button type="button" disabled={busy || onLease === undefined || c.licences === 0} title={onLease === undefined ? 'Lease desk not wired' : c.licences === 0 ? `${c.name} holds none` : undefined} onClick={() => onLease?.('lease', c.id, 'you', RENT_WEEKS)}>
+              Rent
+            </button>
           </span>
         ))}
       </div>
+      <LeaseList leases={leases} busy={busy} onLease={onLease} />
     </div>
   );
 }
@@ -196,7 +242,7 @@ export default function HarbourPanel(props: Props) {
     <section className="panel harbour" aria-label="Harbour office">
       <h2>Harbour office</h2>
       <SurveyRow busy={props.busy} playerGold={props.playerGold} onSurvey={props.onSurvey} />
-      <LicenceRow captains={props.captains} licencePool={props.licencePool} youLicences={props.youLicences} busy={props.busy} playerGold={props.playerGold} licencePrice={props.licencePrice} onLicence={props.onLicence} />
+      <LicenceRow captains={props.captains} licencePool={props.licencePool} youLicences={props.youLicences} busy={props.busy} playerGold={props.playerGold} licencePrice={props.licencePrice} leases={props.leases} onLicence={props.onLicence} onLease={props.onLease} />
       <DebtRow loans={props.loans} busy={props.busy} playerGold={props.playerGold} onDebt={props.onDebt} />
       <CouncilBlock proposal={props.proposal} lastCouncil={props.lastCouncil} busy={props.busy} onPropose={props.onPropose} onVote={props.onVote} />
     </section>

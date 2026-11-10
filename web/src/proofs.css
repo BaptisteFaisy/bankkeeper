@@ -1,0 +1,167 @@
+/* Proofs page: same chart-room palette as the game, no washes, no icons.
+   Every rule is prefixed `pf-` so the game's stylesheet stays untouched. */
+.pf {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 28px 22px 72px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.pf-head {
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+}
+
+.pf-kicker {
+  margin: 0 0 6px;
+  color: var(--sand);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.pf-head h1 {
+  margin: 0 0 10px;
+  font-size: 34px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.pf-lede { margin: 0 0 10px; max-width: 68ch; }
+
+.pf-sep { color: var(--line); margin: 0 10px; }
+
+.pf-link { color: var(--gold); text-decoration: none; border-bottom: 1px solid var(--line); }
+.pf-link:hover, .pf-link:focus { border-bottom-color: var(--gold); }
+
+.pf-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--sea);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.pf-card h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: var(--sand);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.pf-card h3 { margin: 0 0 6px; color: var(--ink); font-size: 15px; }
+
+.pf-body p { margin: 0 0 10px; }
+.pf-body p:last-child { margin-bottom: 0; }
+
+.pf-status { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+.pf-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--ink);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pf-badge-live { border-color: var(--kelp); color: var(--kelp); }
+.pf-badge-warn { border-color: var(--buoy); color: var(--buoy); }
+
+.pf-muted { color: var(--muted); }
+.pf-warn { color: var(--buoy); }
+.pf-num { font-variant-numeric: tabular-nums; color: var(--gold); }
+
+.pf-list { margin: 0 0 10px; padding-left: 20px; }
+.pf-list li { margin-bottom: 6px; }
+
+.pf-table { width: 100%; border-collapse: collapse; margin: 4px 0 10px; }
+.pf-table th, .pf-table td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.pf-table th {
+  color: var(--sand);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+button {
+  background: var(--buoy);
+  color: #fff6ec;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+button:disabled { background: var(--panel-2); color: var(--muted); cursor: default; }
+
+.pf-button {
+  display: inline-block;
+  background: var(--buoy);
+  color: #fff6ec;
+  padding: 9px 16px;
+  text-decoration: none;
+  border-radius: 4px;
+}
+.pf-button:hover, .pf-button:focus { background: var(--red); }
+
+code {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 13.5px;
+  color: var(--gold);
+  background: var(--panel-2);
+  padding: 1px 5px;
+}
+
+.pf-cmd {
+  display: block;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--bg);
+  border-left: 2px solid var(--gold);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pf-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.pf-col { border-top: 2px solid var(--sea); padding-top: 10px; }
+.pf-col-off { border-top-color: var(--sand); }
+
+.pf-dl { margin: 0; }
+.pf-row { margin-bottom: 10px; }
+.pf-row dt { color: var(--ink); font-weight: 600; }
+.pf-row dd { margin: 2px 0 0; font-size: 14.5px; }
+
+.pf-proofs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pf-proof { background: var(--panel-2); padding: 12px 14px; }
+.pf-proof p { margin: 0; font-size: 14.5px; }
+
+.pf-foot {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .pf-cols, .pf-proofs { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf * { transition: none; animation: none; }
+}

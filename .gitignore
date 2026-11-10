@@ -4,6 +4,9 @@ target/
 node_modules/
 web/node_modules
 web/dist/
+web/dist-chain/
+# Local NEAR chain: node data, keys, state.json (never in the tree)
+.chain/
 server/state.json
 server/*.state.json
 .DS_Store
