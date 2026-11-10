@@ -16,14 +16,15 @@ import BoatsPanel from './components/BoatsPanel';
 import LedgerPanel from './components/LedgerPanel';
 import HarbourPanel from './components/HarbourPanel';
 import ChainBar from './components/ChainBar';
-import { ClockControls, CopyLink } from './components/HeaderControls';
+import { ClockControls, CopyLink, HowToPlay } from './components/HeaderControls';
+import { Tutorial, useTutorial } from './components/Tutorial';
 import JudgesPanel from './components/JudgesPanel';
 import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
 import { fmtGold } from './format';
 import { CHAIN_ENABLED } from './near/chain';
 
-function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot }: {
+function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot, onHowToPlay }: {
   port: PortState | null;
   session: Session;
   onLogout: () => void;
@@ -37,6 +38,7 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
   setLive: (on: boolean) => void;
   secondsLeft: number;
   nextLot: () => void;
+  onHowToPlay: () => void;
 }) {
   return (
     <header className="topbar">
@@ -57,6 +59,7 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
         busy={dayBusy}
         over={over}
       />
+      <HowToPlay onOpen={onHowToPlay} />
       <button type="button" className="ghost" disabled={dayBusy} onClick={onReset}>
         New harbour
       </button>
@@ -386,7 +389,7 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
   );
 }
 
-function GameScreen({ game, session }: { game: GameState; session: Session }) {
+function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: Session; onHowToPlay: () => void }) {
   const port = game.port;
   const selected = findBoat(port, game.selectedBoat);
   const dayKey = `${port?.week ?? 0}-${port?.day ?? ''}`;
@@ -413,6 +416,7 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
         setLive={game.setLive}
         secondsLeft={game.secondsLeft}
         nextLot={game.nextLot}
+        onHowToPlay={onHowToPlay}
       />
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
@@ -446,6 +450,7 @@ function ToastStack({ game }: { game: GameState }) {
 
 export default function App() {
   const game = useGame();
+  const tutorial = useTutorial();
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
       if (e.key !== 'Escape') return;
@@ -466,7 +471,8 @@ export default function App() {
   }
   return (
     <div className="app">
-      <GameScreen game={game} session={game.session} />
+      <GameScreen game={game} session={game.session} onHowToPlay={tutorial.show} />
+      {tutorial.open && <Tutorial onClose={tutorial.close} />}
       <ToastStack game={game} />
     </div>
   );

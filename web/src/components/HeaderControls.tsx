@@ -37,6 +37,21 @@ export function ClockControls({ live, setLive, secondsLeft, nextLot, onEndDay, b
   );
 }
 
+/** Reopens the three-card tutorial, for anyone who skipped it or forgot it. */
+export function HowToPlay({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      className="ghost how-to-play"
+      onClick={onOpen}
+      title="Three cards: the shared stock, the auction, the council"
+      aria-label="How to play"
+    >
+      How to play
+    </button>
+  );
+}
+
 /** The link that replays this season elsewhere (seed + length in the URL). */
 export function CopyLink({ game, port }: { game: GameState; port: PortState | null }) {
   const [copied, setCopied] = useState(false);
