@@ -68,7 +68,7 @@ pub const COUNCIL_WEEK_START: u64 = 21;
 // ---------------------------------------------------------------------------
 
 /// Token metadata (NEP-245 Metadata extension, game subset).
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct TokenMeta {
     pub token_id: String,
@@ -77,7 +77,7 @@ pub struct TokenMeta {
 }
 
 /// A captain: the human player (`player`) or an NPC id.
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Captain {
     pub owner: String,
@@ -87,7 +87,7 @@ pub struct Captain {
 }
 
 /// A boat and its current assignment. Deed token holder owns the boat.
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Boat {
     pub deed: String,
@@ -98,7 +98,7 @@ pub struct Boat {
 }
 
 /// A fish buyer: stock targets drive its auction limits (TW-N-31).
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Buyer {
     pub name: String,
@@ -110,14 +110,14 @@ pub struct Buyer {
 }
 
 /// Bank, chandlery and residents never close; gold lives in the ledger.
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Actor {
     pub name: String,
 }
 
 /// One fishing zone: a shared stock with logistic regrowth (TW-N-01..05).
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Zone {
     pub name: String,
@@ -136,7 +136,7 @@ pub struct Zone {
 
 /// A loan is a transferable note token (100+). The lender seizes the boat
 /// deed after two missed weekly payments (TW-C3-03).
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Loan {
     pub borrower: String,
@@ -149,7 +149,7 @@ pub struct Loan {
 }
 
 /// One bailout event: profit shares (200+) pay from sales proceeds.
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Share {
     pub actor: String,
@@ -168,7 +168,7 @@ pub enum ProposalKind {
 }
 
 /// A council proposal with licence-weighted votes (TW-C4-02).
-#[near]
+#[near(serializers = [borsh, json])]
 #[derive(Clone)]
 pub struct Proposal {
     pub author: String,

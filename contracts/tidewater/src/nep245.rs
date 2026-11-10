@@ -8,11 +8,11 @@
 
 use crate::{log_event, Tidewater, TidewaterExt};
 use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near, AccountId, NearToken};
 
 /// NEP-245 Token view (fungible items: no single owner, no approvals).
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct Token {
     pub token_id: String,
     pub owner_id: Option<AccountId>,
@@ -20,7 +20,8 @@ pub struct Token {
 }
 
 /// NEP-245 metadata; `base_price_milli` is our documented extra.
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct TokenMetadata {
     pub title: Option<String>,
     pub description: Option<String>,

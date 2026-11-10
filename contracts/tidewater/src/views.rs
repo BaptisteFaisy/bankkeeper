@@ -8,11 +8,11 @@ use crate::{
     format_gold, npc_owner, Tidewater, TidewaterExt, COUNCIL_WEEK_START, GOLD_TOKEN, LICENCE_TOKEN,
     SEASON_DAYS,
 };
-use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near, AccountId};
 
 /// One zone: real stock (judges) plus the signals players see (TW-C1-02).
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct ZoneView {
     pub id: u8,
     pub name: String,
@@ -26,7 +26,8 @@ pub struct ZoneView {
 }
 
 /// One buyer limit with its reasoning line (TW-N-31, TW-UI-05).
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct LimitView {
     pub buyer: String,
     pub species: String,
@@ -35,7 +36,8 @@ pub struct LimitView {
 }
 
 /// One actor card: gold, open flag, licence weight.
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct ActorView {
     pub id: String,
     pub name: String,
@@ -45,7 +47,8 @@ pub struct ActorView {
 }
 
 /// Gold conservation check (TW-N-42): supply must equal seed + flows.
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct GoldTotals {
     pub total_milli: u64,
     pub exterior_in_milli: u64,
@@ -53,7 +56,8 @@ pub struct GoldTotals {
 }
 
 /// Day, week and season clock plus the council flag.
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct DayView {
     pub day: u64,
     pub week: u64,
