@@ -1,14 +1,20 @@
-// Sections 2 to 4: shared season, what is on-chain vs off-chain, invariants.
+// Panels.tsx — shared season card, on-chain/off-chain ledger, and invariants.
+//
+// The season card carries the exact ?seed= and ?weeks= that replay the game;
+// the ledger honestly splits what lives in the contract vs what runs off-chain;
+// the invariants list the deterministic tests judges can reproduce themselves.
 import { proofsHref, replayHref } from './season';
 import type { SharedSeason } from './season';
 
 export function SeasonCard({ season }: { season: SharedSeason }) {
   return (
     <section className="pf-card" aria-label="2 La saison partagée" data-testid="season-card">
-      <h2>2 · La saison partagée</h2>
+      <div className="pf-card-head">
+        <h2>2 &middot; La saison partagée</h2>
+        <span className="pf-badge">graine {season.seed}</span>
+      </div>
       <div className="pf-body">
         <p className="pf-status">
-          <span className="pf-badge">graine {season.seed}</span>
           <span>
             {season.weeks} semaine(s) par saison, 3 saisons par campagne
             {season.shared ? ' — graine lue dans cette URL' : ' — graine par défaut'}
@@ -19,11 +25,11 @@ export function SeasonCard({ season }: { season: SharedSeason }) {
           graine, même saison, même <code>history_hash</code>. Ce lien rejoue la
           saison dont parle cette page.
         </p>
-        <p>
+        <p className="pf-actions-row">
           <a className="pf-button" data-testid="replay-link" href={replayHref(season)}>
             Rejouer cette saison dans le jeu
           </a>
-          <span className="pf-sep">·</span>
+          <span className="pf-sep">&middot;</span>
           <a className="pf-link" data-testid="proofs-link" href={proofsHref(season)}>
             garder cette graine sur la page de preuves
           </a>
@@ -79,7 +85,9 @@ function Column({ title, rows, kind }: { title: string; rows: Row[]; kind: 'chai
 export function Ledger() {
   return (
     <section className="pf-card" aria-label="3 On-chain ou hors chaîne">
-      <h2>3 · On-chain ou hors chaîne</h2>
+      <div className="pf-card-head">
+        <h2>3 &middot; On-chain ou hors chaîne</h2>
+      </div>
       <p className="pf-body pf-muted">
         Deux colonnes honnêtes. Aujourd&rsquo;hui, aucun geste du jeu joué ne passe
         par la chaîne : les jetons existent dans le contrat, le navigateur tourne sur
@@ -136,7 +144,9 @@ function ProofCard({ proof }: { proof: Proof }) {
 export function Invariants() {
   return (
     <section className="pf-card" id="invariants" aria-label="4 Les invariants du moteur">
-      <h2>4 · Les invariants du moteur</h2>
+      <div className="pf-card-head">
+        <h2>4 &middot; Les invariants du moteur</h2>
+      </div>
       <p className="pf-body pf-muted">
         Quatre choses que vous pouvez reproduire sur votre machine, sans nous : le
         dépôt suffit, il n&rsquo;y a ni service ni secret à obtenir.
