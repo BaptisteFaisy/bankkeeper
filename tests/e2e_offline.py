@@ -46,6 +46,32 @@ def serve_dist():
     raise RuntimeError("static server never came up")
 
 
+def dismiss_tutorial(driver, timeout=6):
+    """A first launch opens the tutorial; a player presses `Skip`. Do the same.
+
+    The card mounts with the game screen, so wait for it instead of guessing:
+    a click that lands too early is swallowed and a backdrop left up intercepts
+    every later click. A returning player has the mark set and sees no card.
+    """
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as ec
+    from selenium.webdriver.support.ui import WebDriverWait
+    backdrop = (By.CSS_SELECTOR, ".tutorial-backdrop")
+    try:
+        seen = driver.execute_script("return localStorage.getItem('tidewater-tutorial-v1')")
+    except Exception:  # noqa: BLE001  (storage blocked: play the card as it comes)
+        seen = None
+    if seen is not None:
+        return False
+    try:
+        WebDriverWait(driver, timeout).until(ec.presence_of_element_located(backdrop))
+    except Exception:  # noqa: BLE001  (no card came: nothing to skip)
+        return False
+    for button in driver.find_elements(By.XPATH, "//div[@role='dialog']//button[text()='Skip']"):
+        button.click()
+        break
+    WebDriverWait(driver, timeout).until(ec.invisibility_of_element_located(backdrop))
+    return True
 def journey(driver, base, notes):
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support import expected_conditions as ec
