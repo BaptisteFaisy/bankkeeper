@@ -39,6 +39,7 @@ export function sandboxBin() {
   const candidates = [
     process.env.NEAR_SANDBOX_BIN,
     path.join(os.homedir(), 'mandat/.sandbox/near-sandbox'),
+    path.join(os.homedir(), '.local/near-sandbox/near-sandbox'),
     '/usr/local/bin/near-sandbox',
   ].filter(Boolean);
   const found = candidates.find((candidate) => fs.existsSync(candidate));
@@ -154,6 +155,23 @@ export async function accountExists(accountId, url) {
   } catch {
     return false;
   }
+}
+
+/** The NEAR balance of an account, in whole NEAR. */
+export async function viewAccountBalance(accountId, url) {
+  const info = await provider(url).viewAccount({ accountId, finalityQuery: { finality: 'final' } });
+  return Number(info.amount ?? 0) / 1e24;
+}
+
+/** Send NEAR from one account to another: the house topping a captain up. */
+export async function transferNear(from, receiverId, near) {
+  const res = await from.signAndSendTransaction({
+    receiverId,
+    actions: [actions.transfer(BigInt(nearToYocto(near)))],
+    waitUntil: 'FINAL',
+    throwOnFailure: true,
+  });
+  return { hash: txHash(res) };
 }
 
 export function newKeyPair() {

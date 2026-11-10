@@ -56,6 +56,10 @@ function initialiseNode(bin) {
   if (config) {
     const want = `127.0.0.1:${sandboxPort()}`;
     config.network = { ...config.network, boot_nodes: '' };
+    // The p2p port is a fixed 24567 by default: two sandboxes on the same
+    // machine would fight for it. TW_SANDBOX_NETWORK_PORT gives it its own.
+    const networkPort = process.env.TW_SANDBOX_NETWORK_PORT;
+    if (networkPort) config.network.addr = `127.0.0.1:${networkPort}`;
     if (config.rpc?.addr !== want) config.rpc = { ...config.rpc, addr: want };
     fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
   }

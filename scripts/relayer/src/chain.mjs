@@ -4,13 +4,16 @@
 // full-access key lives server-side under TW_CHAIN_HOME/players. The relayer
 // signs with that key and pays the gas, so the browser only ever gets a hash
 // and the new balance. Nothing here returns a secret key.
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
   accountExists, chainConfig, createAccount, paths, readJson, readKey,
-  send, signer, view,
+  send, signer, transferNear, view, viewAccountBalance,
 } from '../../sandbox/lib.mjs';
+import { accountKey, emailHash, normaliseEmail } from './identity.mjs';
+import { SEED_GOLD_MILLI, allowSeed, recordSeed } from './guard.mjs';
+
+export { emailHash, normaliseEmail, accountKey };
 
 /** NEAR handed to a fresh account so its own calls can pay gas. */
 export const START_NEAR = process.env.TW_START_NEAR || '10';
@@ -26,16 +29,6 @@ function serialise(key, work) {
   const next = previous.then(work, work);
   queues.set(key, next.catch(() => undefined));
   return next;
-}
-
-export function emailHash(email) {
-  return crypto.createHash('sha256').update(String(email).trim().toLowerCase()).digest('hex').slice(0, 20);
-}
-
-export function normaliseEmail(email) {
-  const value = String(email ?? '').trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) throw new Error('invalid email');
-  return value;
 }
 
 export function playerAccountId(email) {
@@ -73,6 +66,54 @@ function masterSigner() {
   return signer(file);
 }
 
+/** The house purse: the account that lends gold to a fresh captain.
+ *  On the sandbox it is the seeded captain, which holds the world's gold;
+ *  on testnet it is the deployer (`TW_SPONSOR_ACCOUNT`). */
+function sponsorAccountId() {
+  return process.env.TW_SPONSOR_ACCOUNT || chainConfig().playerAccount;
+}
+
+function sponsorSigner() {
+  return signer(path.join(paths().keys, `${sponsorAccountId()}.json`));
+}
+
+/** Below this many NEAR, the house tops the captain up so it never has to
+ *  ask the player for gas. */
+export const NEAR_FLOOR = Number(process.env.TW_NEAR_FLOOR || 1);
+
+/** The house keeps the captain's account able to pay its own gas. */
+export async function topUpNear(accountId, near = '5') {
+  const balance = await viewAccountBalance(accountId);
+  if (balance >= NEAR_FLOOR) return null;
+  const { hash } = await transferNear(masterSigner(), accountId, near);
+  return { txHash: hash, near };
+}
+
+/** The house puts the first purse in a fresh captain's bag — once.
+ *  `guard.mjs` caps it: `SEED_GOLD_MILLI` milli-gold per account, and a
+ *  budget of fresh captains per hour. */
+export async function seedPurse(email) {
+  const { contractId } = chainConfig();
+  const address = normaliseEmail(email);
+  const accountId = playerAccountId(address);
+  if (accountId === sponsorAccountId()) return null;
+  const gold = BigInt(await view(contractId, 'mt_balance_of', { account_id: accountId, token_id: GOLD_TOKEN }));
+  if (gold > 0n) return null;
+  const key = accountKey(address);
+  if (!allowSeed(key, SEED_GOLD_MILLI)) {
+    throw new Error('E_SPEND_CAP: the house will not fund this captain again');
+  }
+  const { hash } = await send(sponsorSigner(), contractId, 'mt_transfer', {
+    receiver_id: accountId,
+    token_id: GOLD_TOKEN,
+    amount: String(SEED_GOLD_MILLI),
+    approval: null,
+    memo: 'sponsor',
+  }, { deposit: 1n });
+  recordSeed(key, SEED_GOLD_MILLI);
+  return { txHash: hash, goldMilli: String(SEED_GOLD_MILLI) };
+}
+
 export { ownerSigner, treasurySigner, chainConfig };
 
 /** Fine-grained error text from a contract panic, for the UI. */
@@ -107,12 +148,13 @@ export async function position(email) {
 
 /** First login: the captain's key, already on this server, or a new account.
  *
- * Gold cannot be handed to a new account: `mt_transfer` is uncallable on this
- * contract (no `#[payable]`, so 1 yocto is refused and 0 yocto panics
- * E_YOCTO_REQUIRED). On the sandbox every login therefore maps to the seeded
- * captain, the only owner the contract ever funded. `TW_SINGLE_CAPTAIN=0`
- * opens one account per email, which can vote but never buy: documented in
- * docs/ONCHAIN.md.
+ * The house sponsors the newcomer: it creates the account, lends it its first
+ * purse (gold) and keeps enough NEAR in it to pay its own gas. The player
+ * never sees a wallet, a phrase or a gas prompt — only a hash and a balance.
+ *
+ * `TW_SINGLE_CAPTAIN=1` (the default) maps every email to the seeded captain,
+ * which already holds the world's gold; `TW_SINGLE_CAPTAIN=0` gives every
+ * email its own account, `p-<sha256(email)>.<suffix>`.
  */
 export async function login(email) {
   const address = normaliseEmail(email);
@@ -122,13 +164,27 @@ export async function login(email) {
     if (singleCaptain) throw new Error(`the seeded captain ${accountId} is missing: run scripts/sandbox/start.mjs`);
     await serialise(accountId, async () => {
       if (await accountExists(accountId)) return;
-      await createAccount(masterSigner(), accountId, START_NEAR, undefined);
+      const created = await createAccount(masterSigner(), accountId, START_NEAR, undefined);
+      // The captain's key lives with the other players' keys, named by the
+      // email: one copy, mode 0600, under TW_CHAIN_HOME/players.
+      const playerFile = path.join(paths().players, `${emailHash(address)}.json`);
+      fs.copyFileSync(created.file, playerFile);
+      fs.chmodSync(playerFile, 0o600);
+      fs.unlinkSync(created.file);
     });
   }
   if (!fs.existsSync(playerKeyFile(address))) {
     throw new Error(`this server holds no key for ${accountId}`);
   }
-  return position(address);
+  const seed = await seedPurse(address);
+  const topUp = await topUpNear(accountId);
+  const state = await position(address);
+  return {
+    ...state,
+    seedTxHash: seed === null ? null : seed.txHash,
+    seedGoldMilli: seed === null ? null : seed.goldMilli,
+    topUpTxHash: topUp === null ? null : topUp.txHash,
+  };
 }
 
 async function needPlayer(email) {
