@@ -15,12 +15,14 @@ import AuctionPanel from './components/AuctionPanel';
 import BoatsPanel from './components/BoatsPanel';
 import LedgerPanel from './components/LedgerPanel';
 import HarbourPanel from './components/HarbourPanel';
+import ChainBar from './components/ChainBar';
 import { ClockControls, CopyLink, HowToPlay } from './components/HeaderControls';
 import { Tutorial, useTutorial } from './components/Tutorial';
 import JudgesPanel from './components/JudgesPanel';
 import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
 import { fmtGold } from './format';
+import { CHAIN_ENABLED } from './near/chain';
 
 function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot, onHowToPlay }: {
   port: PortState | null;
@@ -419,6 +421,7 @@ function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: 
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
       )}
+      {CHAIN_ENABLED && <ChainBar email={session.email} />}
       <PlayPanels game={game} port={port} selected={selected} judges={judges} youLicences={you?.licences ?? 0} council={end.council} over={end.over} />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
       {end.bankrupt && you !== null && port !== null && (

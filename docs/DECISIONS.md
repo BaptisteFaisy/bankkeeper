@@ -148,3 +148,17 @@ la limite est la cotation, le marteau est le prix exact.
 - `tests/e2e_offline.py` rejoue le parcours de référence sur le build
   statique et **échoue si une seule requête `/api/` part** : c'est la preuve
   que le moteur fait le travail. Vérifié aussi sur la prod Vercel.
+
+## 2026-11-10 — La fiction reste un port de pêche (décision du propriétaire)
+
+- Le track parle d'un « market-town game » ; Tidewater est un **port**. Les
+  mécaniques demandées sont toutes là, à l'identique : on récolte (on pêche),
+  on vend à des marchands agents qui ont leur bourse et leur inventaire, leur
+  prix suit leur stock et la demande récente, et un marchand ruiné ferme
+  jusqu'à ce que quelqu'un investisse.
+- **Décision : on garde le port.** Pas de re-thème en ville-marché. Le port
+  n'est pas un habillage : c'est ce qui rend la ressource commune **non
+  possédée** (le banc n'appartient à personne) et donc la tragédie des communs
+  lisible sans un mot d'explication.
+- Conséquence pratique : aucun travail de libellé à prévoir ; `docs/COMPLIANCE.md`
+  garde la ligne « fiction différente » comme un choix assumé, pas comme un écart.
