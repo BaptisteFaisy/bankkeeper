@@ -15,6 +15,9 @@ pub enum LicenceError {
     ZeroQuantity,
     SellerShortOfLicences { have: u64, need: u64 },
     BuyerShortOfGold { have: i64, need: u64 },
+    /// The buyer already holds the per-captain ceiling: licences stay spread
+    /// over the port, so the council vote cannot be bought out (section 13).
+    CapReached { have: u64, cap: u64 },
     Overflow,
 }
 
@@ -38,6 +41,12 @@ pub fn port_quota(config: &Config) -> u64 {
 /// Weekly crates removed from sea pressure by unfished licences (TW-N-23).
 pub fn pressure_removed(idle_licences: u64, config: &Config) -> u64 {
     weekly_quota(idle_licences, config)
+}
+
+/// True when adding `adding` licences would break the per-captain ceiling.
+/// A ceiling of zero means "no ceiling".
+pub fn cap_reached(held: u64, cap: u64, adding: u64) -> bool {
+    cap > 0 && held.saturating_add(adding) > cap
 }
 
 /// TW-N-22 sell trigger: below the gold reserve, down to the last licence

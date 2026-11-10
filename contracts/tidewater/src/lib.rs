@@ -52,6 +52,9 @@ pub const FLOOR_DIVISOR: u64 = 4;
 pub const CATCH_SHARE_BPS: u64 = 40;
 pub const TRIPS_PER_DAY: u32 = 3;
 pub const LICENCE_SUPPLY: u64 = 20;
+/// Licences one captain may hold (brief section 13, question 3): the council
+/// stays contested, nobody buys the port.
+pub const LICENCE_CAP_PER_CAPTAIN: u64 = 8;
 pub const START_QUOTA_PER_LICENCE: u64 = 70;
 pub const UPKEEP_MILLI_PER_DAY: u64 = 6_000;
 /// Shareholders of a bailed-out actor take 20 % of its sales proceeds.

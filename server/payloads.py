@@ -142,7 +142,7 @@ def validate_fastforward_payload(body: object) -> tuple[dict | None,
     data = _as_dict(body)
     if data is None:
         return None, "E_BAD_JSON"
-    if _as_int(data.get("days")) not in (7, 28):
+    if _as_int(data.get("days")) not in (7, 14, 28):
         return None, "E_BAD_FASTFORWARD"
     seed = _as_nonneg_int(data.get("seed", 7))
     if seed is None:

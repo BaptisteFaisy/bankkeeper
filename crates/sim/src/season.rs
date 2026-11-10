@@ -8,7 +8,7 @@
 use crate::{fmt_gold, Game};
 use rules::bankruptcy::{broke_captains, lay_up};
 use rules::council::{indemnity_cost, npc_vote, tally, vote_reasoning, Proposal, Tally, Vote};
-use rules::licences::{should_buy_licence, should_sell_licence, trade_licences};
+use rules::licences::{cap_reached, should_buy_licence, should_sell_licence, trade_licences};
 use rules::trips::quota_left;
 use rules::state::{ActorId, Zone};
 use rules::debt::weekly_due;
@@ -102,6 +102,8 @@ fn match_licence_traders(game: &Game, price: u64) -> (Vec<ActorId>, Vec<ActorId>
         let gold = game.port.gold[captain.idx()];
         if should_sell_licence(gold, licence_reserve(game, captain), held) {
             sellers.push(captain);
+        } else if cap_reached(held, game.config.licence_cap_per_captain, 1) {
+            continue;
         } else if should_buy_licence(
             quota_left(held, game.port.weekly_catch[captain.idx()], &game.config),
             game.boats_of(captain).len() as u64,

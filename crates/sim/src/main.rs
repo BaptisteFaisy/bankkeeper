@@ -100,8 +100,19 @@ fn current_mesh(game: &Game, captain: ActorId, boat: u64) -> Mesh {
 fn cmd_init(args: &[String]) -> ExitCode {
     let seed: u64 = flag(args, "seed").and_then(|v| v.parse().ok()).unwrap_or(7);
     let out = flag(args, "out").unwrap_or_else(|| "state.json".to_string());
-    write_json(&out, &seed_game(seed));
-    println!("seeded {out} with seed {seed}");
+    let mut game = seed_game(seed);
+    if let Some(weeks) = flag(args, "weeks").and_then(|v| v.parse::<u64>().ok()) {
+        if !(1..=12).contains(&weeks) {
+            eprintln!("weeks must be between 1 and 12");
+            return ExitCode::from(1);
+        }
+        game.config.weeks_per_season = weeks;
+    }
+    write_json(&out, &game);
+    println!(
+        "seeded {out} with seed {seed}, {} days a season",
+        game.config.days_per_week * game.config.weeks_per_season
+    );
     ExitCode::SUCCESS
 }
 
@@ -126,8 +137,8 @@ fn cmd_day(args: &[String]) -> ExitCode {
 fn cmd_ff(args: &[String]) -> ExitCode {
     let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
     let days: u64 = flag(args, "days").and_then(|v| v.parse().ok()).unwrap_or(7);
-    if days != 7 && days != 28 {
-        eprintln!("days must be 7 or 28");
+    if !matches!(days, 7 | 14 | 28) {
+        eprintln!("days must be 7, 14 or 28");
         return ExitCode::from(1);
     }
     let mut game = read_game(&path);
@@ -312,7 +323,7 @@ fn cmd_view(args: &[String], view: fn(&Game) -> serde_json::Value) -> ExitCode {
 fn cmd_fastforward(args: &[String]) -> ExitCode {
     let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
     let days: u64 = flag(args, "days").and_then(|v| v.parse().ok()).unwrap_or(7);
-    if days != 7 && days != 28 {
+    if !matches!(days, 7 | 14 | 28) {
         println!("{{\"error\":\"E_BAD_FASTFORWARD\"}}");
         return ExitCode::from(1);
     }
