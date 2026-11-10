@@ -36,6 +36,7 @@ fn main() -> ExitCode {
         Some("buy-note") => cmd_buy_note(&args),
         Some("defer") => cmd_defer(&args),
         Some("next-season") => cmd_next_season(&args),
+        Some("harness") => sim::harness::cli(&args),
         Some("state") => cmd_view(&args, views::view_state),
         Some("graph") => cmd_view(&args, views::view_graph),
         Some("judges") => cmd_view(&args, views::view_judges),
