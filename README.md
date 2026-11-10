@@ -1,8 +1,12 @@
-# near_tidewater — Tidewater
+# Bankkeeper
 
-Tidewater : le port de pêche et son stock commun. Tu es capitaine dans un
-port où tous les bateaux puisent dans les mêmes bancs : ce que chacun
-prend aujourd'hui décide de ce qu'il restera demain.
+**Bankkeeper** : le port de pêche et son stock commun. Tu es capitaine dans un
+port où tous les bateaux puisent dans les mêmes bancs : ce que chacun prend
+aujourd'hui décide de ce qu'il restera demain.
+
+> Le nom vient de là : dans ce jeu, *bank* est à la fois le **banc de poissons**
+> que personne ne possède et la **banque** qui pousse à le vider. Le keeper, c'est
+> toi. Voir [`docs/NAMING.md`](docs/NAMING.md).
 
 Jeu du hackathon NEAR, track *Games With Real Economies*. Le brief fait
 foi : [`tidewater.md`](tidewater.md). Docs : [`docs/`](docs).
