@@ -8,7 +8,7 @@
 mod helpers;
 
 use helpers::week_old;
-use rules::council::{Proposal, Vote};
+use rules::council::{Funding, Proposal, Vote};
 use rules::species::{cod_capacity, effective_regrow_rate, mesh_catch, MeshLedger};
 use rules::state::{ActorId, Mesh, Zone};
 use rules::survey::buy_estimate;
@@ -133,11 +133,14 @@ fn roll_with_indemnity(per_licence_week: u64) -> sim::season::CouncilReport {
     let mut game = seed_game(5);
     week_old(&mut game);
     game.port.gold[ActorId::You.idx()] = 10_000_000;
+    // Barreau 3: the motion carries its money; the fund holds the bill.
+    game.fund.balance = 10_000_000;
     game.propose(Proposal {
         quota_per_licence: 10,
         close_zone: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: per_licence_week,
+        funding: Some(Funding::Fund),
         levy_per_crate: None,
     });
     roll_season(&mut game)

@@ -253,9 +253,28 @@ export interface CouncilProposal {
   close_zone: string | null;
   ban_small_mesh: boolean;
   indemnity_per_licence_week: number;
+  // Barreau 3: who pays an indemnity — the port fund or a further levy on
+  // next season's landings. Null on a motion that promises nothing.
+  funding?: 'fund' | 'levies' | null;
   // Barreau 2: landing levy for next season, centigold a crate; absent or
   // null means the motion leaves the levy alone.
   levy_per_crate?: number | null;
+}
+
+// Barreau 3: a season is four weeks (rules/config.rs weeks_per_season). The
+// harbour office has no season prop, so the preview repeats the rule's
+// default; the sim still decides the real bill at the council.
+export const SEASON_WEEKS = 4;
+
+// What an indemnity promises over a season: rate x licences x weeks, gold.
+// The council pays every licence that votes yes, so the preview counts them
+// all — the worst case the motion can cost.
+export function indemnityBill(
+  perLicenceWeek: number,
+  licences: number,
+  weeks: number = SEASON_WEEKS,
+): number {
+  return Math.round(perLicenceWeek * licences * weeks * 100) / 100;
 }
 
 export interface JudgesLive {

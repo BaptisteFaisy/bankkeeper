@@ -4,7 +4,7 @@
 // (buy/forbear/seize) and council motions (propose + vote yes/no).
 import { useState } from 'react';
 import type { CaptainView, CouncilOutcome, CouncilProposal, LoanView, ZoneId } from '../types';
-import { ZONE_LABEL } from '../types';
+import { SEASON_WEEKS, ZONE_LABEL, indemnityBill } from '../types';
 import { fmtGold } from '../format';
 
 // One lease in force: a licence lent for a term, the quota going with it.
@@ -161,6 +161,10 @@ function proposalText(proposal: CouncilProposal): string {
     parts.push(`levy ${(proposal.levy_per_crate / 100).toFixed(1)}g a crate`);
   }
   parts.push(`indemnity ${(proposal.indemnity_per_licence_week / 100).toFixed(2)}g`);
+  // Barreau 3: a promise names who pays for it.
+  if (proposal.indemnity_per_licence_week > 0) {
+    parts.push(proposal.funding === 'levies' ? 'paid by an extra levy' : 'paid by the port fund');
+  }
   return parts.join(' · ');
 }
 
@@ -174,23 +178,50 @@ function LevyInput({ value, onChange }: { value: string; onChange: (next: string
   );
 }
 
-function ProposeForm({ busy, onPropose }: Pick<Props, 'busy' | 'onPropose'>) {
+// Barreau 3: who pays the indemnity — the port fund, or a further levy.
+function FundingRow({ bill, licences, value, onChange }: { bill: number; licences: number; value: string; onChange: (next: string) => void }) {
+  return (
+    <>
+      <label>
+        Paid by
+        <select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Who pays the indemnity">
+          <option value="fund">Port fund</option>
+          <option value="levies">Extra levy</option>
+        </select>
+      </label>
+      <p className="muted" data-testid="motion-cost">
+        Costs {fmtGold(bill)}g over the season: {licences} licences paid for {SEASON_WEEKS} weeks.
+        {value === 'fund' ? ' The fund must hold it when the council sits.' : ' A further levy on the landings pays it.'}
+      </p>
+    </>
+  );
+}
+
+// The relay rule string: quota, closure, mesh, levy, and — barreau 3 —
+// the payer that goes with the money the motion promises.
+function motionTokens(quota: string, closeZone: string, banMesh: boolean, levy: string, promised: number, funding: string): string {
+  const tokens = [`quota${quota.trim() === '' ? '50' : quota.trim()}`];
+  if (closeZone !== '') tokens.push(`close:${closeZone}`);
+  if (banMesh) tokens.push('ban-mesh');
+  const rate = Number(levy);
+  if (levy.trim() !== '' && Number.isFinite(rate) && rate >= 0 && rate <= 1.2) {
+    tokens.push(`levy:${rate}`);
+  }
+  if (promised > 0) tokens.push(`pay:${funding}`);
+  return tokens.join(',');
+}
+
+function ProposeForm({ busy, captains, onPropose }: Pick<Props, 'busy' | 'captains' | 'onPropose'>) {
   const [quota, setQuota] = useState('50');
   const [closeZone, setCloseZone] = useState('');
   const [banMesh, setBanMesh] = useState(false);
   const [indemnity, setIndemnity] = useState('0');
   const [levy, setLevy] = useState('');
-  function propose(): void {
-    const tokens = [`quota${quota.trim() === '' ? '50' : quota.trim()}`];
-    if (closeZone !== '') tokens.push(`close:${closeZone}`);
-    if (banMesh) tokens.push('ban-mesh');
-    const rate = Number(levy);
-    if (levy.trim() !== '' && Number.isFinite(rate) && rate >= 0 && rate <= 1.2) {
-      tokens.push(`levy:${rate}`);
-    }
-    const pay = Number(indemnity);
-    onPropose(tokens.join(','), Number.isFinite(pay) && pay > 0 ? pay : 0);
-  }
+  const [funding, setFunding] = useState('fund');
+  const pay = Number(indemnity);
+  const promised = Number.isFinite(pay) && pay > 0 ? pay : 0;
+  // Every licence that votes yes is paid: the preview counts them all.
+  const payeeLicences = captains.filter((c) => c.id !== 'you').reduce((sum, c) => sum + c.licences, 0);
   return (
     <div className="harbour-row">
       <label>
@@ -215,7 +246,10 @@ function ProposeForm({ busy, onPropose }: Pick<Props, 'busy' | 'onPropose'>) {
         <input value={indemnity} onChange={(e) => setIndemnity(e.target.value)} inputMode="decimal" maxLength={6} aria-label="Indemnity in gold" />
       </label>
       <LevyInput value={levy} onChange={setLevy} />
-      <button type="button" disabled={busy} onClick={propose}>
+      {promised > 0 && (
+        <FundingRow bill={indemnityBill(promised, payeeLicences)} licences={payeeLicences} value={funding} onChange={setFunding} />
+      )}
+      <button type="button" disabled={busy} onClick={() => onPropose(motionTokens(quota, closeZone, banMesh, levy, promised, funding), promised)}>
         Propose
       </button>
     </div>
@@ -236,7 +270,7 @@ function CouncilMinutes({ council }: { council: CouncilOutcome }) {
   );
 }
 
-function CouncilBlock({ proposal, lastCouncil, busy, onPropose, onVote }: Pick<Props, 'proposal' | 'lastCouncil' | 'busy' | 'onPropose' | 'onVote'>) {
+function CouncilBlock({ proposal, lastCouncil, captains, busy, onPropose, onVote }: Pick<Props, 'proposal' | 'lastCouncil' | 'captains' | 'busy' | 'onPropose' | 'onVote'>) {
   const showMinutes = proposal === null && lastCouncil !== null && lastCouncil.lines.length > 0;
   return (
     <div className="harbour-block">
@@ -244,7 +278,7 @@ function CouncilBlock({ proposal, lastCouncil, busy, onPropose, onVote }: Pick<P
       {proposal !== null && <p className="muted">Motion: {proposalText(proposal)}</p>}
       {proposal === null && !showMinutes && <p className="muted">No motion tabled.</p>}
       {showMinutes && lastCouncil !== null && <CouncilMinutes council={lastCouncil} />}
-      <ProposeForm busy={busy} onPropose={onPropose} />
+      <ProposeForm busy={busy} captains={captains} onPropose={onPropose} />
       <div className="harbour-row">
         <button type="button" disabled={busy} onClick={() => onVote(true)}>
           Vote yes
@@ -264,7 +298,7 @@ export default function HarbourPanel(props: Props) {
       <SurveyRow busy={props.busy} playerGold={props.playerGold} onSurvey={props.onSurvey} />
       <LicenceRow captains={props.captains} licencePool={props.licencePool} youLicences={props.youLicences} busy={props.busy} playerGold={props.playerGold} licencePrice={props.licencePrice} leases={props.leases} onLicence={props.onLicence} onLease={props.onLease} />
       <DebtRow loans={props.loans} busy={props.busy} playerGold={props.playerGold} onDebt={props.onDebt} />
-      <CouncilBlock proposal={props.proposal} lastCouncil={props.lastCouncil} busy={props.busy} onPropose={props.onPropose} onVote={props.onVote} />
+      <CouncilBlock proposal={props.proposal} lastCouncil={props.lastCouncil} captains={props.captains} busy={props.busy} onPropose={props.onPropose} onVote={props.onVote} />
     </section>
   );
 }

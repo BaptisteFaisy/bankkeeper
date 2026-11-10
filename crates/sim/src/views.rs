@@ -353,6 +353,7 @@ pub fn view_state(game: &Game) -> Value {
         "favours": crate::favours::favours_view(game),
         "levyPerCrate": gold_pieces(game.config.levy_per_crate as i64),
         "fund": crate::fund::fund_view(game),
+        "council": crate::govern::council_view(game),
     })
 }
 
