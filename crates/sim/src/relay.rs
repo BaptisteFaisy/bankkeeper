@@ -8,11 +8,7 @@
 
 use crate::{fmt_gold, Game};
 use rules::council::Proposal;
-use rules::licences::cap_reached;
-use rules::licences::{
-    default_weekly_rent, leased_out, rent_covered, sellable_licences, trade_licences, Lease,
-    LicenceError, MAX_LEASE_WEEKS,
-};
+use rules::licences::{cap_reached, default_weekly_rent, leased_out, rent_covered, sellable_licences, trade_licences, Lease, LicenceError, MAX_LEASE_WEEKS};
 use rules::state::{ActorId, Zone};
 
 /// Licence failures as the UI's friendly codes (see web FRIENDLY).
@@ -58,6 +54,10 @@ fn apply_rule_token(motion: &mut Proposal, token: &str) -> Result<(), String> {
         motion.quota_per_licence = quota.parse().map_err(|_| format!("bad quota in {token:?}"))?;
         return Ok(());
     }
+    if let Some(levy) = flat.strip_prefix("levy") {
+        motion.levy_per_crate = Some(crate::fund::parse_levy_token(levy, token)?);
+        return Ok(());
+    }
     if let Some(zone) = flat.strip_prefix("close:").or_else(|| flat.strip_prefix("close")) {
         motion.close_zone = Some(parse_zone_name(zone).ok_or_else(|| format!("unknown zone in {token:?}"))?);
         return Ok(());
@@ -80,49 +80,28 @@ impl Game {
     /// Hand trade at a named price in centigold. Below the going price the
     /// buyer's book opens by one; at the going price it is plain business and
     /// moves nothing (no commercial grudge either way).
-    pub fn trade_licence_at(
-        &mut self,
-        seller: ActorId,
-        buyer: ActorId,
-        price: u64,
-    ) -> Result<String, String> {
+    pub fn trade_licence_at(&mut self, seller: ActorId, buyer: ActorId, price: u64) -> Result<String, String> {
         if seller == buyer {
             return Err("cannot trade with yourself".to_string());
         }
         let cap = self.config.licence_cap_per_captain;
         if cap_reached(self.owned_licences(buyer), cap, 1) {
-            return Err(format!(
-                "{} already holds {cap} licences, the ceiling for one captain",
-                buyer.name()
-            ));
+            return Err(format!("{} already holds {cap} licences, the ceiling for one captain", buyer.name()));
         }
         if sellable_licences(self.owned_licences(seller), leased_out(&self.leases, seller)) == 0 {
-            return Err(format!(
-                "{} has a lease running on that licence: take it back first",
-                seller.name()
-            ));
+            return Err(format!("{} has a lease running on that licence: take it back first", seller.name()));
         }
         let going = self.licence_price_now();
         let (_, (seller_left, buyer_left, seller_gold, buyer_gold)) = trade_licences(
-            self.port.licences[seller.idx()],
-            self.port.licences[buyer.idx()],
-            self.port.gold[seller.idx()],
-            self.port.gold[buyer.idx()],
-            1,
-            price,
-        )
-        .map_err(trade_error)?;
+            self.port.licences[seller.idx()], self.port.licences[buyer.idx()],
+            self.port.gold[seller.idx()], self.port.gold[buyer.idx()], 1, price,
+        ).map_err(trade_error)?;
         self.port.licences[seller.idx()] = seller_left;
         self.port.licences[buyer.idx()] = buyer_left;
         self.port.gold[seller.idx()] = seller_gold;
         self.port.gold[buyer.idx()] = buyer_gold;
         if seller == ActorId::You && price < going {
-            let reason = format!(
-                "You sold {} a licence under the going price ({} against {}).",
-                buyer.name(),
-                fmt_gold(price as i64),
-                fmt_gold(going as i64)
-            );
+            let reason = format!("You sold {} a licence under the going price ({} against {}).", buyer.name(), fmt_gold(price as i64), fmt_gold(going as i64));
             self.record_favour(buyer, crate::favours::CHEAP_LICENCE, &reason);
         }
         Ok(format!("{} sells a licence to {} for {}.", seller.name(), buyer.name(), fmt_gold(price as i64)))
@@ -311,11 +290,7 @@ impl Game {
                 continue;
             }
             self.release_licence(&lease);
-            lines.push(format!(
-                "The lease between {} and {} lapses.",
-                lease.lessor.name(),
-                lease.lessee.name()
-            ));
+            lines.push(format!("The lease between {} and {} lapses.", lease.lessor.name(), lease.lessee.name()));
         }
         self.leases = kept;
         lines
@@ -349,10 +324,8 @@ impl Game {
     /// "quota50,close:greybank", "quota50,ban-mesh" (TW-C4-03).
     pub fn proposed_motion(&self, rule: &str, indemnity_gold: u64) -> Result<Proposal, String> {
         let mut motion = Proposal {
-            quota_per_licence: self.config.quota_per_licence,
-            close_zone: None,
-            ban_small_mesh: false,
-            indemnity_per_licence_week: indemnity_gold.saturating_mul(100),
+            quota_per_licence: self.config.quota_per_licence, close_zone: None, ban_small_mesh: false,
+            indemnity_per_licence_week: indemnity_gold.saturating_mul(100), levy_per_crate: None,
         };
         for token in rule.split(',').map(|part| part.trim().to_lowercase()).filter(|part| !part.is_empty()) {
             apply_rule_token(&mut motion, &token)?;

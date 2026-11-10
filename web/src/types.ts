@@ -253,6 +253,9 @@ export interface CouncilProposal {
   close_zone: string | null;
   ban_small_mesh: boolean;
   indemnity_per_licence_week: number;
+  // Barreau 2: landing levy for next season, centigold a crate; absent or
+  // null means the motion leaves the levy alone.
+  levy_per_crate?: number | null;
 }
 
 export interface JudgesLive {

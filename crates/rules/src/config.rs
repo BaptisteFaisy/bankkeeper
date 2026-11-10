@@ -12,6 +12,12 @@ use crate::state::{ActorId, Species, Zone};
 /// Config schema version. States refuse configs they do not understand.
 pub const CONFIG_VERSION: u32 = 1;
 
+/// Demo landing levy in centigold per crate (0.4 gold). The rules keep
+/// [`Config::levy_per_crate`] at 0 by default; the browser profile sets this
+/// value so the port fund has something in it from the first sale. A crate
+/// sells around 4 gold, so this is a tenth of the lot, enough to read.
+pub const DEMO_LEVY_PER_CRATE: u64 = 40;
+
 /// Whole balance config. `Default` is the brief section 12 starting point.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -111,6 +117,11 @@ pub struct Config {
     /// can be bought into a vote his interest refuses outright.
     #[serde(default = "favour_score_cap")]
     pub favour_score_cap: i32,
+    /// Landing levy in centigold per crate, taken out of every sale and paid
+    /// into the port fund. 0 by default: the levy is a council motion the port
+    /// has to vote for, never a silent tax.
+    #[serde(default)]
+    pub levy_per_crate: u64,
 }
 
 /// Default for [`Config::favour_vote_threshold`] on states saved without it.
@@ -212,11 +223,9 @@ impl Default for Config {
             starting_licences: starting_licences(),
             starting_boats: starting_boats(),
             buyer_targets: buyer_targets(),
-            favour_vote_threshold: favour_vote_threshold(),
-            favour_owe_slack_bps: favour_owe_slack_bps(),
-            favour_grudge_premium_bps: favour_grudge_premium_bps(),
-            favour_zone_slack_bps: favour_zone_slack_bps(),
-            favour_score_cap: favour_score_cap(),
+            favour_vote_threshold: favour_vote_threshold(), favour_owe_slack_bps: favour_owe_slack_bps(),
+            favour_grudge_premium_bps: favour_grudge_premium_bps(), favour_zone_slack_bps: favour_zone_slack_bps(),
+            favour_score_cap: favour_score_cap(), levy_per_crate: 0,
         }
     }
 }

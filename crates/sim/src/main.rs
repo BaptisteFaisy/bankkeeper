@@ -1,7 +1,7 @@
 //! `sim` CLI: the relay shells out to this binary.
 //!
 //! Commands (gold flags are whole pieces):
-//!   sim init --seed 7 --out state.json
+//!   sim init --seed 7 --out state.json [--levy 0.4]
 //!   sim day --state state.json [--report report.json]
 //!   sim ff --state state.json --days 7|28 [--history h.json --events e.json]
 //!   sim assign --state state.json --captain you --boat 0 --zone greybank [--mesh small]
@@ -17,6 +17,7 @@ use rules::council::Proposal;
 use rules::state::{ActorId, Mesh};
 use sim::cycle::try_day;
 use sim::fastforward::{history_hash, run};
+use sim::fund::levy_cents;
 use sim::{relay, seed_game, views, Game};
 use std::collections::HashMap;
 use std::process::ExitCode;
@@ -115,11 +116,11 @@ fn cmd_init(args: &[String]) -> ExitCode {
         }
         game.config.weeks_per_season = weeks;
     }
+    if let Some(levy) = flag(args, "levy") {
+        game.config.levy_per_crate = levy_cents(&levy);
+    }
     write_json(&out, &game);
-    println!(
-        "seeded {out} with seed {seed}, {} days a season",
-        game.config.days_per_week * game.config.weeks_per_season
-    );
+    println!("seeded {out} with seed {seed}, {} days a season", game.config.days_per_week * game.config.weeks_per_season);
     ExitCode::SUCCESS
 }
 
@@ -177,11 +178,7 @@ fn cmd_ff(args: &[String]) -> ExitCode {
     let mut summary = HashMap::new();
     summary.insert("days_run".to_string(), serde_json::json!(result.days_run));
     summary.insert("seed".to_string(), serde_json::json!(result.seed));
-    summary.insert(
-        "history_hash".to_string(),
-        // String, not number: u64 exceeds the 2^53 JSON-number range.
-        serde_json::json!(history_hash(&result.history).to_string()),
-    );
+    summary.insert("history_hash".to_string(), serde_json::json!(history_hash(&result.history).to_string()));
     summary.insert("events".to_string(), serde_json::json!(result.events.len()));
     println!("{}", serde_json::to_string(&summary).expect("serialize"));
     ExitCode::SUCCESS
@@ -195,28 +192,16 @@ fn cmd_assign(args: &[String]) -> ExitCode {
     let zone_raw = flag(args, "zone").unwrap_or_else(|| "quay".to_string());
     let zone = if zone_raw.to_lowercase() == "quay" {
         None
+    } else if let Some(z) = relay::parse_zone_name(&zone_raw) {
+        Some(z)
     } else {
-        match relay::parse_zone_name(&zone_raw) {
-            Some(zone) => Some(zone),
-            None => {
-                println!("{{\"error\":\"E_UNKNOWN_ZONE\"}}");
-                return ExitCode::from(1);
-            }
-        }
+        println!("{{\"error\":\"E_UNKNOWN_ZONE\"}}");
+        return ExitCode::from(1);
     };
-    let mesh = flag(args, "mesh")
-        .and_then(|raw| parse_mesh(&raw))
-        .unwrap_or_else(|| current_mesh(&game, captain, boat));
+    let mesh = flag(args, "mesh").and_then(|raw| parse_mesh(&raw)).unwrap_or_else(|| current_mesh(&game, captain, boat));
     match game.assign_boat(captain, boat, zone, mesh) {
-        Ok(()) => {
-            write_json(&path, &game);
-            println!("{{\"ok\":true}}");
-            ExitCode::SUCCESS
-        }
-        Err(error) => {
-            println!("{}", serde_json::json!({ "error": error }));
-            ExitCode::from(1)
-        }
+        Ok(()) => { write_json(&path, &game); println!("{{\"ok\":true}}"); ExitCode::SUCCESS }
+        Err(error) => { println!("{}", serde_json::json!({ "error": error })); ExitCode::from(1) }
     }
 }
 
@@ -229,15 +214,8 @@ fn cmd_survey(args: &[String]) -> ExitCode {
         return ExitCode::from(1);
     };
     match game.buy_survey(actor, zone) {
-        Ok(survey) => {
-            write_json(&path, &game);
-            println!("{}", serde_json::to_string(&survey).expect("serialize"));
-            ExitCode::SUCCESS
-        }
-        Err(error) => {
-            println!("{}", serde_json::json!({ "error": error }));
-            ExitCode::from(1)
-        }
+        Ok(survey) => { write_json(&path, &game); println!("{}", serde_json::to_string(&survey).expect("serialize")); ExitCode::SUCCESS }
+        Err(error) => { println!("{}", serde_json::json!({ "error": error })); ExitCode::from(1) }
     }
 }
 
@@ -252,10 +230,9 @@ fn cmd_propose(args: &[String]) -> ExitCode {
     }
     let indemnity: u64 = flag(args, "indemnity").and_then(|v| v.parse().ok()).unwrap_or(0);
     game.propose(Proposal {
-        quota_per_licence: quota,
-        close_zone: close,
-        ban_small_mesh: has(args, "ban-mesh"),
+        quota_per_licence: quota, close_zone: close, ban_small_mesh: has(args, "ban-mesh"),
         indemnity_per_licence_week: indemnity * 100,
+        levy_per_crate: flag(args, "levy").map(|raw| levy_cents(&raw)),
     });
     write_json(&path, &game);
     println!("{{\"ok\":true}}");

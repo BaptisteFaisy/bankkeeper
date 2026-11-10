@@ -5,13 +5,10 @@
 //! captains lay up and pooled licences go back on the block. Every fourth
 //! Monday the captains vote next season's rules, one vote per licence.
 
-use crate::{favours, fmt_gold, Game};
+use crate::{favours, fmt_gold, fund, Game};
 use rules::bankruptcy::{broke_captains, lay_up};
-use rules::council::{indemnity_cost, npc_vote, tally, vote_reasoning, Proposal, Tally, Vote};
-use rules::licences::{
-    cap_reached, leased_out, sellable_licences, should_buy_licence, should_sell_licence,
-    trade_licences,
-};
+use rules::council::{indemnity_cost, npc_vote, tally, Proposal, Tally, Vote};
+use rules::licences::{cap_reached, leased_out, sellable_licences, should_buy_licence, should_sell_licence, trade_licences};
 use rules::trips::quota_left;
 use rules::state::{ActorId, Zone};
 use rules::debt::weekly_due;
@@ -197,6 +194,7 @@ fn status_quo(game: &Game) -> Proposal {
         close_zone: None,
         ban_small_mesh: game.small_mesh_banned,
         indemnity_per_licence_week: 0,
+        levy_per_crate: None,
     }
 }
 
@@ -269,13 +267,8 @@ fn fleet_cpt(game: &Game) -> u64 {
 
 /// Expected season profit under quota/closure/ban rules, on the captain's own
 /// catch reading and last week's crate price.
-fn season_profit(
-    game: &Game,
-    captain: ActorId,
-    quota: u64,
-    close_zone: Option<Zone>,
-    ban_small_mesh: bool,
-) -> i64 {
+/// Barreau 2: `levy` is the landing levy that would apply, centigold a crate.
+fn season_profit(game: &Game, captain: ActorId, quota: u64, close_zone: Option<Zone>, ban_small_mesh: bool, levy: u64) -> i64 {
     let boats = game.boats_of(captain).len() as u64;
     let mut cpt = own_cpt_tenths(game, captain);
     let uses_small = game
@@ -292,7 +285,9 @@ fn season_profit(
     };
     let fishable = boats * 7 * 3 * cpt / 10 * share_num / share_den;
     let allowance = game.port.licences[captain.idx()] * quota;
-    let revenue = fishable.min(allowance) as i64 * price as i64;
+    let crates = fishable.min(allowance);
+    let revenue = crates as i64 * price as i64;
+    let levy_bill = rules::council::levy_week_cost(crates, levy);
     let wages = rules::debt::daily_charges(boats, &game.config) * 7;
     let dues: u64 = game
         .loans
@@ -300,7 +295,7 @@ fn season_profit(
         .filter(|loan| loan.borrower == captain)
         .map(|loan| weekly_due(loan, &game.config))
         .sum();
-    (revenue - (wages + dues) as i64) * game.config.weeks_per_season as i64
+    (revenue - (wages + dues) as i64 - levy_bill) * game.config.weeks_per_season as i64
 }
 
 /// Season-end council (TW-C4): every sailing captain votes its own profit,
@@ -373,8 +368,9 @@ fn poll_captains(
             lines.push(player_ballot_line(ballot));
             continue;
         }
-        let pass = season_profit(game, captain, proposal.quota_per_licence, proposal.close_zone, proposal.ban_small_mesh);
-        let fail = season_profit(game, captain, game.config.quota_per_licence, None, game.small_mesh_banned);
+        let next_levy = proposal.levy_per_crate.unwrap_or(game.config.levy_per_crate);
+        let pass = season_profit(game, captain, proposal.quota_per_licence, proposal.close_zone, proposal.ban_small_mesh, next_levy);
+        let fail = season_profit(game, captain, game.config.quota_per_licence, None, game.small_mesh_banned, game.config.levy_per_crate);
         let base = npc_vote(pass, fail, held, proposal.indemnity_per_licence_week, game.config.weeks_per_season);
         let weekly_cost = (((fail - pass).max(0) / game.config.weeks_per_season as i64) / 100).max(0) as u64;
         let offer = proposal.indemnity_per_licence_week.saturating_mul(held) / 100;
@@ -384,11 +380,7 @@ fn poll_captains(
         let season_offer = offer.saturating_mul(game.config.weeks_per_season).saturating_mul(100) as i64;
         let vote = favours::court_vote(base, book.score, &game.config, pass, fail, season_offer);
         ballots.push((captain, vote, held));
-        lines.push(format!(
-            "{}{}",
-            vote_reasoning(captain.name(), vote, proposal.quota_per_licence, weekly_cost, offer),
-            book.clause(&game.config)
-        ));
+        lines.push(format!("{}{}", fund::vote_line(captain, vote, proposal, weekly_cost, offer), book.clause(&game.config)));
     }
 }
 
@@ -410,13 +402,11 @@ fn player_ballot_line(ballot: Vote) -> String {
 
 /// Carry a passed motion: new quota, closure, mesh ban, and the indemnity bill
 /// paid upfront by the proposer to the yes-voters.
-fn apply_proposal(
-    game: &mut Game,
-    proposal: &Proposal,
-    ballots: &[(ActorId, Vote, u64)],
-    lines: &mut Vec<String>,
-) {
+fn apply_proposal(game: &mut Game, proposal: &Proposal, ballots: &[(ActorId, Vote, u64)], lines: &mut Vec<String>) {
     game.config.quota_per_licence = proposal.quota_per_licence;
+    if let Some(levy) = proposal.levy_per_crate {
+        game.apply_levy(levy, lines);
+    }
     game.closed = [false; 3];
     if let Some(zone) = proposal.close_zone {
         game.closed[zone.idx()] = true;

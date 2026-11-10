@@ -351,6 +351,8 @@ pub fn view_state(game: &Game) -> Value {
         "leases": game.leases.iter().map(|lease| json!({"lessor": actor_id(lease.lessor), "lessorName": lease.lessor.name(), "lessee": actor_id(lease.lessee), "lesseeName": lease.lessee.name(), "weeklyRent": gold_pieces(lease.weekly_rent as i64), "weeksLeft": lease.weeks_left})).collect::<Vec<_>>(),
         "attribution": attribution(game),
         "favours": crate::favours::favours_view(game),
+        "levyPerCrate": gold_pieces(game.config.levy_per_crate as i64),
+        "fund": crate::fund::fund_view(game),
     })
 }
 
@@ -437,26 +439,24 @@ pub fn view_judges(game: &Game) -> Value {
         "licence_pool": game.port.licence_pool,
         "proposal": game.proposal,
         "loans": loans,
+        "fund": crate::fund::fund_view(game),
     })
 }
 
 /// Columnar graph series from a fast-forward run, for --series.
 pub fn ff_series(history: &[DayPoint]) -> Value {
     json!({
-        "days": history.iter().map(|point| point.day).collect::<Vec<_>>(),
-        "stocks": history.iter().map(|point| point.stocks).collect::<Vec<_>>(),
-        "herring_price": history.iter().map(|point| point.herring_price).collect::<Vec<_>>(),
-        "gold_total": history.iter().map(|point| point.gold_total).collect::<Vec<_>>(),
+        "days": history.iter().map(|p| p.day).collect::<Vec<_>>(),
+        "stocks": history.iter().map(|p| p.stocks).collect::<Vec<_>>(),
+        "herring_price": history.iter().map(|p| p.herring_price).collect::<Vec<_>>(),
+        "gold_total": history.iter().map(|p| p.gold_total).collect::<Vec<_>>(),
     })
 }
 
 /// Graph markers from a fast-forward journal: closures and seizures only.
 pub fn ff_markers(events: &[FfEvent]) -> Value {
-    let markers: Vec<Value> = events
-        .iter()
-        .filter(|event| event.kind == "closure" || event.kind == "seizure")
-        .map(|event| json!({"day": event.day, "kind": event.kind, "detail": event.detail}))
-        .collect();
+    let markers: Vec<Value> = events.iter().filter(|e| e.kind == "closure" || e.kind == "seizure")
+        .map(|e| json!({"day": e.day, "kind": e.kind, "detail": e.detail})).collect();
     Value::Array(markers)
 }
 

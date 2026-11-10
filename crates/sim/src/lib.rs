@@ -13,6 +13,7 @@ mod evening;
 pub mod favours;
 pub mod fastforward;
 pub mod fleet;
+pub mod fund;
 pub mod harness;
 pub mod policies;
 mod reading;
@@ -22,6 +23,7 @@ pub mod season;
 pub mod seed;
 pub mod views;
 
+pub use fund::Fund;
 pub use seed::{draw, draw_below, seed_game, Rng};
 
 use rules::bankruptcy::{bailout_owed, bailout_payout};
@@ -181,23 +183,21 @@ pub struct Game {
     /// Licence leases in force (TW-N-24): one record per licence lent out.
     #[serde(default)]
     pub leases: Vec<rules::licences::Lease>,
+    /// The port fund: levy in, repairs out (barreau 2).
+    #[serde(default)]
+    pub fund: Fund,
 }
 
 impl Game {
     /// Boat indices owned by an actor, in fleet order.
     pub fn boats_of(&self, owner: ActorId) -> Vec<usize> {
-        self.port
-            .boats
-            .iter()
-            .enumerate()
-            .filter(|(_, boat)| boat.owner == owner)
-            .map(|(index, _)| index)
-            .collect()
+        self.port.boats.iter().enumerate()
+            .filter(|(_, boat)| boat.owner == owner).map(|(index, _)| index).collect()
     }
 
-    /// Total gold in the port (TW-N-42 conservation input).
+    /// Total gold in the port (TW-N-42 conservation input, fund included).
     pub fn gold_total(&self) -> i64 {
-        self.port.total_gold()
+        self.port.total_gold() + self.fund.balance
     }
 
     /// Licences a captain fishes with this week: its own, minus those lent
@@ -448,21 +448,15 @@ mod tests {
     fn assignment_refuses_closed_zones_and_banned_mesh() {
         let mut game = game();
         game.closed[Zone::Greybank.idx()] = true;
-        assert!(game
-            .assign_boat(ActorId::You, 0, Some(Zone::Greybank), Mesh::Large)
-            .is_err());
+        assert!(game.assign_boat(ActorId::You, 0, Some(Zone::Greybank), Mesh::Large).is_err());
         game.small_mesh_banned = true;
-        assert!(game
-            .assign_boat(ActorId::You, 0, Some(Zone::Shallows), Mesh::Small)
-            .is_err());
+        assert!(game.assign_boat(ActorId::You, 0, Some(Zone::Shallows), Mesh::Small).is_err());
     }
 
     #[test]
     fn nets_switch_at_quay_only() {
         let mut game = game();
-        assert!(game
-            .assign_boat(ActorId::You, 0, Some(Zone::Shallows), Mesh::Small)
-            .is_err());
+        assert!(game.assign_boat(ActorId::You, 0, Some(Zone::Shallows), Mesh::Small).is_err());
         game.assign_boat(ActorId::You, 0, None, Mesh::Large).unwrap();
         game.assign_boat(ActorId::You, 0, None, Mesh::Small).unwrap();
     }

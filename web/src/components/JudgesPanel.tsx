@@ -17,6 +17,14 @@ export interface ActorStanding {
   stopped: boolean;
 }
 
+// Barreau 2: the port fund, gold the harbour holds in common. The payload is
+// the judges view's own `fund` object; a run saved before the fund has none.
+export interface PortFund {
+  balance: number;
+  paid_in: number;
+  paid_out: number;
+}
+
 export interface JudgeRun {
   seed: string;
   days: number;
@@ -27,6 +35,7 @@ export interface JudgeRun {
   goldTotal: number;
   outsideIn: number;
   outsideOut: number;
+  fund?: PortFund;
 }
 
 export type Trend = 'rising' | 'steady' | 'falling';
@@ -191,6 +200,15 @@ function RunSummary({ shown }: { shown: JudgeRun }) {
   );
 }
 
+function PortFundRow({ fund }: { fund: PortFund | undefined }) {
+  const money = (cents: number | undefined): string => (cents === undefined ? '—' : fmtGold(cents));
+  return (
+    <p className="muted" data-testid="judges-fund">
+      Port fund · balance {money(fund?.balance)} · in {money(fund?.paid_in)} · out {money(fund?.paid_out)}
+    </p>
+  );
+}
+
 function RunCurves({ shown, live }: { shown: JudgeRun; live: StockPoint | null }) {
   return (
     <>
@@ -200,6 +218,7 @@ function RunCurves({ shown, live }: { shown: JudgeRun; live: StockPoint | null }
         Live gold in port: {fmtGold(shown.goldTotal)} · outside in: {fmtGold(shown.outsideIn)} · outside out: {fmtGold(shown.outsideOut)} ·
         net {fmtGold(shown.outsideIn - shown.outsideOut)}
       </p>
+      <PortFundRow fund={shown.fund} />
       <h4>Live standings</h4>
       <ActorsTable actors={shown.actors} />
     </>
