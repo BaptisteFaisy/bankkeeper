@@ -63,9 +63,12 @@
 
 5. **Barreaux 3, 4, 5** de la colonne (motion financée, dette envers la mer,
    jachère et contentieux) : 3 à 4 jours, dans cet ordre.
-6. **Équilibrage** avec le harnais (`make balance`) : 50 graines × 4 politiques,
-   puis régler les quatre curseurs qui comptent (repousse, part prise par
-   sortie, redevance, seuil de jachère).
+6. ~~**Équilibrage** avec le harnais~~ **fait** : 50 graines × 4 politiques,
+   quatre curseurs réglés et mesurés (repousse, part prise par sortie,
+   redevance, seuil de jachère), jeu de référence régénéré
+   (`docs/balance-50.json`), deux tests qui verrouillent la dérive —
+   `docs/BALANCE.md`. Restent des points de game design à trancher (liste
+   en fin de `docs/BALANCE.md`).
 7. **Soumission** : README de présentation, page `/proofs.html` à jour, script
    de démonstration en 90 secondes (dont le fast-forward), et la vidéo si elle
    est demandée. **Date d'échéance à confirmer** — 14/11 18:00 UTC était

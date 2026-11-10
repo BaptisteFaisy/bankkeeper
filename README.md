@@ -43,7 +43,7 @@ déploiement et vérifications : [`docs/deployments.md`](docs/deployments.md).
 ## 1. Ce qui a été fait (l'état réel)
 
 > État vérifié le 10/11/2026 à 20:35 sur `main` = `b0869ee` :
-> `cargo test --workspace` → **236 tests verts, 0 échec**.
+> `cargo test --workspace` → **238 tests verts, 0 échec**.
 
 ### A. Économie & Moteur (100 % déterministe, zéro IO)
 
@@ -168,7 +168,7 @@ est dans [`docs/AUDIT-CONTRACT.md`](docs/AUDIT-CONTRACT.md).
 git clone https://github.com/BaptisteFaisy/bankkeeper.git
 cd bankkeeper
 
-# 2. Vérifier toute la simulation et le contrat en Rust (236 tests)
+# 2. Vérifier toute la simulation et le contrat en Rust (238 tests)
 cargo test --workspace
 
 # 3. Compiler le moteur en WebAssembly
