@@ -1,0 +1,7164 @@
+{
+  "seeds": 50,
+  "first_seed": 1,
+  "seasons": 3,
+  "days_per_season": 28,
+  "policies": [
+    "passive",
+    "greedy",
+    "steward",
+    "mixed"
+  ],
+  "aggregates": {
+    "greedy": {
+      "runs": 50,
+      "net_worth": {
+        "median": 1675219,
+        "p10": 1594215,
+        "p90": 1785947,
+        "min": 1377973,
+        "max": 1839883
+      },
+      "stocks": {
+        "deeps": {
+          "median": 365,
+          "p10": 316,
+          "p90": 549,
+          "min": 201,
+          "max": 1056
+        },
+        "greybank": {
+          "median": 469,
+          "p10": 351,
+          "p90": 621,
+          "min": 0,
+          "max": 715
+        },
+        "shallows": {
+          "median": 805,
+          "p10": 633,
+          "p90": 1256,
+          "min": 581,
+          "max": 2052
+        }
+      },
+      "licences_median": 4,
+      "bankrupt_runs": 0,
+      "bankrupt_share_bps": 0,
+      "median_first_bankruptcy_day": null
+    },
+    "mixed": {
+      "runs": 50,
+      "net_worth": {
+        "median": 1447690,
+        "p10": 1289180,
+        "p90": 1670503,
+        "min": 1260579,
+        "max": 1784363
+      },
+      "stocks": {
+        "deeps": {
+          "median": 318,
+          "p10": 222,
+          "p90": 432,
+          "min": 177,
+          "max": 836
+        },
+        "greybank": {
+          "median": 694,
+          "p10": 426,
+          "p90": 971,
+          "min": 360,
+          "max": 1125
+        },
+        "shallows": {
+          "median": 1370,
+          "p10": 850,
+          "p90": 2272,
+          "min": 636,
+          "max": 2751
+        }
+      },
+      "licences_median": 6,
+      "bankrupt_runs": 0,
+      "bankrupt_share_bps": 0,
+      "median_first_bankruptcy_day": null
+    },
+    "passive": {
+      "runs": 50,
+      "net_worth": {
+        "median": 78200,
+        "p10": 78200,
+        "p90": 78200,
+        "min": 78200,
+        "max": 78200
+      },
+      "stocks": {
+        "deeps": {
+          "median": 744,
+          "p10": 607,
+          "p90": 954,
+          "min": 519,
+          "max": 1614
+        },
+        "greybank": {
+          "median": 982,
+          "p10": 862,
+          "p90": 1175,
+          "min": 663,
+          "max": 1385
+        },
+        "shallows": {
+          "median": 1526,
+          "p10": 1285,
+          "p90": 1811,
+          "min": 1172,
+          "max": 2530
+        }
+      },
+      "licences_median": 0,
+      "bankrupt_runs": 50,
+      "bankrupt_share_bps": 10000,
+      "median_first_bankruptcy_day": 13
+    },
+    "steward": {
+      "runs": 50,
+      "net_worth": {
+        "median": 1683717,
+        "p10": 1542271,
+        "p90": 1863419,
+        "min": 1272605,
+        "max": 1969671
+      },
+      "stocks": {
+        "deeps": {
+          "median": 330,
+          "p10": 233,
+          "p90": 444,
+          "min": 190,
+          "max": 1380
+        },
+        "greybank": {
+          "median": 732,
+          "p10": 606,
+          "p90": 1091,
+          "min": 363,
+          "max": 1231
+        },
+        "shallows": {
+          "median": 1431,
+          "p10": 926,
+          "p90": 2184,
+          "min": 809,
+          "max": 2504
+        }
+      },
+      "licences_median": 6,
+      "bankrupt_runs": 0,
+      "bankrupt_share_bps": 0,
+      "median_first_bankruptcy_day": null
+    }
+  },
+  "runs": [
+    {
+      "seed": 1,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 43190,
+      "boats": 2,
+      "stocks": [
+        1599,
+        932,
+        779
+      ],
+      "season_stocks": [
+        [
+          2630,
+          2056,
+          1952
+        ],
+        [
+          1935,
+          1384,
+          1108
+        ],
+        [
+          1599,
+          932,
+          779
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "16229480967261795005"
+    },
+    {
+      "seed": 2,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 40390,
+      "boats": 2,
+      "stocks": [
+        1513,
+        869,
+        996
+      ],
+      "season_stocks": [
+        [
+          2630,
+          2128,
+          1851
+        ],
+        [
+          1420,
+          1451,
+          1683
+        ],
+        [
+          1513,
+          869,
+          996
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "18243006531023593864"
+    },
+    {
+      "seed": 3,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 47180,
+      "boats": 2,
+      "stocks": [
+        1557,
+        903,
+        900
+      ],
+      "season_stocks": [
+        [
+          2608,
+          2080,
+          1944
+        ],
+        [
+          1629,
+          1307,
+          1641
+        ],
+        [
+          1557,
+          903,
+          900
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "18238246879522036958"
+    },
+    {
+      "seed": 4,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36540,
+      "boats": 2,
+      "stocks": [
+        1415,
+        1020,
+        976
+      ],
+      "season_stocks": [
+        [
+          2546,
+          2136,
+          1952
+        ],
+        [
+          1490,
+          1329,
+          1816
+        ],
+        [
+          1415,
+          1020,
+          976
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "5427141847460828378"
+    },
+    {
+      "seed": 5,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 39690,
+      "boats": 2,
+      "stocks": [
+        1702,
+        946,
+        680
+      ],
+      "season_stocks": [
+        [
+          2823,
+          1785,
+          2000
+        ],
+        [
+          1981,
+          1326,
+          1179
+        ],
+        [
+          1702,
+          946,
+          680
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "10067828900575326485"
+    },
+    {
+      "seed": 6,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 38220,
+      "boats": 2,
+      "stocks": [
+        1312,
+        718,
+        1614
+      ],
+      "season_stocks": [
+        [
+          2972,
+          1902,
+          1725
+        ],
+        [
+          2542,
+          747,
+          1725
+        ],
+        [
+          1312,
+          718,
+          1614
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "18185516086248291880"
+    },
+    {
+      "seed": 7,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 45080,
+      "boats": 2,
+      "stocks": [
+        1842,
+        915,
+        659
+      ],
+      "season_stocks": [
+        [
+          2661,
+          1998,
+          1896
+        ],
+        [
+          2142,
+          1245,
+          1204
+        ],
+        [
+          1842,
+          915,
+          659
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "15942024705862191338"
+    },
+    {
+      "seed": 8,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 56840,
+      "boats": 2,
+      "stocks": [
+        2530,
+        738,
+        519
+      ],
+      "season_stocks": [
+        [
+          2960,
+          1729,
+          1944
+        ],
+        [
+          1718,
+          1572,
+          1004
+        ],
+        [
+          2530,
+          738,
+          519
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "14967268578227922074"
+    },
+    {
+      "seed": 9,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 35490,
+      "boats": 2,
+      "stocks": [
+        1723,
+        961,
+        689
+      ],
+      "season_stocks": [
+        [
+          2715,
+          1970,
+          1904
+        ],
+        [
+          1671,
+          1321,
+          1446
+        ],
+        [
+          1723,
+          961,
+          689
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "14447907394828666657"
+    },
+    {
+      "seed": 10,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 35910,
+      "boats": 2,
+      "stocks": [
+        1317,
+        1064,
+        716
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1737,
+          1952
+        ],
+        [
+          1960,
+          1372,
+          1024
+        ],
+        [
+          1317,
+          1064,
+          716
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "7564496935517713165"
+    },
+    {
+      "seed": 11,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 60410,
+      "boats": 2,
+      "stocks": [
+        1780,
+        886,
+        770
+      ],
+      "season_stocks": [
+        [
+          2392,
+          2189,
+          2000
+        ],
+        [
+          2352,
+          1246,
+          1072
+        ],
+        [
+          1780,
+          886,
+          770
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "9875751720342086729"
+    },
+    {
+      "seed": 12,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 37380,
+      "boats": 2,
+      "stocks": [
+        1522,
+        863,
+        857
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1690,
+          1952
+        ],
+        [
+          2042,
+          1292,
+          1234
+        ],
+        [
+          1522,
+          863,
+          857
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "6087289532907745060"
+    },
+    {
+      "seed": 13,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 60690,
+      "boats": 2,
+      "stocks": [
+        1663,
+        991,
+        806
+      ],
+      "season_stocks": [
+        [
+          2636,
+          2093,
+          1816
+        ],
+        [
+          2154,
+          958,
+          1648
+        ],
+        [
+          1663,
+          991,
+          806
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "4233727927138061840"
+    },
+    {
+      "seed": 14,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 44520,
+      "boats": 2,
+      "stocks": [
+        2075,
+        788,
+        737
+      ],
+      "season_stocks": [
+        [
+          2958,
+          1882,
+          1781
+        ],
+        [
+          2271,
+          843,
+          1781
+        ],
+        [
+          2075,
+          788,
+          737
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "15490038830413122904"
+    },
+    {
+      "seed": 15,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 46760,
+      "boats": 2,
+      "stocks": [
+        1531,
+        1285,
+        541
+      ],
+      "season_stocks": [
+        [
+          2972,
+          1827,
+          1830
+        ],
+        [
+          2477,
+          959,
+          1299
+        ],
+        [
+          1531,
+          1285,
+          541
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "17490426104770048123"
+    },
+    {
+      "seed": 16,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36400,
+      "boats": 2,
+      "stocks": [
+        1354,
+        1073,
+        860
+      ],
+      "season_stocks": [
+        [
+          2384,
+          2272,
+          1960
+        ],
+        [
+          1627,
+          1615,
+          1329
+        ],
+        [
+          1354,
+          1073,
+          860
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "2922143550806629514"
+    },
+    {
+      "seed": 17,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 37940,
+      "boats": 2,
+      "stocks": [
+        1702,
+        969,
+        571
+      ],
+      "season_stocks": [
+        [
+          2378,
+          2264,
+          1952
+        ],
+        [
+          1981,
+          1476,
+          988
+        ],
+        [
+          1702,
+          969,
+          571
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "1271640001756201381"
+    },
+    {
+      "seed": 18,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 35560,
+      "boats": 2,
+      "stocks": [
+        1382,
+        1067,
+        815
+      ],
+      "season_stocks": [
+        [
+          2318,
+          2420,
+          1865
+        ],
+        [
+          1802,
+          1225,
+          1554
+        ],
+        [
+          1382,
+          1067,
+          815
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "17568378981063974648"
+    },
+    {
+      "seed": 19,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 49700,
+      "boats": 2,
+      "stocks": [
+        1426,
+        1296,
+        635
+      ],
+      "season_stocks": [
+        [
+          2390,
+          2261,
+          1952
+        ],
+        [
+          1616,
+          1601,
+          1344
+        ],
+        [
+          1426,
+          1296,
+          635
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "15169241568079500526"
+    },
+    {
+      "seed": 20,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 49840,
+      "boats": 2,
+      "stocks": [
+        1409,
+        1358,
+        674
+      ],
+      "season_stocks": [
+        [
+          2607,
+          2062,
+          1952
+        ],
+        [
+          1474,
+          1293,
+          1888
+        ],
+        [
+          1409,
+          1358,
+          674
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "5253947420631267105"
+    },
+    {
+      "seed": 21,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 56070,
+      "boats": 2,
+      "stocks": [
+        1808,
+        857,
+        746
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1681,
+          1952
+        ],
+        [
+          2241,
+          1282,
+          1064
+        ],
+        [
+          1808,
+          857,
+          746
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "9622751690352610840"
+    },
+    {
+      "seed": 22,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 56210,
+      "boats": 2,
+      "stocks": [
+        1726,
+        938,
+        701
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1712,
+          1992
+        ],
+        [
+          2170,
+          1260,
+          1052
+        ],
+        [
+          1726,
+          938,
+          701
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "11953827981821586778"
+    },
+    {
+      "seed": 23,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 54950,
+      "boats": 2,
+      "stocks": [
+        1945,
+        913,
+        632
+      ],
+      "season_stocks": [
+        [
+          2660,
+          1972,
+          1952
+        ],
+        [
+          2229,
+          1181,
+          1249
+        ],
+        [
+          1945,
+          913,
+          632
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "4074075829513144370"
+    },
+    {
+      "seed": 24,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36400,
+      "boats": 2,
+      "stocks": [
+        1413,
+        1095,
+        698
+      ],
+      "season_stocks": [
+        [
+          2247,
+          2426,
+          1952
+        ],
+        [
+          1819,
+          1732,
+          952
+        ],
+        [
+          1413,
+          1095,
+          698
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "10469466285176584715"
+    },
+    {
+      "seed": 25,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 54810,
+      "boats": 2,
+      "stocks": [
+        1566,
+        947,
+        821
+      ],
+      "season_stocks": [
+        [
+          2685,
+          1912,
+          1992
+        ],
+        [
+          2586,
+          1109,
+          1174
+        ],
+        [
+          1566,
+          947,
+          821
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "6073283312448138256"
+    },
+    {
+      "seed": 26,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36540,
+      "boats": 2,
+      "stocks": [
+        1238,
+        1100,
+        815
+      ],
+      "season_stocks": [
+        [
+          2966,
+          1728,
+          1952
+        ],
+        [
+          1574,
+          1593,
+          1194
+        ],
+        [
+          1238,
+          1100,
+          815
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "13417898592247915478"
+    },
+    {
+      "seed": 27,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 50680,
+      "boats": 2,
+      "stocks": [
+        1318,
+        1335,
+        680
+      ],
+      "season_stocks": [
+        [
+          2960,
+          1741,
+          1952
+        ],
+        [
+          1546,
+          1499,
+          1428
+        ],
+        [
+          1318,
+          1335,
+          680
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "9362327926437498214"
+    },
+    {
+      "seed": 28,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 54180,
+      "boats": 2,
+      "stocks": [
+        1499,
+        1022,
+        824
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1659,
+          2000
+        ],
+        [
+          2200,
+          1190,
+          1329
+        ],
+        [
+          1499,
+          1022,
+          824
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "18431614430518040256"
+    },
+    {
+      "seed": 29,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36190,
+      "boats": 2,
+      "stocks": [
+        1242,
+        1064,
+        764
+      ],
+      "season_stocks": [
+        [
+          2353,
+          2310,
+          1880
+        ],
+        [
+          1751,
+          1454,
+          1088
+        ],
+        [
+          1242,
+          1064,
+          764
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "10067531174616360012"
+    },
+    {
+      "seed": 30,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 59710,
+      "boats": 2,
+      "stocks": [
+        1718,
+        905,
+        740
+      ],
+      "season_stocks": [
+        [
+          2960,
+          1860,
+          1830
+        ],
+        [
+          2137,
+          930,
+          1512
+        ],
+        [
+          1718,
+          905,
+          740
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "329435119722615675"
+    },
+    {
+      "seed": 31,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 48790,
+      "boats": 2,
+      "stocks": [
+        1355,
+        1385,
+        587
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1712,
+          1992
+        ],
+        [
+          2568,
+          947,
+          1422
+        ],
+        [
+          1355,
+          1385,
+          587
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "4649606054360248417"
+    },
+    {
+      "seed": 32,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 41230,
+      "boats": 2,
+      "stocks": [
+        1372,
+        1010,
+        812
+      ],
+      "season_stocks": [
+        [
+          2468,
+          2157,
+          1976
+        ],
+        [
+          1992,
+          1215,
+          1279
+        ],
+        [
+          1372,
+          1010,
+          812
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "13664166123686275689"
+    },
+    {
+      "seed": 33,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 37800,
+      "boats": 2,
+      "stocks": [
+        1441,
+        946,
+        821
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1736,
+          1952
+        ],
+        [
+          1795,
+          1100,
+          1494
+        ],
+        [
+          1441,
+          946,
+          821
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "15606715568779917883"
+    },
+    {
+      "seed": 34,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36540,
+      "boats": 2,
+      "stocks": [
+        1339,
+        1049,
+        952
+      ],
+      "season_stocks": [
+        [
+          2880,
+          1847,
+          1952
+        ],
+        [
+          1489,
+          1254,
+          1816
+        ],
+        [
+          1339,
+          1049,
+          952
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "17038957903450732720"
+    },
+    {
+      "seed": 35,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 53480,
+      "boats": 2,
+      "stocks": [
+        1748,
+        1021,
+        665
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1926,
+          1697
+        ],
+        [
+          2233,
+          1119,
+          1304
+        ],
+        [
+          1748,
+          1021,
+          665
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "5995950529795971278"
+    },
+    {
+      "seed": 36,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 35490,
+      "boats": 2,
+      "stocks": [
+        1401,
+        998,
+        749
+      ],
+      "season_stocks": [
+        [
+          2765,
+          1947,
+          1896
+        ],
+        [
+          1750,
+          1457,
+          1174
+        ],
+        [
+          1401,
+          998,
+          749
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "14414008917950270608"
+    },
+    {
+      "seed": 37,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 52710,
+      "boats": 2,
+      "stocks": [
+        1787,
+        974,
+        607
+      ],
+      "season_stocks": [
+        [
+          2363,
+          2386,
+          1795
+        ],
+        [
+          2141,
+          1374,
+          1012
+        ],
+        [
+          1787,
+          974,
+          607
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "13290866092212340606"
+    },
+    {
+      "seed": 38,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 49000,
+      "boats": 2,
+      "stocks": [
+        1571,
+        953,
+        722
+      ],
+      "season_stocks": [
+        [
+          2973,
+          1854,
+          1746
+        ],
+        [
+          2387,
+          1135,
+          1008
+        ],
+        [
+          1571,
+          953,
+          722
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "15129981057115400095"
+    },
+    {
+      "seed": 39,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 54390,
+      "boats": 2,
+      "stocks": [
+        1901,
+        959,
+        626
+      ],
+      "season_stocks": [
+        [
+          2809,
+          1943,
+          1816
+        ],
+        [
+          2279,
+          1190,
+          1239
+        ],
+        [
+          1901,
+          959,
+          626
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "1378183555899187116"
+    },
+    {
+      "seed": 40,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 59990,
+      "boats": 2,
+      "stocks": [
+        1665,
+        916,
+        743
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1684,
+          1936
+        ],
+        [
+          2224,
+          1204,
+          1084
+        ],
+        [
+          1665,
+          916,
+          743
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "15631459347263164534"
+    },
+    {
+      "seed": 41,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 35700,
+      "boats": 2,
+      "stocks": [
+        1402,
+        1001,
+        818
+      ],
+      "season_stocks": [
+        [
+          2550,
+          2125,
+          1888
+        ],
+        [
+          1910,
+          1424,
+          1169
+        ],
+        [
+          1402,
+          1001,
+          818
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "4002347279260142829"
+    },
+    {
+      "seed": 42,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 55090,
+      "boats": 2,
+      "stocks": [
+        1608,
+        999,
+        794
+      ],
+      "season_stocks": [
+        [
+          2974,
+          1827,
+          1830
+        ],
+        [
+          2372,
+          922,
+          1548
+        ],
+        [
+          1608,
+          999,
+          794
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "5270241041776909005"
+    },
+    {
+      "seed": 43,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36050,
+      "boats": 2,
+      "stocks": [
+        1266,
+        1163,
+        800
+      ],
+      "season_stocks": [
+        [
+          2608,
+          2096,
+          1904
+        ],
+        [
+          1810,
+          1517,
+          1259
+        ],
+        [
+          1266,
+          1163,
+          800
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "5950324520891807375"
+    },
+    {
+      "seed": 44,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 38990,
+      "boats": 2,
+      "stocks": [
+        1783,
+        663,
+        1044
+      ],
+      "season_stocks": [
+        [
+          2958,
+          1734,
+          1952
+        ],
+        [
+          2202,
+          1221,
+          1116
+        ],
+        [
+          1783,
+          663,
+          1044
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "13189337574853803619"
+    },
+    {
+      "seed": 45,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36050,
+      "boats": 2,
+      "stocks": [
+        1289,
+        1083,
+        833
+      ],
+      "season_stocks": [
+        [
+          2880,
+          1847,
+          1952
+        ],
+        [
+          1637,
+          1377,
+          1410
+        ],
+        [
+          1289,
+          1083,
+          833
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "2641924486386607839"
+    },
+    {
+      "seed": 46,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36750,
+      "boats": 2,
+      "stocks": [
+        1172,
+        1100,
+        1024
+      ],
+      "season_stocks": [
+        [
+          2422,
+          2230,
+          1952
+        ],
+        [
+          1629,
+          1472,
+          1500
+        ],
+        [
+          1172,
+          1100,
+          1024
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "11107852961613258934"
+    },
+    {
+      "seed": 47,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 36190,
+      "boats": 2,
+      "stocks": [
+        1248,
+        1059,
+        743
+      ],
+      "season_stocks": [
+        [
+          2937,
+          1763,
+          1952
+        ],
+        [
+          1751,
+          1520,
+          1060
+        ],
+        [
+          1248,
+          1059,
+          743
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "1599684994676117384"
+    },
+    {
+      "seed": 48,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 38570,
+      "boats": 2,
+      "stocks": [
+        1734,
+        958,
+        607
+      ],
+      "season_stocks": [
+        [
+          2363,
+          2386,
+          1795
+        ],
+        [
+          1846,
+          1552,
+          1060
+        ],
+        [
+          1734,
+          958,
+          607
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "6741557411338942445"
+    },
+    {
+      "seed": 49,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 35490,
+      "boats": 2,
+      "stocks": [
+        1616,
+        949,
+        716
+      ],
+      "season_stocks": [
+        [
+          2272,
+          2328,
+          2000
+        ],
+        [
+          1694,
+          1435,
+          1269
+        ],
+        [
+          1616,
+          949,
+          716
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "329081832911627385"
+    },
+    {
+      "seed": 50,
+      "policy": "passive",
+      "net_worth": 78200,
+      "gold": -1800,
+      "licences": 0,
+      "licence_price": 35980,
+      "boats": 2,
+      "stocks": [
+        1288,
+        1150,
+        677
+      ],
+      "season_stocks": [
+        [
+          2780,
+          1916,
+          1896
+        ],
+        [
+          1753,
+          1610,
+          1020
+        ],
+        [
+          1288,
+          1150,
+          677
+        ]
+      ],
+      "bankruptcies": 1,
+      "first_bankruptcy_day": 13,
+      "days_played": 84,
+      "history_hash": "4462303028379569019"
+    },
+    {
+      "seed": 1,
+      "policy": "greedy",
+      "net_worth": 1647316,
+      "gold": 1425916,
+      "licences": 4,
+      "licence_price": 35350,
+      "boats": 2,
+      "stocks": [
+        859,
+        418,
+        323
+      ],
+      "season_stocks": [
+        [
+          2855,
+          1127,
+          1952
+        ],
+        [
+          1960,
+          782,
+          501
+        ],
+        [
+          859,
+          418,
+          323
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13800243507755941065"
+    },
+    {
+      "seed": 2,
+      "policy": "greedy",
+      "net_worth": 1641756,
+      "gold": 1391236,
+      "licences": 4,
+      "licence_price": 42630,
+      "boats": 2,
+      "stocks": [
+        761,
+        341,
+        606
+      ],
+      "season_stocks": [
+        [
+          2869,
+          1492,
+          1506
+        ],
+        [
+          2267,
+          466,
+          866
+        ],
+        [
+          761,
+          341,
+          606
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "9770926726472481538"
+    },
+    {
+      "seed": 3,
+      "policy": "greedy",
+      "net_worth": 1645326,
+      "gold": 1360646,
+      "licences": 4,
+      "licence_price": 51170,
+      "boats": 2,
+      "stocks": [
+        789,
+        379,
+        547
+      ],
+      "season_stocks": [
+        [
+          2856,
+          1778,
+          1255
+        ],
+        [
+          2135,
+          502,
+          867
+        ],
+        [
+          789,
+          379,
+          547
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15162800928979267854"
+    },
+    {
+      "seed": 4,
+      "policy": "greedy",
+      "net_worth": 1576799,
+      "gold": 1222119,
+      "licences": 4,
+      "licence_price": 68670,
+      "boats": 2,
+      "stocks": [
+        1164,
+        77,
+        627
+      ],
+      "season_stocks": [
+        [
+          2770,
+          1253,
+          1952
+        ],
+        [
+          2411,
+          283,
+          1593
+        ],
+        [
+          1164,
+          77,
+          627
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11253925681682852040"
+    },
+    {
+      "seed": 5,
+      "policy": "greedy",
+      "net_worth": 1666276,
+      "gold": 1367596,
+      "licences": 4,
+      "licence_price": 54670,
+      "boats": 2,
+      "stocks": [
+        1136,
+        391,
+        348
+      ],
+      "season_stocks": [
+        [
+          2774,
+          1071,
+          2000
+        ],
+        [
+          1629,
+          652,
+          943
+        ],
+        [
+          1136,
+          391,
+          348
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17810965123849509866"
+    },
+    {
+      "seed": 6,
+      "policy": "greedy",
+      "net_worth": 1597795,
+      "gold": 1363795,
+      "licences": 4,
+      "licence_price": 38500,
+      "boats": 2,
+      "stocks": [
+        747,
+        444,
+        368
+      ],
+      "season_stocks": [
+        [
+          2972,
+          1638,
+          1234
+        ],
+        [
+          2660,
+          599,
+          458
+        ],
+        [
+          747,
+          444,
+          368
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4547067688528199986"
+    },
+    {
+      "seed": 7,
+      "policy": "greedy",
+      "net_worth": 1671763,
+      "gold": 1342563,
+      "licences": 4,
+      "licence_price": 62300,
+      "boats": 2,
+      "stocks": [
+        1255,
+        378,
+        352
+      ],
+      "season_stocks": [
+        [
+          2643,
+          1248,
+          1928
+        ],
+        [
+          1744,
+          643,
+          992
+        ],
+        [
+          1255,
+          378,
+          352
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17454380086418699421"
+    },
+    {
+      "seed": 8,
+      "policy": "greedy",
+      "net_worth": 1588986,
+      "gold": 1294786,
+      "licences": 4,
+      "licence_price": 53550,
+      "boats": 2,
+      "stocks": [
+        972,
+        243,
+        662
+      ],
+      "season_stocks": [
+        [
+          2458,
+          1594,
+          1952
+        ],
+        [
+          2403,
+          363,
+          1251
+        ],
+        [
+          972,
+          243,
+          662
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5276037173169717537"
+    },
+    {
+      "seed": 9,
+      "policy": "greedy",
+      "net_worth": 1680927,
+      "gold": 1452247,
+      "licences": 4,
+      "licence_price": 37170,
+      "boats": 2,
+      "stocks": [
+        695,
+        621,
+        365
+      ],
+      "season_stocks": [
+        [
+          2943,
+          1072,
+          1904
+        ],
+        [
+          894,
+          721,
+          1311
+        ],
+        [
+          695,
+          621,
+          365
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5284513374134202249"
+    },
+    {
+      "seed": 10,
+      "policy": "greedy",
+      "net_worth": 1812836,
+      "gold": 1446116,
+      "licences": 4,
+      "licence_price": 71680,
+      "boats": 2,
+      "stocks": [
+        832,
+        490,
+        349
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1044,
+          1928
+        ],
+        [
+          2137,
+          651,
+          627
+        ],
+        [
+          832,
+          490,
+          349
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16602140799907535314"
+    },
+    {
+      "seed": 11,
+      "policy": "greedy",
+      "net_worth": 1701952,
+      "gold": 1455072,
+      "licences": 4,
+      "licence_price": 41720,
+      "boats": 2,
+      "stocks": [
+        598,
+        715,
+        367
+      ],
+      "season_stocks": [
+        [
+          2414,
+          1475,
+          2000
+        ],
+        [
+          1009,
+          1013,
+          833
+        ],
+        [
+          598,
+          715,
+          367
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17209076951563982292"
+    },
+    {
+      "seed": 12,
+      "policy": "greedy",
+      "net_worth": 1672763,
+      "gold": 1434283,
+      "licences": 4,
+      "licence_price": 39620,
+      "boats": 2,
+      "stocks": [
+        804,
+        363,
+        540
+      ],
+      "season_stocks": [
+        [
+          3000,
+          973,
+          1952
+        ],
+        [
+          973,
+          897,
+          1010
+        ],
+        [
+          804,
+          363,
+          540
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "12264432088957264999"
+    },
+    {
+      "seed": 13,
+      "policy": "greedy",
+      "net_worth": 1751517,
+      "gold": 1395437,
+      "licences": 4,
+      "licence_price": 69020,
+      "boats": 2,
+      "stocks": [
+        1248,
+        503,
+        331
+      ],
+      "season_stocks": [
+        [
+          2738,
+          1738,
+          1387
+        ],
+        [
+          1704,
+          459,
+          1264
+        ],
+        [
+          1248,
+          503,
+          331
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15416537107100428694"
+    },
+    {
+      "seed": 14,
+      "policy": "greedy",
+      "net_worth": 1773746,
+      "gold": 1493546,
+      "licences": 4,
+      "licence_price": 50050,
+      "boats": 2,
+      "stocks": [
+        653,
+        620,
+        371
+      ],
+      "season_stocks": [
+        [
+          2610,
+          1871,
+          1466
+        ],
+        [
+          837,
+          815,
+          1466
+        ],
+        [
+          653,
+          620,
+          371
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "426190955254297328"
+    },
+    {
+      "seed": 15,
+      "policy": "greedy",
+      "net_worth": 1655371,
+      "gold": 1425011,
+      "licences": 4,
+      "licence_price": 37590,
+      "boats": 2,
+      "stocks": [
+        581,
+        546,
+        472
+      ],
+      "season_stocks": [
+        [
+          2972,
+          1111,
+          1792
+        ],
+        [
+          1477,
+          529,
+          1335
+        ],
+        [
+          581,
+          546,
+          472
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2266290068436863024"
+    },
+    {
+      "seed": 16,
+      "policy": "greedy",
+      "net_worth": 1647640,
+      "gold": 1416160,
+      "licences": 4,
+      "licence_price": 37870,
+      "boats": 2,
+      "stocks": [
+        635,
+        575,
+        430
+      ],
+      "season_stocks": [
+        [
+          2951,
+          1227,
+          1685
+        ],
+        [
+          939,
+          1000,
+          789
+        ],
+        [
+          635,
+          575,
+          430
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13838853791318266163"
+    },
+    {
+      "seed": 17,
+      "policy": "greedy",
+      "net_worth": 1606475,
+      "gold": 1373035,
+      "licences": 4,
+      "licence_price": 38360,
+      "boats": 2,
+      "stocks": [
+        961,
+        557,
+        354
+      ],
+      "season_stocks": [
+        [
+          2429,
+          1691,
+          1788
+        ],
+        [
+          1046,
+          1100,
+          765
+        ],
+        [
+          961,
+          557,
+          354
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2189740161734841918"
+    },
+    {
+      "seed": 18,
+      "policy": "greedy",
+      "net_worth": 1693734,
+      "gold": 1464214,
+      "licences": 4,
+      "licence_price": 37380,
+      "boats": 2,
+      "stocks": [
+        605,
+        671,
+        402
+      ],
+      "season_stocks": [
+        [
+          2288,
+          1875,
+          1788
+        ],
+        [
+          1132,
+          935,
+          808
+        ],
+        [
+          605,
+          671,
+          402
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17146996023621286613"
+    },
+    {
+      "seed": 19,
+      "policy": "greedy",
+      "net_worth": 1640665,
+      "gold": 1408905,
+      "licences": 4,
+      "licence_price": 37940,
+      "boats": 2,
+      "stocks": [
+        987,
+        483,
+        317
+      ],
+      "season_stocks": [
+        [
+          2959,
+          1118,
+          1792
+        ],
+        [
+          845,
+          1096,
+          728
+        ],
+        [
+          987,
+          483,
+          317
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2750657613579642504"
+    },
+    {
+      "seed": 20,
+      "policy": "greedy",
+      "net_worth": 1674807,
+      "gold": 1443887,
+      "licences": 4,
+      "licence_price": 37730,
+      "boats": 2,
+      "stocks": [
+        636,
+        589,
+        387
+      ],
+      "season_stocks": [
+        [
+          2880,
+          1230,
+          1802
+        ],
+        [
+          1128,
+          668,
+          1229
+        ],
+        [
+          636,
+          589,
+          387
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "7447916313364783094"
+    },
+    {
+      "seed": 21,
+      "policy": "greedy",
+      "net_worth": 1752132,
+      "gold": 1426572,
+      "licences": 4,
+      "licence_price": 61390,
+      "boats": 2,
+      "stocks": [
+        858,
+        462,
+        365
+      ],
+      "season_stocks": [
+        [
+          3000,
+          949,
+          1952
+        ],
+        [
+          1996,
+          673,
+          572
+        ],
+        [
+          858,
+          462,
+          365
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11055474988469657459"
+    },
+    {
+      "seed": 22,
+      "policy": "greedy",
+      "net_worth": 1836352,
+      "gold": 1462632,
+      "licences": 4,
+      "licence_price": 73430,
+      "boats": 2,
+      "stocks": [
+        804,
+        582,
+        338
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1014,
+          1952
+        ],
+        [
+          1798,
+          810,
+          579
+        ],
+        [
+          804,
+          582,
+          338
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8002249845433326007"
+    },
+    {
+      "seed": 23,
+      "policy": "greedy",
+      "net_worth": 1731666,
+      "gold": 1380346,
+      "licences": 4,
+      "licence_price": 67830,
+      "boats": 2,
+      "stocks": [
+        1177,
+        396,
+        383
+      ],
+      "season_stocks": [
+        [
+          2642,
+          1248,
+          1952
+        ],
+        [
+          1984,
+          518,
+          1068
+        ],
+        [
+          1177,
+          396,
+          383
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "1672585904041622996"
+    },
+    {
+      "seed": 24,
+      "policy": "greedy",
+      "net_worth": 1678707,
+      "gold": 1450307,
+      "licences": 4,
+      "licence_price": 37100,
+      "boats": 2,
+      "stocks": [
+        663,
+        664,
+        392
+      ],
+      "season_stocks": [
+        [
+          2271,
+          1748,
+          1952
+        ],
+        [
+          1037,
+          1091,
+          807
+        ],
+        [
+          663,
+          664,
+          392
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "12565035445948120041"
+    },
+    {
+      "seed": 25,
+      "policy": "greedy",
+      "net_worth": 1778871,
+      "gold": 1451351,
+      "licences": 4,
+      "licence_price": 61880,
+      "boats": 2,
+      "stocks": [
+        728,
+        534,
+        418
+      ],
+      "season_stocks": [
+        [
+          2662,
+          1181,
+          1960
+        ],
+        [
+          2289,
+          499,
+          900
+        ],
+        [
+          728,
+          534,
+          418
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11592197375430602096"
+    },
+    {
+      "seed": 26,
+      "policy": "greedy",
+      "net_worth": 1675412,
+      "gold": 1365812,
+      "licences": 4,
+      "licence_price": 57400,
+      "boats": 2,
+      "stocks": [
+        611,
+        517,
+        466
+      ],
+      "season_stocks": [
+        [
+          2966,
+          1014,
+          1952
+        ],
+        [
+          2283,
+          395,
+          1100
+        ],
+        [
+          611,
+          517,
+          466
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "137002445180991734"
+    },
+    {
+      "seed": 27,
+      "policy": "greedy",
+      "net_worth": 1754174,
+      "gold": 1440094,
+      "licences": 4,
+      "licence_price": 58520,
+      "boats": 2,
+      "stocks": [
+        1266,
+        476,
+        338
+      ],
+      "season_stocks": [
+        [
+          2535,
+          1502,
+          1960
+        ],
+        [
+          779,
+          853,
+          1616
+        ],
+        [
+          1266,
+          476,
+          338
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "529185307945128405"
+    },
+    {
+      "seed": 28,
+      "policy": "greedy",
+      "net_worth": 1705481,
+      "gold": 1450761,
+      "licences": 4,
+      "licence_price": 43680,
+      "boats": 2,
+      "stocks": [
+        891,
+        400,
+        378
+      ],
+      "season_stocks": [
+        [
+          3000,
+          966,
+          1960
+        ],
+        [
+          1701,
+          383,
+          1628
+        ],
+        [
+          891,
+          400,
+          378
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15482827205574888743"
+    },
+    {
+      "seed": 29,
+      "policy": "greedy",
+      "net_worth": 1643883,
+      "gold": 1415483,
+      "licences": 4,
+      "licence_price": 37100,
+      "boats": 2,
+      "stocks": [
+        750,
+        637,
+        353
+      ],
+      "season_stocks": [
+        [
+          2280,
+          1790,
+          1896
+        ],
+        [
+          1424,
+          967,
+          620
+        ],
+        [
+          750,
+          637,
+          353
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "10369449777426043648"
+    },
+    {
+      "seed": 30,
+      "policy": "greedy",
+      "net_worth": 1810442,
+      "gold": 1423842,
+      "licences": 4,
+      "licence_price": 76650,
+      "boats": 2,
+      "stocks": [
+        1054,
+        398,
+        361
+      ],
+      "season_stocks": [
+        [
+          2451,
+          1568,
+          1952
+        ],
+        [
+          1551,
+          402,
+          1904
+        ],
+        [
+          1054,
+          398,
+          361
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "6132499815730246118"
+    },
+    {
+      "seed": 31,
+      "policy": "greedy",
+      "net_worth": 1817913,
+      "gold": 1471073,
+      "licences": 4,
+      "licence_price": 66710,
+      "boats": 2,
+      "stocks": [
+        915,
+        528,
+        306
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1014,
+          1952
+        ],
+        [
+          1812,
+          746,
+          563
+        ],
+        [
+          915,
+          528,
+          306
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4645117646401147723"
+    },
+    {
+      "seed": 32,
+      "policy": "greedy",
+      "net_worth": 1635554,
+      "gold": 1394834,
+      "licences": 4,
+      "licence_price": 40180,
+      "boats": 2,
+      "stocks": [
+        626,
+        556,
+        330
+      ],
+      "season_stocks": [
+        [
+          2941,
+          1638,
+          1289
+        ],
+        [
+          2155,
+          630,
+          563
+        ],
+        [
+          626,
+          556,
+          330
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16315217407968618430"
+    },
+    {
+      "seed": 33,
+      "policy": "greedy",
+      "net_worth": 1754469,
+      "gold": 1393629,
+      "licences": 4,
+      "licence_price": 70210,
+      "boats": 2,
+      "stocks": [
+        949,
+        423,
+        339
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1058,
+          1896
+        ],
+        [
+          1608,
+          409,
+          1298
+        ],
+        [
+          949,
+          423,
+          339
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "7448915013201521"
+    },
+    {
+      "seed": 34,
+      "policy": "greedy",
+      "net_worth": 1708319,
+      "gold": 1248079,
+      "licences": 4,
+      "licence_price": 95060,
+      "boats": 2,
+      "stocks": [
+        1546,
+        171,
+        477
+      ],
+      "season_stocks": [
+        [
+          2603,
+          1371,
+          1952
+        ],
+        [
+          2310,
+          331,
+          1545
+        ],
+        [
+          1546,
+          171,
+          477
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14825710166584304676"
+    },
+    {
+      "seed": 35,
+      "policy": "greedy",
+      "net_worth": 1664186,
+      "gold": 1427946,
+      "licences": 4,
+      "licence_price": 39060,
+      "boats": 2,
+      "stocks": [
+        676,
+        551,
+        353
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1080,
+          1816
+        ],
+        [
+          2217,
+          633,
+          597
+        ],
+        [
+          676,
+          551,
+          353
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8870932141980923149"
+    },
+    {
+      "seed": 36,
+      "policy": "greedy",
+      "net_worth": 1594797,
+      "gold": 1374517,
+      "licences": 4,
+      "licence_price": 35070,
+      "boats": 2,
+      "stocks": [
+        909,
+        427,
+        309
+      ],
+      "season_stocks": [
+        [
+          2856,
+          1143,
+          1928
+        ],
+        [
+          2360,
+          601,
+          593
+        ],
+        [
+          909,
+          427,
+          309
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4280880939387095962"
+    },
+    {
+      "seed": 37,
+      "policy": "greedy",
+      "net_worth": 1651136,
+      "gold": 1419096,
+      "licences": 4,
+      "licence_price": 38010,
+      "boats": 2,
+      "stocks": [
+        653,
+        542,
+        507
+      ],
+      "season_stocks": [
+        [
+          2291,
+          1874,
+          1802
+        ],
+        [
+          1069,
+          1020,
+          857
+        ],
+        [
+          653,
+          542,
+          507
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "9843158866918625831"
+    },
+    {
+      "seed": 38,
+      "policy": "greedy",
+      "net_worth": 1783226,
+      "gold": 1442266,
+      "licences": 4,
+      "licence_price": 65240,
+      "boats": 2,
+      "stocks": [
+        904,
+        447,
+        348
+      ],
+      "season_stocks": [
+        [
+          2973,
+          1153,
+          1732
+        ],
+        [
+          1648,
+          800,
+          587
+        ],
+        [
+          904,
+          447,
+          348
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "842826670487573036"
+    },
+    {
+      "seed": 39,
+      "policy": "greedy",
+      "net_worth": 1736396,
+      "gold": 1513036,
+      "licences": 4,
+      "licence_price": 35840,
+      "boats": 2,
+      "stocks": [
+        806,
+        498,
+        356
+      ],
+      "season_stocks": [
+        [
+          2799,
+          1232,
+          1770
+        ],
+        [
+          1471,
+          454,
+          1672
+        ],
+        [
+          806,
+          498,
+          356
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16178118914923219314"
+    },
+    {
+      "seed": 40,
+      "policy": "greedy",
+      "net_worth": 1778140,
+      "gold": 1351220,
+      "licences": 4,
+      "licence_price": 86730,
+      "boats": 2,
+      "stocks": [
+        643,
+        426,
+        573
+      ],
+      "season_stocks": [
+        [
+          3000,
+          967,
+          1960
+        ],
+        [
+          1860,
+          395,
+          1388
+        ],
+        [
+          643,
+          426,
+          573
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5531559845577431582"
+    },
+    {
+      "seed": 41,
+      "policy": "greedy",
+      "net_worth": 1839883,
+      "gold": 1461123,
+      "licences": 4,
+      "licence_price": 74690,
+      "boats": 2,
+      "stocks": [
+        1268,
+        414,
+        341
+      ],
+      "season_stocks": [
+        [
+          2559,
+          1424,
+          1912
+        ],
+        [
+          1534,
+          934,
+          693
+        ],
+        [
+          1268,
+          414,
+          341
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "1581407842535552328"
+    },
+    {
+      "seed": 42,
+      "policy": "greedy",
+      "net_worth": 1566215,
+      "gold": 1259415,
+      "licences": 4,
+      "licence_price": 56700,
+      "boats": 2,
+      "stocks": [
+        2052,
+        389,
+        201
+      ],
+      "season_stocks": [
+        [
+          2974,
+          1380,
+          1482
+        ],
+        [
+          2416,
+          379,
+          914
+        ],
+        [
+          2052,
+          389,
+          201
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14114440026507755086"
+    },
+    {
+      "seed": 43,
+      "policy": "greedy",
+      "net_worth": 1711070,
+      "gold": 1479870,
+      "licences": 4,
+      "licence_price": 37800,
+      "boats": 2,
+      "stocks": [
+        634,
+        585,
+        365
+      ],
+      "season_stocks": [
+        [
+          2856,
+          1366,
+          1662
+        ],
+        [
+          935,
+          977,
+          824
+        ],
+        [
+          634,
+          585,
+          365
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4113196807039774708"
+    },
+    {
+      "seed": 44,
+      "policy": "greedy",
+      "net_worth": 1670724,
+      "gold": 1432804,
+      "licences": 4,
+      "licence_price": 39480,
+      "boats": 2,
+      "stocks": [
+        761,
+        353,
+        532
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1080,
+          1858
+        ],
+        [
+          2048,
+          674,
+          568
+        ],
+        [
+          761,
+          353,
+          532
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16967407430747578751"
+    },
+    {
+      "seed": 45,
+      "policy": "greedy",
+      "net_worth": 1669081,
+      "gold": 1451601,
+      "licences": 4,
+      "licence_price": 34370,
+      "boats": 2,
+      "stocks": [
+        1062,
+        428,
+        291
+      ],
+      "season_stocks": [
+        [
+          2603,
+          1371,
+          1952
+        ],
+        [
+          1871,
+          665,
+          718
+        ],
+        [
+          1062,
+          428,
+          291
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3308565263604159098"
+    },
+    {
+      "seed": 46,
+      "policy": "greedy",
+      "net_worth": 1675689,
+      "gold": 1393529,
+      "licences": 4,
+      "licence_price": 50540,
+      "boats": 2,
+      "stocks": [
+        795,
+        447,
+        341
+      ],
+      "season_stocks": [
+        [
+          2936,
+          1016,
+          1952
+        ],
+        [
+          2234,
+          606,
+          501
+        ],
+        [
+          795,
+          447,
+          341
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15406952240500157190"
+    },
+    {
+      "seed": 47,
+      "policy": "greedy",
+      "net_worth": 1377973,
+      "gold": 1087973,
+      "licences": 4,
+      "licence_price": 52500,
+      "boats": 2,
+      "stocks": [
+        1328,
+        0,
+        1056
+      ],
+      "season_stocks": [
+        [
+          2602,
+          1390,
+          1952
+        ],
+        [
+          2398,
+          345,
+          1370
+        ],
+        [
+          1328,
+          0,
+          1056
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4916997689414904106"
+    },
+    {
+      "seed": 48,
+      "policy": "greedy",
+      "net_worth": 1683326,
+      "gold": 1451846,
+      "licences": 4,
+      "licence_price": 37870,
+      "boats": 2,
+      "stocks": [
+        653,
+        565,
+        419
+      ],
+      "season_stocks": [
+        [
+          2291,
+          1874,
+          1802
+        ],
+        [
+          1069,
+          1020,
+          857
+        ],
+        [
+          653,
+          565,
+          419
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11637227904195561273"
+    },
+    {
+      "seed": 49,
+      "policy": "greedy",
+      "net_worth": 1675027,
+      "gold": 1448587,
+      "licences": 4,
+      "licence_price": 36610,
+      "boats": 2,
+      "stocks": [
+        711,
+        624,
+        332
+      ],
+      "season_stocks": [
+        [
+          2292,
+          1648,
+          2000
+        ],
+        [
+          2116,
+          752,
+          578
+        ],
+        [
+          711,
+          624,
+          332
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17484574034858865154"
+    },
+    {
+      "seed": 50,
+      "policy": "greedy",
+      "net_worth": 1547859,
+      "gold": 1331219,
+      "licences": 4,
+      "licence_price": 34160,
+      "boats": 2,
+      "stocks": [
+        1095,
+        417,
+        254
+      ],
+      "season_stocks": [
+        [
+          2877,
+          1145,
+          1904
+        ],
+        [
+          2364,
+          591,
+          555
+        ],
+        [
+          1095,
+          417,
+          254
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16603177619643948424"
+    },
+    {
+      "seed": 1,
+      "policy": "steward",
+      "net_worth": 1611022,
+      "gold": 1318922,
+      "licences": 6,
+      "licence_price": 35350,
+      "boats": 2,
+      "stocks": [
+        1047,
+        925,
+        267
+      ],
+      "season_stocks": [
+        [
+          2862,
+          1293,
+          1952
+        ],
+        [
+          2204,
+          1003,
+          541
+        ],
+        [
+          1047,
+          925,
+          267
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5930461453468913131"
+    },
+    {
+      "seed": 2,
+      "policy": "steward",
+      "net_worth": 1815872,
+      "gold": 1572972,
+      "licences": 6,
+      "licence_price": 27150,
+      "boats": 2,
+      "stocks": [
+        949,
+        988,
+        396
+      ],
+      "season_stocks": [
+        [
+          2869,
+          1629,
+          1590
+        ],
+        [
+          2445,
+          1194,
+          429
+        ],
+        [
+          949,
+          988,
+          396
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15743379377600316313"
+    },
+    {
+      "seed": 3,
+      "policy": "steward",
+      "net_worth": 1908452,
+      "gold": 1599132,
+      "licences": 6,
+      "licence_price": 38220,
+      "boats": 2,
+      "stocks": [
+        1360,
+        894,
+        383
+      ],
+      "season_stocks": [
+        [
+          2822,
+          1676,
+          1602
+        ],
+        [
+          1255,
+          1475,
+          1116
+        ],
+        [
+          1360,
+          894,
+          383
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "12055518185937142806"
+    },
+    {
+      "seed": 4,
+      "policy": "steward",
+      "net_worth": 1705528,
+      "gold": 1356728,
+      "licences": 6,
+      "licence_price": 44800,
+      "boats": 2,
+      "stocks": [
+        1000,
+        767,
+        529
+      ],
+      "season_stocks": [
+        [
+          2797,
+          1379,
+          1952
+        ],
+        [
+          1869,
+          464,
+          1816
+        ],
+        [
+          1000,
+          767,
+          529
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14565099905704695879"
+    },
+    {
+      "seed": 5,
+      "policy": "steward",
+      "net_worth": 1851747,
+      "gold": 1536127,
+      "licences": 6,
+      "licence_price": 39270,
+      "boats": 2,
+      "stocks": [
+        1009,
+        1129,
+        373
+      ],
+      "season_stocks": [
+        [
+          2793,
+          1253,
+          2000
+        ],
+        [
+          1446,
+          1305,
+          1000
+        ],
+        [
+          1009,
+          1129,
+          373
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8638502797291564296"
+    },
+    {
+      "seed": 6,
+      "policy": "steward",
+      "net_worth": 1893583,
+      "gold": 1541183,
+      "licences": 6,
+      "licence_price": 45400,
+      "boats": 2,
+      "stocks": [
+        1570,
+        730,
+        373
+      ],
+      "season_stocks": [
+        [
+          2480,
+          2047,
+          1500
+        ],
+        [
+          1406,
+          1097,
+          1048
+        ],
+        [
+          1570,
+          730,
+          373
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17698756447244607060"
+    },
+    {
+      "seed": 7,
+      "policy": "steward",
+      "net_worth": 1389913,
+      "gold": 1134113,
+      "licences": 6,
+      "licence_price": 29300,
+      "boats": 2,
+      "stocks": [
+        2306,
+        457,
+        190
+      ],
+      "season_stocks": [
+        [
+          2763,
+          1666,
+          1627
+        ],
+        [
+          2540,
+          536,
+          988
+        ],
+        [
+          2306,
+          457,
+          190
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2831325330923760811"
+    },
+    {
+      "seed": 8,
+      "policy": "steward",
+      "net_worth": 1598200,
+      "gold": 1368200,
+      "licences": 6,
+      "licence_price": 25000,
+      "boats": 2,
+      "stocks": [
+        1743,
+        657,
+        239
+      ],
+      "season_stocks": [
+        [
+          2960,
+          1391,
+          1627
+        ],
+        [
+          2759,
+          761,
+          499
+        ],
+        [
+          1743,
+          657,
+          239
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4256276053225573768"
+    },
+    {
+      "seed": 9,
+      "policy": "steward",
+      "net_worth": 1655794,
+      "gold": 1358894,
+      "licences": 6,
+      "licence_price": 36150,
+      "boats": 2,
+      "stocks": [
+        2504,
+        363,
+        312
+      ],
+      "season_stocks": [
+        [
+          2917,
+          1569,
+          1494
+        ],
+        [
+          2711,
+          875,
+          455
+        ],
+        [
+          2504,
+          363,
+          312
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16120697323026843405"
+    },
+    {
+      "seed": 10,
+      "policy": "steward",
+      "net_worth": 1775472,
+      "gold": 1508872,
+      "licences": 6,
+      "licence_price": 31100,
+      "boats": 2,
+      "stocks": [
+        1119,
+        898,
+        368
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1235,
+          1904
+        ],
+        [
+          2401,
+          1093,
+          483
+        ],
+        [
+          1119,
+          898,
+          368
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "7699922501901339752"
+    },
+    {
+      "seed": 11,
+      "policy": "steward",
+      "net_worth": 1595112,
+      "gold": 1355512,
+      "licences": 6,
+      "licence_price": 26600,
+      "boats": 2,
+      "stocks": [
+        1881,
+        631,
+        237
+      ],
+      "season_stocks": [
+        [
+          2547,
+          1560,
+          2000
+        ],
+        [
+          2501,
+          923,
+          589
+        ],
+        [
+          1881,
+          631,
+          237
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11757811942302355154"
+    },
+    {
+      "seed": 12,
+      "policy": "steward",
+      "net_worth": 1783353,
+      "gold": 1448653,
+      "licences": 6,
+      "licence_price": 42450,
+      "boats": 2,
+      "stocks": [
+        2333,
+        610,
+        286
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1244,
+          1837
+        ],
+        [
+          1397,
+          1243,
+          1036
+        ],
+        [
+          2333,
+          610,
+          286
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8090353004568316168"
+    },
+    {
+      "seed": 13,
+      "policy": "steward",
+      "net_worth": 1554692,
+      "gold": 1233792,
+      "licences": 6,
+      "licence_price": 40150,
+      "boats": 2,
+      "stocks": [
+        825,
+        626,
+        698
+      ],
+      "season_stocks": [
+        [
+          2477,
+          1985,
+          1608
+        ],
+        [
+          2349,
+          392,
+          1464
+        ],
+        [
+          825,
+          626,
+          698
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "7745225831252199852"
+    },
+    {
+      "seed": 14,
+      "policy": "steward",
+      "net_worth": 1272605,
+      "gold": 1036905,
+      "licences": 6,
+      "licence_price": 25950,
+      "boats": 2,
+      "stocks": [
+        931,
+        522,
+        1380
+      ],
+      "season_stocks": [
+        [
+          2703,
+          1668,
+          1774
+        ],
+        [
+          2543,
+          369,
+          1774
+        ],
+        [
+          931,
+          522,
+          1380
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3287015276410831899"
+    },
+    {
+      "seed": 15,
+      "policy": "steward",
+      "net_worth": 1926908,
+      "gold": 1654308,
+      "licences": 6,
+      "licence_price": 32100,
+      "boats": 2,
+      "stocks": [
+        1477,
+        805,
+        319
+      ],
+      "season_stocks": [
+        [
+          2895,
+          1560,
+          1500
+        ],
+        [
+          1922,
+          1197,
+          565
+        ],
+        [
+          1477,
+          805,
+          319
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "10404333620779084000"
+    },
+    {
+      "seed": 16,
+      "policy": "steward",
+      "net_worth": 1701341,
+      "gold": 1409241,
+      "licences": 6,
+      "licence_price": 35350,
+      "boats": 2,
+      "stocks": [
+        1099,
+        963,
+        329
+      ],
+      "season_stocks": [
+        [
+          2951,
+          1399,
+          1704
+        ],
+        [
+          1892,
+          1542,
+          470
+        ],
+        [
+          1099,
+          963,
+          329
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "180118635209213489"
+    },
+    {
+      "seed": 17,
+      "policy": "steward",
+      "net_worth": 1681045,
+      "gold": 1394405,
+      "licences": 6,
+      "licence_price": 34440,
+      "boats": 2,
+      "stocks": [
+        1295,
+        811,
+        284
+      ],
+      "season_stocks": [
+        [
+          2558,
+          1731,
+          1788
+        ],
+        [
+          2455,
+          1173,
+          450
+        ],
+        [
+          1295,
+          811,
+          284
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "10356636337892874291"
+    },
+    {
+      "seed": 18,
+      "policy": "steward",
+      "net_worth": 1562390,
+      "gold": 1272390,
+      "licences": 6,
+      "licence_price": 35000,
+      "boats": 2,
+      "stocks": [
+        1704,
+        645,
+        244
+      ],
+      "season_stocks": [
+        [
+          2449,
+          1865,
+          1788
+        ],
+        [
+          2054,
+          1121,
+          605
+        ],
+        [
+          1704,
+          645,
+          244
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14028575125246059486"
+    },
+    {
+      "seed": 19,
+      "policy": "steward",
+      "net_worth": 1860615,
+      "gold": 1544995,
+      "licences": 6,
+      "licence_price": 39270,
+      "boats": 2,
+      "stocks": [
+        1001,
+        1104,
+        373
+      ],
+      "season_stocks": [
+        [
+          2785,
+          1281,
+          1952
+        ],
+        [
+          1484,
+          1275,
+          976
+        ],
+        [
+          1001,
+          1104,
+          373
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15446824576402839150"
+    },
+    {
+      "seed": 20,
+      "policy": "steward",
+      "net_worth": 1656967,
+      "gold": 1303667,
+      "licences": 6,
+      "licence_price": 45550,
+      "boats": 2,
+      "stocks": [
+        1293,
+        682,
+        405
+      ],
+      "season_stocks": [
+        [
+          2947,
+          1308,
+          1802
+        ],
+        [
+          1413,
+          776,
+          1229
+        ],
+        [
+          1293,
+          682,
+          405
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "1903974689192499343"
+    },
+    {
+      "seed": 21,
+      "policy": "steward",
+      "net_worth": 1969671,
+      "gold": 1675471,
+      "licences": 6,
+      "licence_price": 35700,
+      "boats": 2,
+      "stocks": [
+        1531,
+        638,
+        410
+      ],
+      "season_stocks": [
+        [
+          2980,
+          2510,
+          801
+        ],
+        [
+          1880,
+          1501,
+          498
+        ],
+        [
+          1531,
+          638,
+          410
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11344610506414355739"
+    },
+    {
+      "seed": 22,
+      "policy": "steward",
+      "net_worth": 1748632,
+      "gold": 1430732,
+      "licences": 6,
+      "licence_price": 39650,
+      "boats": 2,
+      "stocks": [
+        2425,
+        652,
+        234
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1204,
+          1944
+        ],
+        [
+          2149,
+          1020,
+          713
+        ],
+        [
+          2425,
+          652,
+          234
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17747354977781403751"
+    },
+    {
+      "seed": 23,
+      "policy": "steward",
+      "net_worth": 1672148,
+      "gold": 1442148,
+      "licences": 6,
+      "licence_price": 25000,
+      "boats": 2,
+      "stocks": [
+        1210,
+        1231,
+        291
+      ],
+      "season_stocks": [
+        [
+          2738,
+          1561,
+          1753
+        ],
+        [
+          2470,
+          1112,
+          451
+        ],
+        [
+          1210,
+          1231,
+          291
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "1794688428523686484"
+    },
+    {
+      "seed": 24,
+      "policy": "steward",
+      "net_worth": 1492041,
+      "gold": 1255741,
+      "licences": 6,
+      "licence_price": 26050,
+      "boats": 2,
+      "stocks": [
+        2172,
+        626,
+        287
+      ],
+      "season_stocks": [
+        [
+          2440,
+          1750,
+          1952
+        ],
+        [
+          2476,
+          1122,
+          529
+        ],
+        [
+          2172,
+          626,
+          287
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13628635261281483606"
+    },
+    {
+      "seed": 25,
+      "policy": "steward",
+      "net_worth": 1782790,
+      "gold": 1456250,
+      "licences": 6,
+      "licence_price": 41090,
+      "boats": 2,
+      "stocks": [
+        1586,
+        837,
+        367
+      ],
+      "season_stocks": [
+        [
+          2748,
+          1348,
+          1952
+        ],
+        [
+          1126,
+          1455,
+          1209
+        ],
+        [
+          1586,
+          837,
+          367
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3639680250912170435"
+    },
+    {
+      "seed": 26,
+      "policy": "steward",
+      "net_worth": 1606197,
+      "gold": 1369297,
+      "licences": 6,
+      "licence_price": 26150,
+      "boats": 2,
+      "stocks": [
+        887,
+        886,
+        391
+      ],
+      "season_stocks": [
+        [
+          2966,
+          1210,
+          1952
+        ],
+        [
+          2650,
+          841,
+          583
+        ],
+        [
+          887,
+          886,
+          391
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "9269670192508218677"
+    },
+    {
+      "seed": 27,
+      "policy": "steward",
+      "net_worth": 1748883,
+      "gold": 1401583,
+      "licences": 6,
+      "licence_price": 44550,
+      "boats": 2,
+      "stocks": [
+        2014,
+        614,
+        343
+      ],
+      "season_stocks": [
+        [
+          2700,
+          1517,
+          1952
+        ],
+        [
+          1249,
+          1056,
+          1428
+        ],
+        [
+          2014,
+          614,
+          343
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "6688858443758100751"
+    },
+    {
+      "seed": 28,
+      "policy": "steward",
+      "net_worth": 1619791,
+      "gold": 1144391,
+      "licences": 6,
+      "licence_price": 65900,
+      "boats": 2,
+      "stocks": [
+        1570,
+        624,
+        361
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1161,
+          1952
+        ],
+        [
+          2085,
+          405,
+          1732
+        ],
+        [
+          1570,
+          624,
+          361
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "497478436706833388"
+    },
+    {
+      "seed": 29,
+      "policy": "steward",
+      "net_worth": 1780341,
+      "gold": 1519441,
+      "licences": 6,
+      "licence_price": 30150,
+      "boats": 2,
+      "stocks": [
+        1272,
+        1026,
+        331
+      ],
+      "season_stocks": [
+        [
+          2440,
+          1781,
+          1904
+        ],
+        [
+          1930,
+          1303,
+          565
+        ],
+        [
+          1272,
+          1026,
+          331
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11092845480555767669"
+    },
+    {
+      "seed": 30,
+      "policy": "steward",
+      "net_worth": 1543276,
+      "gold": 1189076,
+      "licences": 6,
+      "licence_price": 45700,
+      "boats": 2,
+      "stocks": [
+        888,
+        734,
+        626
+      ],
+      "season_stocks": [
+        [
+          2700,
+          1657,
+          1816
+        ],
+        [
+          2249,
+          466,
+          1500
+        ],
+        [
+          888,
+          734,
+          626
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "10862903322887880319"
+    },
+    {
+      "seed": 31,
+      "policy": "steward",
+      "net_worth": 1771572,
+      "gold": 1447972,
+      "licences": 6,
+      "licence_price": 40600,
+      "boats": 2,
+      "stocks": [
+        1656,
+        766,
+        285
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1204,
+          1944
+        ],
+        [
+          2101,
+          1138,
+          677
+        ],
+        [
+          1656,
+          766,
+          285
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "6639773217443278273"
+    },
+    {
+      "seed": 32,
+      "policy": "steward",
+      "net_worth": 1645668,
+      "gold": 1411168,
+      "licences": 6,
+      "licence_price": 25750,
+      "boats": 2,
+      "stocks": [
+        991,
+        1100,
+        316
+      ],
+      "season_stocks": [
+        [
+          2422,
+          1793,
+          1960
+        ],
+        [
+          2449,
+          1211,
+          507
+        ],
+        [
+          991,
+          1100,
+          316
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "9982347623346329255"
+    },
+    {
+      "seed": 33,
+      "policy": "steward",
+      "net_worth": 1578402,
+      "gold": 1246402,
+      "licences": 6,
+      "licence_price": 42000,
+      "boats": 2,
+      "stocks": [
+        1990,
+        575,
+        262
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1241,
+          1896
+        ],
+        [
+          2268,
+          592,
+          1060
+        ],
+        [
+          1990,
+          575,
+          262
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11128101688228763616"
+    },
+    {
+      "seed": 34,
+      "policy": "steward",
+      "net_worth": 1772489,
+      "gold": 1478289,
+      "licences": 6,
+      "licence_price": 35700,
+      "boats": 2,
+      "stocks": [
+        1099,
+        1091,
+        299
+      ],
+      "season_stocks": [
+        [
+          2703,
+          1791,
+          1683
+        ],
+        [
+          2488,
+          1185,
+          467
+        ],
+        [
+          1099,
+          1091,
+          299
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11123689021772219271"
+    },
+    {
+      "seed": 35,
+      "policy": "steward",
+      "net_worth": 1669301,
+      "gold": 1440201,
+      "licences": 6,
+      "licence_price": 24850,
+      "boats": 2,
+      "stocks": [
+        1274,
+        1070,
+        275
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1248,
+          1816
+        ],
+        [
+          2664,
+          950,
+          449
+        ],
+        [
+          1274,
+          1070,
+          275
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13591488252381455122"
+    },
+    {
+      "seed": 36,
+      "policy": "steward",
+      "net_worth": 1547750,
+      "gold": 1284150,
+      "licences": 6,
+      "licence_price": 30600,
+      "boats": 2,
+      "stocks": [
+        2098,
+        518,
+        250
+      ],
+      "season_stocks": [
+        [
+          2877,
+          1563,
+          1627
+        ],
+        [
+          2583,
+          764,
+          653
+        ],
+        [
+          2098,
+          518,
+          250
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "7650705686255284893"
+    },
+    {
+      "seed": 37,
+      "policy": "steward",
+      "net_worth": 1755377,
+      "gold": 1509777,
+      "licences": 6,
+      "licence_price": 27600,
+      "boats": 2,
+      "stocks": [
+        994,
+        906,
+        368
+      ],
+      "season_stocks": [
+        [
+          2424,
+          1918,
+          1809
+        ],
+        [
+          2375,
+          1171,
+          551
+        ],
+        [
+          994,
+          906,
+          368
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "18036655184459555285"
+    },
+    {
+      "seed": 38,
+      "policy": "steward",
+      "net_worth": 1888656,
+      "gold": 1570936,
+      "licences": 6,
+      "licence_price": 39620,
+      "boats": 2,
+      "stocks": [
+        1386,
+        716,
+        327
+      ],
+      "season_stocks": [
+        [
+          2973,
+          2785,
+          739
+        ],
+        [
+          2202,
+          1383,
+          484
+        ],
+        [
+          1386,
+          716,
+          327
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5535594996673618507"
+    },
+    {
+      "seed": 39,
+      "policy": "steward",
+      "net_worth": 1796825,
+      "gold": 1489185,
+      "licences": 6,
+      "licence_price": 37940,
+      "boats": 2,
+      "stocks": [
+        1509,
+        652,
+        294
+      ],
+      "season_stocks": [
+        [
+          2921,
+          2838,
+          739
+        ],
+        [
+          2308,
+          1044,
+          515
+        ],
+        [
+          1509,
+          652,
+          294
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "1678095548553330544"
+    },
+    {
+      "seed": 40,
+      "policy": "steward",
+      "net_worth": 1631252,
+      "gold": 1342512,
+      "licences": 6,
+      "licence_price": 34790,
+      "boats": 2,
+      "stocks": [
+        1753,
+        644,
+        228
+      ],
+      "season_stocks": [
+        [
+          2963,
+          1295,
+          1753
+        ],
+        [
+          2158,
+          989,
+          553
+        ],
+        [
+          1753,
+          644,
+          228
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3480067638868406739"
+    },
+    {
+      "seed": 41,
+      "policy": "steward",
+      "net_worth": 1523987,
+      "gold": 1174767,
+      "licences": 6,
+      "licence_price": 44870,
+      "boats": 2,
+      "stocks": [
+        1087,
+        836,
+        364
+      ],
+      "season_stocks": [
+        [
+          2700,
+          1570,
+          1795
+        ],
+        [
+          2377,
+          613,
+          1224
+        ],
+        [
+          1087,
+          836,
+          364
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13324379368550981954"
+    },
+    {
+      "seed": 42,
+      "policy": "steward",
+      "net_worth": 1811368,
+      "gold": 1561268,
+      "licences": 6,
+      "licence_price": 28350,
+      "boats": 2,
+      "stocks": [
+        974,
+        862,
+        444
+      ],
+      "season_stocks": [
+        [
+          2901,
+          1644,
+          1602
+        ],
+        [
+          2239,
+          1150,
+          503
+        ],
+        [
+          974,
+          862,
+          444
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13085248272001828959"
+    },
+    {
+      "seed": 43,
+      "policy": "steward",
+      "net_worth": 1745824,
+      "gold": 1478924,
+      "licences": 6,
+      "licence_price": 31150,
+      "boats": 2,
+      "stocks": [
+        1861,
+        624,
+        339
+      ],
+      "season_stocks": [
+        [
+          2892,
+          1563,
+          1560
+        ],
+        [
+          1391,
+          1441,
+          728
+        ],
+        [
+          1861,
+          624,
+          339
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11200025721333564724"
+    },
+    {
+      "seed": 44,
+      "policy": "steward",
+      "net_worth": 1681944,
+      "gold": 1334644,
+      "licences": 6,
+      "licence_price": 44550,
+      "boats": 2,
+      "stocks": [
+        1636,
+        872,
+        383
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1248,
+          1858
+        ],
+        [
+          933,
+          1133,
+          1634
+        ],
+        [
+          1636,
+          872,
+          383
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17241194586104817310"
+    },
+    {
+      "seed": 45,
+      "policy": "steward",
+      "net_worth": 1685490,
+      "gold": 1334590,
+      "licences": 6,
+      "licence_price": 45150,
+      "boats": 2,
+      "stocks": [
+        1614,
+        659,
+        367
+      ],
+      "season_stocks": [
+        [
+          2725,
+          1486,
+          1976
+        ],
+        [
+          1411,
+          800,
+          1428
+        ],
+        [
+          1614,
+          659,
+          367
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8624939775066155230"
+    },
+    {
+      "seed": 46,
+      "policy": "steward",
+      "net_worth": 1696149,
+      "gold": 1456849,
+      "licences": 6,
+      "licence_price": 26550,
+      "boats": 2,
+      "stocks": [
+        809,
+        893,
+        445
+      ],
+      "season_stocks": [
+        [
+          2944,
+          1216,
+          1952
+        ],
+        [
+          2475,
+          871,
+          565
+        ],
+        [
+          809,
+          893,
+          445
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "11074157395226955367"
+    },
+    {
+      "seed": 47,
+      "policy": "steward",
+      "net_worth": 1647812,
+      "gold": 1410912,
+      "licences": 6,
+      "licence_price": 26150,
+      "boats": 2,
+      "stocks": [
+        1865,
+        664,
+        213
+      ],
+      "season_stocks": [
+        [
+          2955,
+          1480,
+          1560
+        ],
+        [
+          2730,
+          781,
+          525
+        ],
+        [
+          1865,
+          664,
+          213
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "452166179791044583"
+    },
+    {
+      "seed": 48,
+      "policy": "steward",
+      "net_worth": 1759923,
+      "gold": 1508623,
+      "licences": 6,
+      "licence_price": 28550,
+      "boats": 2,
+      "stocks": [
+        889,
+        1105,
+        366
+      ],
+      "season_stocks": [
+        [
+          2424,
+          1918,
+          1809
+        ],
+        [
+          2215,
+          1212,
+          587
+        ],
+        [
+          889,
+          1105,
+          366
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15909540170553517056"
+    },
+    {
+      "seed": 49,
+      "policy": "steward",
+      "net_worth": 1553588,
+      "gold": 1229988,
+      "licences": 6,
+      "licence_price": 40600,
+      "boats": 2,
+      "stocks": [
+        2292,
+        668,
+        224
+      ],
+      "season_stocks": [
+        [
+          2466,
+          1657,
+          2000
+        ],
+        [
+          2477,
+          855,
+          716
+        ],
+        [
+          2292,
+          668,
+          224
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3583300628267578879"
+    },
+    {
+      "seed": 50,
+      "policy": "steward",
+      "net_worth": 1533228,
+      "gold": 1293328,
+      "licences": 6,
+      "licence_price": 26650,
+      "boats": 2,
+      "stocks": [
+        1873,
+        663,
+        229
+      ],
+      "season_stocks": [
+        [
+          2877,
+          1306,
+          1904
+        ],
+        [
+          2583,
+          742,
+          644
+        ],
+        [
+          1873,
+          663,
+          229
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8907772036239290951"
+    },
+    {
+      "seed": 1,
+      "policy": "mixed",
+      "net_worth": 1433665,
+      "gold": 1141145,
+      "licences": 6,
+      "licence_price": 35420,
+      "boats": 2,
+      "stocks": [
+        1047,
+        733,
+        265
+      ],
+      "season_stocks": [
+        [
+          2855,
+          1127,
+          1952
+        ],
+        [
+          2204,
+          877,
+          505
+        ],
+        [
+          1047,
+          733,
+          265
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2877246375283126811"
+    },
+    {
+      "seed": 2,
+      "policy": "mixed",
+      "net_worth": 1524428,
+      "gold": 1276428,
+      "licences": 6,
+      "licence_price": 28000,
+      "boats": 2,
+      "stocks": [
+        761,
+        860,
+        380
+      ],
+      "season_stocks": [
+        [
+          2869,
+          1492,
+          1506
+        ],
+        [
+          2445,
+          928,
+          399
+        ],
+        [
+          761,
+          860,
+          380
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2978502605965619936"
+    },
+    {
+      "seed": 3,
+      "policy": "mixed",
+      "net_worth": 1495635,
+      "gold": 1255735,
+      "licences": 6,
+      "licence_price": 26650,
+      "boats": 2,
+      "stocks": [
+        1035,
+        968,
+        317
+      ],
+      "season_stocks": [
+        [
+          2856,
+          1778,
+          1255
+        ],
+        [
+          2388,
+          1141,
+          352
+        ],
+        [
+          1035,
+          968,
+          317
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15705042863721327208"
+    },
+    {
+      "seed": 4,
+      "policy": "mixed",
+      "net_worth": 1260579,
+      "gold": 915079,
+      "licences": 6,
+      "licence_price": 44250,
+      "boats": 2,
+      "stocks": [
+        2288,
+        360,
+        351
+      ],
+      "season_stocks": [
+        [
+          2770,
+          1253,
+          1952
+        ],
+        [
+          2473,
+          293,
+          1816
+        ],
+        [
+          2288,
+          360,
+          351
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14244045771226012455"
+    },
+    {
+      "seed": 5,
+      "policy": "mixed",
+      "net_worth": 1590673,
+      "gold": 1299173,
+      "licences": 6,
+      "licence_price": 35250,
+      "boats": 2,
+      "stocks": [
+        1355,
+        725,
+        305
+      ],
+      "season_stocks": [
+        [
+          2774,
+          1071,
+          2000
+        ],
+        [
+          1708,
+          678,
+          1040
+        ],
+        [
+          1355,
+          725,
+          305
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4652942754620376748"
+    },
+    {
+      "seed": 6,
+      "policy": "mixed",
+      "net_worth": 1400519,
+      "gold": 1104819,
+      "licences": 6,
+      "licence_price": 35950,
+      "boats": 2,
+      "stocks": [
+        2751,
+        404,
+        177
+      ],
+      "season_stocks": [
+        [
+          2972,
+          1638,
+          1234
+        ],
+        [
+          2805,
+          855,
+          354
+        ],
+        [
+          2751,
+          404,
+          177
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13717414471222427838"
+    },
+    {
+      "seed": 7,
+      "policy": "mixed",
+      "net_worth": 1622966,
+      "gold": 1280466,
+      "licences": 6,
+      "licence_price": 43750,
+      "boats": 2,
+      "stocks": [
+        1803,
+        645,
+        304
+      ],
+      "season_stocks": [
+        [
+          2643,
+          1248,
+          1928
+        ],
+        [
+          1286,
+          1007,
+          1084
+        ],
+        [
+          1803,
+          645,
+          304
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "7657548181559417932"
+    },
+    {
+      "seed": 8,
+      "policy": "mixed",
+      "net_worth": 1385968,
+      "gold": 1092068,
+      "licences": 6,
+      "licence_price": 35650,
+      "boats": 2,
+      "stocks": [
+        2616,
+        447,
+        193
+      ],
+      "season_stocks": [
+        [
+          2458,
+          1594,
+          1952
+        ],
+        [
+          2550,
+          854,
+          553
+        ],
+        [
+          2616,
+          447,
+          193
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5606814734734165825"
+    },
+    {
+      "seed": 9,
+      "policy": "mixed",
+      "net_worth": 1289133,
+      "gold": 1026733,
+      "licences": 6,
+      "licence_price": 30400,
+      "boats": 2,
+      "stocks": [
+        2271,
+        414,
+        233
+      ],
+      "season_stocks": [
+        [
+          2943,
+          1072,
+          1904
+        ],
+        [
+          2434,
+          697,
+          585
+        ],
+        [
+          2271,
+          414,
+          233
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8219692559583645168"
+    },
+    {
+      "seed": 10,
+      "policy": "mixed",
+      "net_worth": 1562483,
+      "gold": 1295283,
+      "licences": 6,
+      "licence_price": 31200,
+      "boats": 2,
+      "stocks": [
+        860,
+        791,
+        366
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1044,
+          1928
+        ],
+        [
+          2410,
+          774,
+          503
+        ],
+        [
+          860,
+          791,
+          366
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "7286013910347662391"
+    },
+    {
+      "seed": 11,
+      "policy": "mixed",
+      "net_worth": 1450016,
+      "gold": 1208016,
+      "licences": 6,
+      "licence_price": 27000,
+      "boats": 2,
+      "stocks": [
+        1846,
+        630,
+        213
+      ],
+      "season_stocks": [
+        [
+          2414,
+          1475,
+          2000
+        ],
+        [
+          2398,
+          833,
+          553
+        ],
+        [
+          1846,
+          630,
+          213
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17315069694236071028"
+    },
+    {
+      "seed": 12,
+      "policy": "mixed",
+      "net_worth": 1528519,
+      "gold": 1172519,
+      "licences": 6,
+      "licence_price": 46000,
+      "boats": 2,
+      "stocks": [
+        2064,
+        591,
+        286
+      ],
+      "season_stocks": [
+        [
+          3000,
+          973,
+          1952
+        ],
+        [
+          1093,
+          980,
+          1224
+        ],
+        [
+          2064,
+          591,
+          286
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "92114218203207794"
+    },
+    {
+      "seed": 13,
+      "policy": "mixed",
+      "net_worth": 1784363,
+      "gold": 1518363,
+      "licences": 6,
+      "licence_price": 31000,
+      "boats": 2,
+      "stocks": [
+        1227,
+        839,
+        327
+      ],
+      "season_stocks": [
+        [
+          2738,
+          1738,
+          1387
+        ],
+        [
+          1950,
+          1075,
+          549
+        ],
+        [
+          1227,
+          839,
+          327
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "1800278096363981274"
+    },
+    {
+      "seed": 14,
+      "policy": "mixed",
+      "net_worth": 1577158,
+      "gold": 1243658,
+      "licences": 6,
+      "licence_price": 42250,
+      "boats": 2,
+      "stocks": [
+        1386,
+        794,
+        409
+      ],
+      "season_stocks": [
+        [
+          2610,
+          1871,
+          1466
+        ],
+        [
+          900,
+          1055,
+          1466
+        ],
+        [
+          1386,
+          794,
+          409
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "18386416173833813659"
+    },
+    {
+      "seed": 15,
+      "policy": "mixed",
+      "net_worth": 1500564,
+      "gold": 1224064,
+      "licences": 6,
+      "licence_price": 32750,
+      "boats": 2,
+      "stocks": [
+        1125,
+        807,
+        320
+      ],
+      "season_stocks": [
+        [
+          2972,
+          1111,
+          1792
+        ],
+        [
+          1891,
+          979,
+          540
+        ],
+        [
+          1125,
+          807,
+          320
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14217062603017535991"
+    },
+    {
+      "seed": 16,
+      "policy": "mixed",
+      "net_worth": 1445364,
+      "gold": 1200364,
+      "licences": 6,
+      "licence_price": 27500,
+      "boats": 2,
+      "stocks": [
+        1707,
+        572,
+        323
+      ],
+      "season_stocks": [
+        [
+          2951,
+          1227,
+          1685
+        ],
+        [
+          1515,
+          1453,
+          466
+        ],
+        [
+          1707,
+          572,
+          323
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "758724248496305446"
+    },
+    {
+      "seed": 17,
+      "policy": "mixed",
+      "net_worth": 1583442,
+      "gold": 1310542,
+      "licences": 6,
+      "licence_price": 32150,
+      "boats": 2,
+      "stocks": [
+        1420,
+        795,
+        318
+      ],
+      "season_stocks": [
+        [
+          2429,
+          1691,
+          1788
+        ],
+        [
+          1647,
+          1289,
+          545
+        ],
+        [
+          1420,
+          795,
+          318
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5176421409582994360"
+    },
+    {
+      "seed": 18,
+      "policy": "mixed",
+      "net_worth": 1670398,
+      "gold": 1434398,
+      "licences": 6,
+      "licence_price": 26000,
+      "boats": 2,
+      "stocks": [
+        872,
+        999,
+        384
+      ],
+      "season_stocks": [
+        [
+          2288,
+          1875,
+          1788
+        ],
+        [
+          1534,
+          1292,
+          767
+        ],
+        [
+          872,
+          999,
+          384
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3038176397593114068"
+    },
+    {
+      "seed": 19,
+      "policy": "mixed",
+      "net_worth": 1411003,
+      "gold": 1120703,
+      "licences": 6,
+      "licence_price": 35050,
+      "boats": 2,
+      "stocks": [
+        1650,
+        643,
+        284
+      ],
+      "season_stocks": [
+        [
+          2959,
+          1118,
+          1792
+        ],
+        [
+          1445,
+          1415,
+          473
+        ],
+        [
+          1650,
+          643,
+          284
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "297908765309465586"
+    },
+    {
+      "seed": 20,
+      "policy": "mixed",
+      "net_worth": 1423366,
+      "gold": 1070066,
+      "licences": 6,
+      "licence_price": 45550,
+      "boats": 2,
+      "stocks": [
+        1226,
+        699,
+        393
+      ],
+      "season_stocks": [
+        [
+          2880,
+          1230,
+          1802
+        ],
+        [
+          1566,
+          680,
+          1169
+        ],
+        [
+          1226,
+          699,
+          393
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "12946425013330342778"
+    },
+    {
+      "seed": 21,
+      "policy": "mixed",
+      "net_worth": 1402876,
+      "gold": 1118576,
+      "licences": 6,
+      "licence_price": 34050,
+      "boats": 2,
+      "stocks": [
+        1065,
+        750,
+        315
+      ],
+      "season_stocks": [
+        [
+          3000,
+          949,
+          1952
+        ],
+        [
+          2060,
+          775,
+          577
+        ],
+        [
+          1065,
+          750,
+          315
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14091619071731726648"
+    },
+    {
+      "seed": 22,
+      "policy": "mixed",
+      "net_worth": 1413543,
+      "gold": 1140643,
+      "licences": 6,
+      "licence_price": 32150,
+      "boats": 2,
+      "stocks": [
+        767,
+        778,
+        409
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1014,
+          1952
+        ],
+        [
+          2338,
+          691,
+          553
+        ],
+        [
+          767,
+          778,
+          409
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "411298677763227772"
+    },
+    {
+      "seed": 23,
+      "policy": "mixed",
+      "net_worth": 1427830,
+      "gold": 1087430,
+      "licences": 6,
+      "licence_price": 43400,
+      "boats": 2,
+      "stocks": [
+        2541,
+        444,
+        225
+      ],
+      "season_stocks": [
+        [
+          2642,
+          1248,
+          1952
+        ],
+        [
+          2323,
+          437,
+          1249
+        ],
+        [
+          2541,
+          444,
+          225
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "15740711473522133003"
+    },
+    {
+      "seed": 24,
+      "policy": "mixed",
+      "net_worth": 1738382,
+      "gold": 1467882,
+      "licences": 6,
+      "licence_price": 31750,
+      "boats": 2,
+      "stocks": [
+        1335,
+        824,
+        326
+      ],
+      "season_stocks": [
+        [
+          2271,
+          1748,
+          1952
+        ],
+        [
+          1661,
+          1245,
+          683
+        ],
+        [
+          1335,
+          824,
+          326
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "403067228954516600"
+    },
+    {
+      "seed": 25,
+      "policy": "mixed",
+      "net_worth": 1601840,
+      "gold": 1265220,
+      "licences": 6,
+      "licence_price": 42770,
+      "boats": 2,
+      "stocks": [
+        1594,
+        667,
+        320
+      ],
+      "season_stocks": [
+        [
+          2662,
+          1181,
+          1960
+        ],
+        [
+          1197,
+          996,
+          1214
+        ],
+        [
+          1594,
+          667,
+          320
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2570632042580469281"
+    },
+    {
+      "seed": 26,
+      "policy": "mixed",
+      "net_worth": 1308881,
+      "gold": 1058781,
+      "licences": 6,
+      "licence_price": 28350,
+      "boats": 2,
+      "stocks": [
+        930,
+        779,
+        299
+      ],
+      "season_stocks": [
+        [
+          2966,
+          1014,
+          1952
+        ],
+        [
+          2650,
+          610,
+          571
+        ],
+        [
+          930,
+          779,
+          299
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "18362108086688609615"
+    },
+    {
+      "seed": 27,
+      "policy": "mixed",
+      "net_worth": 1533002,
+      "gold": 1212702,
+      "licences": 6,
+      "licence_price": 40050,
+      "boats": 2,
+      "stocks": [
+        1811,
+        602,
+        356
+      ],
+      "season_stocks": [
+        [
+          2535,
+          1502,
+          1960
+        ],
+        [
+          1116,
+          952,
+          1434
+        ],
+        [
+          1811,
+          602,
+          356
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13117970798465342362"
+    },
+    {
+      "seed": 28,
+      "policy": "mixed",
+      "net_worth": 1419035,
+      "gold": 1050735,
+      "licences": 6,
+      "licence_price": 48050,
+      "boats": 2,
+      "stocks": [
+        979,
+        572,
+        615
+      ],
+      "season_stocks": [
+        [
+          3000,
+          966,
+          1960
+        ],
+        [
+          2061,
+          346,
+          1739
+        ],
+        [
+          979,
+          572,
+          615
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "17298650860016684296"
+    },
+    {
+      "seed": 29,
+      "policy": "mixed",
+      "net_worth": 1567839,
+      "gold": 1335139,
+      "licences": 6,
+      "licence_price": 25450,
+      "boats": 2,
+      "stocks": [
+        2048,
+        689,
+        273
+      ],
+      "season_stocks": [
+        [
+          2280,
+          1790,
+          1896
+        ],
+        [
+          2214,
+          1106,
+          551
+        ],
+        [
+          2048,
+          689,
+          273
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14127008055617149396"
+    },
+    {
+      "seed": 30,
+      "policy": "mixed",
+      "net_worth": 1267909,
+      "gold": 1017809,
+      "licences": 6,
+      "licence_price": 28350,
+      "boats": 2,
+      "stocks": [
+        1533,
+        441,
+        315
+      ],
+      "season_stocks": [
+        [
+          2451,
+          1568,
+          1952
+        ],
+        [
+          2181,
+          383,
+          1620
+        ],
+        [
+          1533,
+          441,
+          315
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "8879712366191605898"
+    },
+    {
+      "seed": 31,
+      "policy": "mixed",
+      "net_worth": 1450885,
+      "gold": 1173185,
+      "licences": 6,
+      "licence_price": 32950,
+      "boats": 2,
+      "stocks": [
+        1061,
+        755,
+        318
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1014,
+          1952
+        ],
+        [
+          2179,
+          780,
+          565
+        ],
+        [
+          1061,
+          755,
+          318
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "9654181164552479085"
+    },
+    {
+      "seed": 32,
+      "policy": "mixed",
+      "net_worth": 1347847,
+      "gold": 1080947,
+      "licences": 6,
+      "licence_price": 31150,
+      "boats": 2,
+      "stocks": [
+        1122,
+        818,
+        305
+      ],
+      "season_stocks": [
+        [
+          2941,
+          1638,
+          1289
+        ],
+        [
+          2007,
+          697,
+          746
+        ],
+        [
+          1122,
+          818,
+          305
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13698146640629516991"
+    },
+    {
+      "seed": 33,
+      "policy": "mixed",
+      "net_worth": 1372378,
+      "gold": 1011878,
+      "licences": 6,
+      "licence_price": 46750,
+      "boats": 2,
+      "stocks": [
+        1990,
+        372,
+        256
+      ],
+      "season_stocks": [
+        [
+          2965,
+          1058,
+          1896
+        ],
+        [
+          2262,
+          399,
+          1108
+        ],
+        [
+          1990,
+          372,
+          256
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "1862611984419622126"
+    },
+    {
+      "seed": 34,
+      "policy": "mixed",
+      "net_worth": 1579207,
+      "gold": 1241207,
+      "licences": 6,
+      "licence_price": 43000,
+      "boats": 2,
+      "stocks": [
+        955,
+        853,
+        457
+      ],
+      "season_stocks": [
+        [
+          2603,
+          1371,
+          1952
+        ],
+        [
+          1485,
+          516,
+          1816
+        ],
+        [
+          955,
+          853,
+          457
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2075814987750687192"
+    },
+    {
+      "seed": 35,
+      "policy": "mixed",
+      "net_worth": 1289186,
+      "gold": 1042986,
+      "licences": 6,
+      "licence_price": 27700,
+      "boats": 2,
+      "stocks": [
+        2211,
+        428,
+        196
+      ],
+      "season_stocks": [
+        [
+          3000,
+          1080,
+          1816
+        ],
+        [
+          2664,
+          704,
+          461
+        ],
+        [
+          2211,
+          428,
+          196
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3741897266497417299"
+    },
+    {
+      "seed": 36,
+      "policy": "mixed",
+      "net_worth": 1381365,
+      "gold": 1148365,
+      "licences": 6,
+      "licence_price": 25500,
+      "boats": 2,
+      "stocks": [
+        1735,
+        623,
+        244
+      ],
+      "season_stocks": [
+        [
+          2856,
+          1143,
+          1928
+        ],
+        [
+          2580,
+          603,
+          689
+        ],
+        [
+          1735,
+          623,
+          244
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "9938308925044363196"
+    },
+    {
+      "seed": 37,
+      "policy": "mixed",
+      "net_worth": 1649445,
+      "gold": 1411345,
+      "licences": 6,
+      "licence_price": 26350,
+      "boats": 2,
+      "stocks": [
+        1094,
+        1078,
+        322
+      ],
+      "season_stocks": [
+        [
+          2291,
+          1874,
+          1802
+        ],
+        [
+          1792,
+          1375,
+          585
+        ],
+        [
+          1094,
+          1078,
+          322
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5835987140833672407"
+    },
+    {
+      "seed": 38,
+      "policy": "mixed",
+      "net_worth": 1519755,
+      "gold": 1279255,
+      "licences": 6,
+      "licence_price": 26750,
+      "boats": 2,
+      "stocks": [
+        1638,
+        667,
+        235
+      ],
+      "season_stocks": [
+        [
+          2973,
+          1153,
+          1732
+        ],
+        [
+          2141,
+          871,
+          577
+        ],
+        [
+          1638,
+          667,
+          235
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5266798189706701952"
+    },
+    {
+      "seed": 39,
+      "policy": "mixed",
+      "net_worth": 1388348,
+      "gold": 942948,
+      "licences": 6,
+      "licence_price": 60900,
+      "boats": 2,
+      "stocks": [
+        756,
+        647,
+        780
+      ],
+      "season_stocks": [
+        [
+          2799,
+          1232,
+          1770
+        ],
+        [
+          1909,
+          388,
+          1756
+        ],
+        [
+          756,
+          647,
+          780
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16890689832538192287"
+    },
+    {
+      "seed": 40,
+      "policy": "mixed",
+      "net_worth": 1276483,
+      "gold": 852683,
+      "licences": 6,
+      "licence_price": 57300,
+      "boats": 2,
+      "stocks": [
+        898,
+        475,
+        836
+      ],
+      "season_stocks": [
+        [
+          3000,
+          967,
+          1960
+        ],
+        [
+          2233,
+          358,
+          1488
+        ],
+        [
+          898,
+          475,
+          836
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14572111056881209579"
+    },
+    {
+      "seed": 41,
+      "policy": "mixed",
+      "net_worth": 1671455,
+      "gold": 1432155,
+      "licences": 6,
+      "licence_price": 26550,
+      "boats": 2,
+      "stocks": [
+        920,
+        1125,
+        370
+      ],
+      "season_stocks": [
+        [
+          2559,
+          1424,
+          1912
+        ],
+        [
+          1540,
+          1166,
+          884
+        ],
+        [
+          920,
+          1125,
+          370
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "3575121231706057821"
+    },
+    {
+      "seed": 42,
+      "policy": "mixed",
+      "net_worth": 1604373,
+      "gold": 1348273,
+      "licences": 6,
+      "licence_price": 29350,
+      "boats": 2,
+      "stocks": [
+        744,
+        852,
+        394
+      ],
+      "season_stocks": [
+        [
+          2974,
+          1380,
+          1482
+        ],
+        [
+          2257,
+          863,
+          463
+        ],
+        [
+          744,
+          852,
+          394
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "2578711705709590513"
+    },
+    {
+      "seed": 43,
+      "policy": "mixed",
+      "net_worth": 1339478,
+      "gold": 1090578,
+      "licences": 6,
+      "licence_price": 28150,
+      "boats": 2,
+      "stocks": [
+        2423,
+        402,
+        250
+      ],
+      "season_stocks": [
+        [
+          2856,
+          1366,
+          1662
+        ],
+        [
+          2298,
+          1090,
+          403
+        ],
+        [
+          2423,
+          402,
+          250
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "4787828977797870293"
+    },
+    {
+      "seed": 44,
+      "policy": "mixed",
+      "net_worth": 1499557,
+      "gold": 1140857,
+      "licences": 6,
+      "licence_price": 46450,
+      "boats": 2,
+      "stocks": [
+        1477,
+        751,
+        381
+      ],
+      "season_stocks": [
+        [
+          2967,
+          1080,
+          1858
+        ],
+        [
+          856,
+          905,
+          1634
+        ],
+        [
+          1477,
+          751,
+          381
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5944249830872162571"
+    },
+    {
+      "seed": 45,
+      "policy": "mixed",
+      "net_worth": 1355515,
+      "gold": 1049555,
+      "licences": 6,
+      "licence_price": 37660,
+      "boats": 2,
+      "stocks": [
+        1605,
+        661,
+        251
+      ],
+      "season_stocks": [
+        [
+          2603,
+          1371,
+          1952
+        ],
+        [
+          2213,
+          674,
+          892
+        ],
+        [
+          1605,
+          661,
+          251
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13458755658359004609"
+    },
+    {
+      "seed": 46,
+      "policy": "mixed",
+      "net_worth": 1430608,
+      "gold": 1188008,
+      "licences": 6,
+      "licence_price": 27100,
+      "boats": 2,
+      "stocks": [
+        636,
+        841,
+        445
+      ],
+      "season_stocks": [
+        [
+          2936,
+          1016,
+          1952
+        ],
+        [
+          2469,
+          679,
+          517
+        ],
+        [
+          636,
+          841,
+          445
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "16896010761366412387"
+    },
+    {
+      "seed": 47,
+      "policy": "mixed",
+      "net_worth": 1402631,
+      "gold": 1164831,
+      "licences": 6,
+      "licence_price": 26300,
+      "boats": 2,
+      "stocks": [
+        1801,
+        655,
+        210
+      ],
+      "season_stocks": [
+        [
+          2602,
+          1390,
+          1952
+        ],
+        [
+          2581,
+          739,
+          569
+        ],
+        [
+          1801,
+          655,
+          210
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "5389060413480739804"
+    },
+    {
+      "seed": 48,
+      "policy": "mixed",
+      "net_worth": 1728742,
+      "gold": 1427402,
+      "licences": 6,
+      "licence_price": 36890,
+      "boats": 2,
+      "stocks": [
+        1063,
+        1001,
+        335
+      ],
+      "season_stocks": [
+        [
+          2291,
+          1874,
+          1802
+        ],
+        [
+          1721,
+          1441,
+          585
+        ],
+        [
+          1063,
+          1001,
+          335
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "13105262397249063770"
+    },
+    {
+      "seed": 49,
+      "policy": "mixed",
+      "net_worth": 1726672,
+      "gold": 1492772,
+      "licences": 6,
+      "licence_price": 25650,
+      "boats": 2,
+      "stocks": [
+        963,
+        1084,
+        431
+      ],
+      "season_stocks": [
+        [
+          2292,
+          1648,
+          2000
+        ],
+        [
+          1603,
+          1120,
+          839
+        ],
+        [
+          963,
+          1084,
+          431
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "14958532761670388702"
+    },
+    {
+      "seed": 50,
+      "policy": "mixed",
+      "net_worth": 1285765,
+      "gold": 1042265,
+      "licences": 6,
+      "licence_price": 27250,
+      "boats": 2,
+      "stocks": [
+        1873,
+        524,
+        223
+      ],
+      "season_stocks": [
+        [
+          2877,
+          1145,
+          1904
+        ],
+        [
+          2583,
+          644,
+          626
+        ],
+        [
+          1873,
+          524,
+          223
+        ]
+      ],
+      "bankruptcies": 0,
+      "first_bankruptcy_day": null,
+      "days_played": 84,
+      "history_hash": "9821709955767065996"
+    }
+  ]
+}
