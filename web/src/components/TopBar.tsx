@@ -4,6 +4,7 @@
 // Split out of App.tsx so the screen keeps one subject per file (and stays
 // inside the structural line budget). Pure presentation: every value and every
 // callback is handed in by the screen.
+import type { RefObject } from 'react';
 import type { PortState } from '../types';
 import type { Session } from '../session';
 import { ClockControls, HowToPlay } from './HeaderControls';
@@ -15,6 +16,7 @@ export interface TopBarProps {
   onLogout: () => void;
   judgesOpen: boolean;
   onJudges: (open: boolean) => void;
+  judgesRef: RefObject<HTMLButtonElement>;
   onEndDay: () => void;
   dayBusy: boolean;
   over: boolean;
@@ -26,7 +28,7 @@ export interface TopBarProps {
   onHowToPlay: () => void;
 }
 
-export default function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot, onHowToPlay }: TopBarProps) {
+export default function TopBar({ port, session, onLogout, judgesOpen, onJudges, judgesRef, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot, onHowToPlay }: TopBarProps) {
   return (
     <header className="topbar">
       <h1>Tidewater</h1>
@@ -50,7 +52,14 @@ export default function TopBar({ port, session, onLogout, judgesOpen, onJudges, 
       <button type="button" className="ghost" disabled={dayBusy} onClick={onReset}>
         New harbour
       </button>
-      <button type="button" className="ghost" onClick={() => onJudges(!judgesOpen)} aria-expanded={judgesOpen}>
+      <button
+        type="button"
+        className="ghost"
+        ref={judgesRef}
+        onClick={() => onJudges(!judgesOpen)}
+        aria-expanded={judgesOpen}
+        aria-controls={judgesOpen ? 'judges-bench' : undefined}
+      >
         Judges
       </button>
       <button type="button" className="ghost" onClick={onLogout}>Log out</button>

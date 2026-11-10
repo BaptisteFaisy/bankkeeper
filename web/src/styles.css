@@ -9,11 +9,15 @@
   --line: #2b5560;
   --ink: #e4ede6;
   --muted: #9db5ac;
-  --buoy: #e0672f;
+  /* Two oranges and two reds: the dark one carries text (WCAG AA 4.5:1),
+     the bright one is for strokes, fills and the 34px auction price. */
+  --buoy: #b8501f;
+  --buoy-bright: #e0672f;
   --gold: #e3b65a;
   --kelp: #8fc06f;
   --sand: #c9b083;
-  --red: #d4705e;
+  --red: #e08d7d;
+  --red-line: #d4705e;
 }
 
 * { box-sizing: border-box; }
@@ -81,12 +85,13 @@ button {
   transition: background-color 120ms ease;
 }
 
-button:hover:not(:disabled) { background: #ec7f49; }
+button:hover:not(:disabled) { background: #a8471b; }
 button:disabled { opacity: 0.45; cursor: default; }
 button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
 button.ghost:hover { color: var(--ink); border-color: var(--sea); }
 
-button:focus-visible, input:focus-visible {
+button:focus-visible, input:focus-visible, select:focus-visible,
+.sea-canvas:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
@@ -140,7 +145,7 @@ input {
 
 .clock-price {
   font-size: 34px;
-  color: var(--buoy);
+  color: var(--buoy-bright);
   font-variant-numeric: tabular-nums;
   min-width: 96px;
 }
@@ -157,7 +162,7 @@ input {
 .clock-fill {
   display: block;
   height: 100%;
-  background: var(--buoy);
+  background: var(--buoy-bright);
   transition: width 300ms linear;
 }
 
@@ -184,7 +189,7 @@ input {
   padding: 8px 10px;
   background: var(--panel-2);
 }
-.boat-card.selected { border-color: var(--buoy); }
+.boat-card.selected { border-color: var(--buoy-bright); }
 
 .boat-head {
   background: transparent;
@@ -292,7 +297,7 @@ section.judges {
   animation: toast-in 160ms ease;
 }
 .toast p { margin: 4px 0 0; color: var(--muted); word-break: break-word; }
-.toast-error { border-left-color: var(--red); }
+.toast-error { border-left-color: var(--red-line); }
 .toast-info { border-left-color: var(--sea); }
 .toast-report { border-left-color: var(--gold); }
 
@@ -312,12 +317,20 @@ section.judges {
 }
 
 .offline-banner {
-  border: 1px solid var(--red);
+  border: 1px solid var(--red-line);
   border-left-width: 4px;
   border-radius: 8px;
   padding: 8px 12px;
   margin: 0 0 12px;
 }
+
+/* A shared season link waits for the player's word before it replaces anything. */
+.seed-offer {
+  border-color: var(--gold);
+  border-left: 4px solid var(--gold);
+  margin-bottom: 12px;
+}
+.seed-offer code { color: var(--sand); }
 
 .trend-falling { color: var(--red); }
 .trend-rising { color: var(--kelp); }
@@ -430,68 +443,3 @@ section.judges {
 }
 .charter-choice.picked { border-color: var(--buoy); }
 .charter-choice strong { display: block; margin-bottom: 2px; }
-
-/* Tutorial: three cards over the chart, read once, reopened on demand.
-   Solid panels only: no gradient, no blur, one bright colour (the buoy). */
-.tutorial-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(11, 33, 38, 0.88);
-}
-
-.tutorial-card {
-  width: min(620px, 92vw);
-  max-height: calc(100vh - 96px);
-  overflow: auto;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--buoy);
-  border-radius: 10px;
-  padding: 18px 22px 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  animation: tutorial-in 140ms ease;
-}
-
-.tutorial-card:focus { outline: none; }
-.tutorial-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
-.tutorial-card h2 { font-size: 21px; color: var(--ink); text-transform: none; letter-spacing: 0; margin: 0 0 10px; }
-.tutorial-step {
-  margin: 0 0 6px;
-  font-size: 12px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--sand);
-}
-.tutorial-line { margin: 8px 0 0; font-size: 15px; line-height: 1.5; }
-
-.tutorial-art {
-  background: #0b2126;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-.tutorial-art svg { display: block; width: 100%; height: auto; }
-
-.tutorial-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--line);
-}
-.tutorial-actions button { padding: 7px 14px; }
-.tutorial-spacer { flex: 1; }
-
-.how-to-play { padding: 4px 9px; font-size: 13px; white-space: nowrap; }
-
-@keyframes tutorial-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
-

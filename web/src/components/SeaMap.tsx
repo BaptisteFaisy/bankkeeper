@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { BoatView, BuyerView, CaptainView, ZoneId, ZoneView } from '../types';
 import { ZONE_LABEL } from '../types';
+import { useChartKeys } from './chartKeys';
 
 interface Props {
   zones: ZoneView[]; boats: BoatView[]; buyers: BuyerView[]; captains: CaptainView[];
@@ -465,6 +466,7 @@ export default function SeaMap(props: Props) {
   const propsRef = useRef(props);
   propsRef.current = props;
   const [fx] = useState<Fx>(createFx);
+  const keys = useChartKeys(props.boats, props.selectedBoat, props.onPickBoat, props.onPickZone, props.onPickQuay);
   useAnimatedChart(canvasRef, propsRef, fx);
   useStillRepaint(canvasRef, fx, props);
   return (
@@ -472,7 +474,10 @@ export default function SeaMap(props: Props) {
       ref={canvasRef}
       className="sea-canvas"
       style={{ width: '100%', height: 'auto', aspectRatio: `${W} / ${H}` }}
-      aria-label="Sea chart: coast, harbour, three fishing zones and boats"
+      tabIndex={0}
+      role="application"
+      aria-label={keys.label}
+      onKeyDown={keys.onKeyDown}
       onClick={(e) => {
         const canvas = canvasRef.current;
         if (canvas !== null) handlePick(props, fx, canvas, e);
