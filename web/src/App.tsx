@@ -1,7 +1,7 @@
 // App: session gate plus the single 1280x800 game screen.
 // Top bar, sea chart, auction, boats, ledger and the judges drawer.
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent, RefObject } from 'react';
 import type { BoatView, CouncilOutcome, DayNote, FFResponse, GraphLive, JudgesLive, Mesh, PortState, SeasonBilan, ZoneId } from './types';
 import { EMPTY_AUCTION, ZONE_LABEL, parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
@@ -9,6 +9,7 @@ import type { GameState } from './hooks';
 import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
+import type { BootResult } from './boot';
 import type { Session } from './session';
 import type { Charter } from './charter';
 import SeaMap from './components/SeaMap';
@@ -23,6 +24,8 @@ import { CopyLink } from './components/HeaderControls';
 import { Tutorial, useTutorial } from './components/Tutorial';
 import TopBar from './components/TopBar';
 import JudgesPanel from './components/JudgesPanel';
+import SeedOffer from './components/SeedOffer';
+import ToastStack from './components/Toasts';
 import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
 import { fmtCrates, fmtGold } from './format';
@@ -132,7 +135,7 @@ function JudgeBench({ game, port, judges, graph }: { game: GameState; port: Port
   const run = game.ff === null ? null : ffToRun(game.ff, judges);
   const playerView = (port?.zones ?? []).map((z) => ({ zone: ZONE_LABEL[z.id], catchPerTrip: z.catchPerTrip, trend: z.trend }));
   return (
-    <section className="panel judges" aria-label="Judges">
+    <section className="panel judges" id="judges-bench" aria-label="Judges">
       <h2>Judges</h2>
       <p className="muted">
         Seed {seed}, {seasonDays} days a season: same seed, same season. <CopyLink game={game} port={port} />
@@ -359,7 +362,43 @@ function sailUnder(actions: GameActions, port: PortState, charter: Charter): voi
   void doNewCampaign(actions, next);
 }
 
-function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: Session; onHowToPlay: () => void }) {
+// The header strip: the clock, the readings and the three doors. Split out
+// of GameScreen so that function stays about the game, not about props.
+function HarbourTopBar({ game, session, judgesRef, end, noted, onHowToPlay }: {
+  game: GameState;
+  session: Session;
+  judgesRef: RefObject<HTMLButtonElement>;
+  end: OverState;
+  noted: GameActions;
+  onHowToPlay: () => void;
+}) {
+  return (
+    <TopBar
+      port={game.port}
+      session={session}
+      onLogout={game.logout}
+      judgesOpen={game.judgesOpen}
+      onJudges={game.setJudgesOpen}
+      judgesRef={judgesRef}
+      onEndDay={() => { void doEndDay(noted); }}
+      dayBusy={game.busy !== null}
+      over={end.over}
+      onReset={() => { void doReset(noted); }}
+      live={game.live}
+      setLive={game.setLive}
+      secondsLeft={game.secondsLeft}
+      nextLot={game.nextLot}
+      onHowToPlay={onHowToPlay}
+    />
+  );
+}
+
+function GameScreen({ game, session, judgesRef, onHowToPlay }: {
+  game: GameState;
+  session: Session;
+  judgesRef: RefObject<HTMLButtonElement>;
+  onHowToPlay: () => void;
+}) {
   const port = game.port;
   const selected = findBoat(port, game.selectedBoat);
   const dayKey = `${port?.week ?? 0}-${port?.day ?? ''}`;
@@ -375,22 +414,7 @@ function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: 
       {(end.seasonOver || campaignDone) && you !== null && port !== null && (
         <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
-      <TopBar
-        port={port}
-        session={session}
-        onLogout={game.logout}
-        judgesOpen={game.judgesOpen}
-        onJudges={game.setJudgesOpen}
-        onEndDay={() => { void doEndDay(noted); }}
-        dayBusy={game.busy !== null}
-        over={end.over}
-        onReset={() => { void doReset(noted); }}
-        live={game.live}
-        setLive={game.setLive}
-        secondsLeft={game.secondsLeft}
-        nextLot={game.nextLot}
-        onHowToPlay={onHowToPlay}
-      />
+      <HarbourTopBar game={game} session={session} judgesRef={judgesRef} end={end} noted={noted} onHowToPlay={onHowToPlay} />
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
       )}
@@ -407,49 +431,56 @@ function GameScreen({ game, session, onHowToPlay }: { game: GameState; session: 
   );
 }
 
-function ToastStack({ game }: { game: GameState }) {
-  if (game.toasts.length === 0) return null;
-  return (
-    <div className="toast-stack">
-      {game.toasts.map((t) => (
-        <div key={t.id} className={`toast toast-${t.kind}`}>
-          <div>
-            <strong>{t.title}{t.count > 1 && <span className="toast-count">×{t.count}</span>}</strong>
-            {t.body && <p>{t.body}</p>}
-          </div>
-          <button onClick={() => game.dismissToast(t.id)} type="button" className="ghost">Dismiss</button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default function App() {
-  const game = useGame();
-  const tutorial = useTutorial();
+/** Escape closes the judges drawer and hands the focus back to its trigger. */
+function useEscape(game: GameState, judgesRef: RefObject<HTMLButtonElement>): void {
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
       if (e.key !== 'Escape') return;
       game.setSelectedBoat(null);
+      if (!game.judgesOpen) return;
       game.setJudgesOpen(false);
+      judgesRef.current?.focus();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game]);
+  }, [game, judgesRef]);
+}
+
+/** The boot report: one toast for anything the startup had to work around. */
+function useBootNotice(game: GameState, boot: BootResult): void {
+  const notice = boot.notice;
+  const pushRef = useRef(game.actions.pushToast);
+  pushRef.current = game.actions.pushToast;
+  useEffect(() => {
+    if (notice === null) return;
+    pushRef.current(notice.kind, notice.title, notice.body);
+  }, [notice]);
+}
+
+export default function App({ boot }: { boot: BootResult }) {
+  const game = useGame();
+  const tutorial = useTutorial();
+  const judgesRef = useRef<HTMLButtonElement>(null);
+  useEscape(game, judgesRef);
+  useBootNotice(game, boot);
+  const toasts = <ToastStack toasts={game.toasts} onDismiss={game.dismissToast} />;
+  const offer = boot.seedOffer === null ? null : <SeedOffer offer={boot.seedOffer} game={game} />;
   if (game.session === null) {
     return (
       <div className="app">
         <header className="topbar"><h1>Tidewater</h1></header>
+        {offer}
         <AuthGate onLogin={game.login} />
-        <ToastStack game={game} />
+        {toasts}
       </div>
     );
   }
   return (
     <div className="app">
-      <GameScreen game={game} session={game.session} onHowToPlay={tutorial.show} />
+      {offer}
+      <GameScreen game={game} session={game.session} judgesRef={judgesRef} onHowToPlay={tutorial.show} />
       {tutorial.open && <Tutorial onClose={tutorial.close} />}
-      <ToastStack game={game} />
+      {toasts}
     </div>
   );
 }

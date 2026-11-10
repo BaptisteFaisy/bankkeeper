@@ -1,9 +1,11 @@
 // Shared state hooks for the game screen. Small focused hooks
 // compose into one GameState object via useGame.
 import { useEffect, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import { ApiError, getGraph, getJudges, getState } from './api';
 import { doTick } from './actions';
 import { autosave } from './boot';
+import { onStaleSave } from './persistence';
 import type { FFResponse, GraphLive, JudgesLive, PortState, ToastMsg } from './types';
 import { EMPTY_AUCTION } from './types';
 import { clearSession, loadFf, loadSession, saveFf, saveSession } from './session';
@@ -13,6 +15,9 @@ import type { GameActions } from './actions';
 const TOAST_TTL_MS = 4500;
 const TOAST_MAX = 4;
 const POLL_MS = 2000;
+
+const STALE_TAB_TITLE = 'Another tab has this harbour.';
+const STALE_TAB_BODY = 'This tab stops saving, so the newest game is never overwritten. Reload it to carry on there.';
 
 export interface ToastApi {
   toasts: ToastMsg[];
@@ -207,24 +212,47 @@ export function useJudges(dayKey: string, busy: string | null): { judges: Judges
   return { judges, graph };
 }
 
-/// The live clock: one lot every `secondsPerLot`, a day every five minutes.
-/// Stops on its own when the season closes; `nextLot` lands one lot by hand.
-export function useLiveClock(
-  port: PortState | null,
-  actions: GameActions,
-): { live: boolean; setLive: (on: boolean) => void; secondsLeft: number; nextLot: () => void } {
-  const [live, setLive] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const actionsRef = useRef(actions);
-  actionsRef.current = actions;
-  const overNow = port?.seasonOver === true;
-  const periodSecs = Math.max(5, port?.secondsPerLot ?? 30);
+export interface LiveClockInput {
+  port: PortState | null;
+  actions: GameActions;
+  session: Session | null;
+  /** A mutation in flight: the clock waits instead of landing a lot on top of it. */
+  busy: string | null;
+  /** Bumped every time the player closes a day by hand: the clock stands down. */
+  dayClosed: number;
+}
+
+/** The clock stands down by itself: signed out, season over, day closed. */
+function useStandDown(live: boolean, signedIn: boolean, over: boolean, dayClosed: number, setLive: (on: boolean) => void): void {
   useEffect(() => {
-    if (!live) return;
-    if (overNow) {
-      setLive(false);
-      return undefined;
-    }
+    if (live && (!signedIn || over)) setLive(false);
+  }, [live, signedIn, over, setLive]);
+
+  // A day closed by hand stands the clock down — but only that once, so
+  // "Go live" still works afterwards.
+  const lastDayClosed = useRef(dayClosed);
+  useEffect(() => {
+    if (dayClosed === lastDayClosed.current) return;
+    lastDayClosed.current = dayClosed;
+    setLive(false);
+  }, [dayClosed, setLive]);
+}
+
+interface TickerInput {
+  live: boolean;
+  signedIn: boolean;
+  over: boolean;
+  periodSecs: number;
+  busyRef: MutableRefObject<string | null>;
+  actionsRef: MutableRefObject<GameActions>;
+  setSecondsLeft: (n: number) => void;
+}
+
+/** The ticker itself: a countdown, then a lot — never on top of another action. */
+function useTicker(input: TickerInput): void {
+  const { live, signedIn, over, periodSecs, busyRef, actionsRef, setSecondsLeft } = input;
+  useEffect(() => {
+    if (!live || !signedIn || over) return undefined;
     const period = periodSecs * 1000;
     let last = Date.now();
     const ticker = window.setInterval(() => {
@@ -233,6 +261,7 @@ export function useLiveClock(
     const runner = window.setInterval(() => {
       last = Date.now();
       setSecondsLeft(periodSecs);
+      if (busyRef.current !== null || document.visibilityState !== 'visible') return;
       void doTick(actionsRef.current);
     }, period);
     setSecondsLeft(periodSecs);
@@ -240,7 +269,30 @@ export function useLiveClock(
       window.clearInterval(ticker);
       window.clearInterval(runner);
     };
-  }, [live, overNow, periodSecs]);
+  }, [live, signedIn, over, periodSecs, busyRef, actionsRef, setSecondsLeft]);
+}
+
+/// The live clock: one lot every `secondsPerLot`, a day every five minutes.
+/// It only runs for a signed-in player, in a visible tab, with no mutation in
+/// flight; it stands down on its own when the season closes, when the player
+/// closes a day by hand, and when the player signs out.
+export function useLiveClock(input: LiveClockInput): {
+  live: boolean; setLive: (on: boolean) => void; secondsLeft: number; nextLot: () => void;
+} {
+  const { port, actions, session, busy, dayClosed } = input;
+  const [live, setLive] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  const signedIn = session !== null;
+  const overNow = port?.seasonOver === true;
+  const periodSecs = Math.max(5, port?.secondsPerLot ?? 30);
+
+  useStandDown(live, signedIn, overNow, dayClosed, setLive);
+  useTicker({ live, signedIn, over: overNow, periodSecs, busyRef, actionsRef, setSecondsLeft });
+
   return {
     live,
     setLive,
@@ -251,30 +303,48 @@ export function useLiveClock(
   };
 }
 
+/** One toast when another tab takes the save slot over (audit A6). */
+function useStaleTabWarning(pushToast: ToastApi['pushToast']): void {
+  const toastRef = useRef(pushToast);
+  toastRef.current = pushToast;
+  useEffect(() => onStaleSave(() => toastRef.current('error', STALE_TAB_TITLE, STALE_TAB_BODY)), []);
+}
+
 export function useGame(): GameState {
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [selectedBoat, setSelectedBoat] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [judgesOpen, setJudgesOpen] = useState(false);
+  const [dayClosed, setDayClosed] = useState(0);
   const [ff, setFf] = useState<FFResponse | null>(() => validFf(loadFf<FFResponse>()));
   const { port, offline, refreshQuiet } = usePortPoll();
   const { toasts, pushToast, dismissToast, clearToasts, toastError } = useToasts();
   useEffect(() => { saveFf(ff); }, [ff]);
+  useStaleTabWarning(pushToast);
+
+  const actions: GameActions = {
+    deps: {
+      setBusy,
+      toastError,
+      refreshQuiet,
+      onDayClosed: () => setDayClosed((n) => n + 1),
+    },
+    pushToast,
+    resetFf: (r: FFResponse | null) => setFf(r),
+  };
+  const { live, setLive, secondsLeft, nextLot } = useLiveClock({ port, actions, session, busy, dayClosed });
+
   function login(email: string, name: string): void {
     setSession(saveSession(email, name));
     void refreshQuiet();
   }
   function logout(): void {
+    setLive(false);
     clearSession();
     setSession(null);
     setSelectedBoat(null);
     clearToasts();
   }
-  const actions: GameActions = {
-    deps: { setBusy, toastError, refreshQuiet },
-    pushToast,
-    resetFf: (r: FFResponse | null) => setFf(r),
-  };
-  const { live, setLive, secondsLeft, nextLot } = useLiveClock(port, actions);
+
   return { session, port, offline, selectedBoat, busy, ff, toasts, actions, judgesOpen, setJudgesOpen, setSelectedBoat, login, logout, dismissToast, live, setLive, secondsLeft, nextLot };
 }

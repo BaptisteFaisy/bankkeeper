@@ -11,6 +11,7 @@ export interface MutDeps {
   setBusy: (b: string | null) => void;
   toastError: (e: unknown) => void;
   refreshQuiet: () => Promise<void>;
+  onDayClosed?: () => void;
 }
 
 export interface GameActions {
@@ -22,7 +23,17 @@ export interface GameActions {
   noteDay?: (note: DayNote) => void;
 }
 
+let inFlight = false;
+let lastActionKey = '';
+let lastActionTime = 0;
+
 export async function mutate<T>(deps: MutDeps, label: string, fn: () => Promise<T>): Promise<T | null> {
+  const now = Date.now();
+  if (inFlight) return null;
+  if (lastActionKey === label && now - lastActionTime < 500) return null;
+  inFlight = true;
+  lastActionKey = label;
+  lastActionTime = now;
   deps.setBusy(label);
   try {
     const result = await fn();
@@ -32,6 +43,7 @@ export async function mutate<T>(deps: MutDeps, label: string, fn: () => Promise<
     deps.toastError(e);
     return null;
   } finally {
+    inFlight = false;
     deps.setBusy(null);
   }
 }
@@ -48,14 +60,14 @@ export async function doAssign(actions: GameActions, body: AssignBody, boat: str
 }
 
 export async function doLicenceBuy(actions: GameActions): Promise<boolean> {
-  const r = await mutate(actions.deps, 'licence', () => postLicenceBuy());
+  const r = await mutate(actions.deps, 'licence:buy:pool', () => postLicenceBuy());
   if (r === null) return false;
   actions.pushToast('info', 'Licence bought: +70 crates a week.');
   return true;
 }
 
 export async function doLicenceTrade(actions: GameActions, action: 'buy' | 'sell', ref: string): Promise<boolean> {
-  const r = await mutate(actions.deps, 'licence', () => postLicenceTrade(action, ref));
+  const r = await mutate(actions.deps, `licence:${action}:${ref}`, () => postLicenceTrade(action, ref));
   if (r === null) return false;
   actions.pushToast('info', action === 'buy' ? `Licence bought from ${ref}.` : `Licence sold to ${ref}.`);
   return true;
@@ -68,7 +80,7 @@ function debtSummary(action: 'buy' | 'forbear' | 'seize', ref: string): string {
 }
 
 export async function doDebt(actions: GameActions, action: 'buy' | 'forbear' | 'seize', ref: string): Promise<boolean> {
-  const r = await mutate(actions.deps, 'debt', () => postDebt(action, ref));
+  const r = await mutate(actions.deps, `debt:${action}:${ref}`, () => postDebt(action, ref));
   if (r === null) return false;
   actions.pushToast('info', debtSummary(action, ref));
   return true;
@@ -83,13 +95,14 @@ export async function doCouncil(actions: GameActions, action: 'propose' | 'vote'
 }
 
 export async function doSurvey(actions: GameActions, zone: ZoneId): Promise<boolean> {
-  const r = await mutate(actions.deps, 'survey', () => postSurvey(zone));
+  const r = await mutate(actions.deps, `survey:${zone}`, () => postSurvey(zone));
   if (r === null) return false;
   actions.pushToast('report', `Survey of ${ZONE_LABEL[zone]} complete.`, 'The estimate holds for a week.');
   return true;
 }
 
 export async function doEndDay(actions: GameActions): Promise<boolean> {
+  actions.deps.onDayClosed?.();
   const r = await mutate(actions.deps, 'day', () => postEndDay());
   if (r === null) return false;
   const landings = Array.isArray(r.landings) ? r.landings.length : 0;
