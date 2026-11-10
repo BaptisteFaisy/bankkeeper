@@ -46,6 +46,18 @@ def serve_dist():
     raise RuntimeError("static server never came up")
 
 
+def dismiss_tutorial(driver):
+    """A first launch opens the tutorial; a player presses `Skip`. Do the same."""
+    from selenium.webdriver.common.by import By
+    for dialog in driver.find_elements(By.CSS_SELECTOR, "[role='dialog']"):
+        for button in dialog.find_elements(By.XPATH, ".//button[text()='Skip']"):
+            if button.is_displayed():
+                button.click()
+                time.sleep(0.4)
+                return True
+    return False
+
+
 def journey(driver, base, notes):
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support import expected_conditions as ec
@@ -61,6 +73,8 @@ def journey(driver, base, notes):
         wait.until(ec.presence_of_element_located(
             (By.CSS_SELECTOR, "section[aria-label='Sea chart']")))
         notes.append("auth: game screen shows the sea chart")
+        if dismiss_tutorial(driver):
+            notes.append("tutorial: first-launch card, closed with Skip")
     except Exception:
         notes.append("blocked: no sea chart after auth")
         return
