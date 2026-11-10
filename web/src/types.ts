@@ -131,6 +131,13 @@ export interface LandingView {
   mesh: Mesh;
 }
 
+/** The port fund (barreau 2), as the sim view_state reports it. */
+export interface PortFundView {
+  balance: number;
+  paid_in: number;
+  paid_out: number;
+}
+
 export interface PortState {
   week: number;
   day: string;
@@ -147,6 +154,8 @@ export interface PortState {
   auction: AuctionView;
   landings: LandingView[];
   reasoning: string[];
+  // Barreau 2: the port fund chest — balance and what moved through it.
+  fund?: PortFundView;
   // Going licence price in gold pieces, when the sim reports it.
   licencePrice?: number;
   // True once the season is over (sim view_state seasonOver).

@@ -2,59 +2,23 @@
 // clock (brief TW-UI-04: clock, buyer limits, sale price), then the last
 // sale. "Next landing" steps the replay by hand (brief section 11); it
 // auto-advances unless reduced motion is asked.
-import { useEffect, useState } from 'react';
+//
+// The cursor and the sweep live in `replay.ts`: the panel prints the
+// numbers, the scene draws the instruments, and both read the same lot.
 import type { AuctionView, BuyerView, LandingView } from '../types';
 import { MESH_LABEL, parseMesh } from '../types';
 import { fmtGold } from '../format';
+import type { Replay } from '../replay';
 
 interface Props {
   auction: AuctionView;
   buyers: BuyerView[];
-  landings: LandingView[];
-  dayKey: string;
+  replay: Replay;
+  price: number;
 }
 
-function reducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-function usePlayback(landings: LandingView[], dayKey: string): { index: number; next: () => void; skip: () => void } {
-  const [index, setIndex] = useState(0);
-  useEffect(() => { setIndex(0); }, [dayKey]);
-  useEffect(() => {
-    if (index >= landings.length || landings.length === 0 || reducedMotion()) return;
-    const t = window.setTimeout(() => setIndex((i) => i + 1), 1400);
-    return () => window.clearTimeout(t);
-  }, [index, landings.length]);
-  return {
-    index,
-    next: () => setIndex((i) => Math.min(i + 1, landings.length)),
-    skip: () => setIndex(landings.length),
-  };
-}
-
-function useSweep(start: number, hammer: number, lotKey: string): number {
-  const [price, setPrice] = useState(start);
-  useEffect(() => {
-    if (reducedMotion() || start <= hammer) {
-      setPrice(hammer);
-      return;
-    }
-    let frame = 0;
-    const t0 = performance.now();
-    function tick(now: number): void {
-      const k = Math.min(1, (now - t0) / 1100);
-      setPrice(start + (hammer - start) * k);
-      if (k < 1) frame = window.requestAnimationFrame(tick);
-    }
-    frame = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(frame);
-  }, [start, hammer, lotKey]);
-  return price;
-}
-
-/// The merchant's own reasoning, on hover or on keyboard focus: the track asks
-/// for a tooltip, and the sentence comes from `rules::merchant`, not from here.
+/** The merchant's own reasoning, on hover or on keyboard focus: the track asks
+ *  for a tooltip, and the sentence comes from `rules::merchant`, not from here. */
 function BuyerRow({ buyer, hammer }: { buyer: BuyerView; hammer: { name: string; price: number } | null }) {
   const won = hammer !== null && buyer.name === hammer.name;
   const why = (buyer.limits ?? []).map((l) => l.reasoning).join(' ');
@@ -75,25 +39,25 @@ function BuyerRow({ buyer, hammer }: { buyer: BuyerView; hammer: { name: string;
   );
 }
 
-function LiveLot({ lot, position, total, onNext, onSkip }: {
+function LiveLot({ lot, position, total, price, onNext, onSkip }: {
   lot: LandingView;
   position: number;
   total: number;
+  price: number;
   onNext: () => void;
   onSkip: () => void;
 }) {
   const hammer = lot.price;
-  const clock = useSweep(lot.start, hammer, `${position}-${lot.captain}-${lot.crates}`);
   const span = lot.start - hammer;
-  const share = span <= 0 ? 0 : Math.min(1, Math.max(0, (clock - hammer) / span));
+  const share = span <= 0 ? 0 : Math.min(1, Math.max(0, (price - hammer) / span));
   return (
     <>
       <p className="lot-line">
         Lot {position + 1}/{total}: {lot.crates} crates of {lot.species} ({lot.captain}, {MESH_LABEL[parseMesh(lot.mesh)].toLowerCase()})
       </p>
       <div className="clock-row">
-        <span className="clock-price">{fmtGold(clock)}</span>
-        <div className="clock-bar" role="img" aria-label={`Clock at ${fmtGold(clock)}, hammer ${fmtGold(hammer)}`}>
+        <span className="clock-price">{fmtGold(price)}</span>
+        <div className="clock-bar" role="img" aria-label={`Clock at ${fmtGold(price)}, hammer ${fmtGold(hammer)}`}>
           <span className="clock-fill" style={{ width: `${Math.round(share * 100)}%` }} />
         </div>
         <span className="muted">hammer {fmtGold(hammer)}</span>
@@ -127,21 +91,19 @@ function ClosingLine({ lot, position }: { lot: LandingView; position: number }) 
   );
 }
 
-export default function AuctionPanel({ auction, buyers, landings, dayKey }: Props) {
-  const { index, next, skip } = usePlayback(landings, dayKey);
-  const live = index < landings.length ? landings[index] : null;
-  const closed = live === null && landings.length > 0 ? landings[landings.length - 1] : null;
+export default function AuctionPanel({ auction, buyers, replay, price }: Props) {
+  const { live, closed, position, total, next, skip } = replay;
   const hammer = live !== null && live.buyer !== null ? { name: live.buyer, price: live.price } : null;
   return (
     <section className="panel auction" aria-label="Fish auction">
       <h2>Fish auction</h2>
-      {landings.length === 0 && (
+      {total === 0 && (
         <p className="muted">No lot on the clock. The next landing starts the bidding.</p>
       )}
       {live !== null && (
-        <LiveLot lot={live} position={index} total={landings.length} onNext={next} onSkip={skip} />
+        <LiveLot lot={live} position={position - 1} total={total} price={price} onNext={next} onSkip={skip} />
       )}
-      {closed !== null && <ClosingLine lot={closed} position={landings.length} />}
+      {closed !== null && <ClosingLine lot={closed} position={total} />}
       <ul className="buyer-limits">
         {buyers.map((b) => (
           <BuyerRow key={b.id} buyer={b} hammer={hammer} />

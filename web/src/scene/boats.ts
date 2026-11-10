@@ -15,6 +15,8 @@ export interface BoatModel {
   zone: ZoneKey | null;
   mine: boolean;
   disarmed: boolean;
+  /** True on the boat the player picked: the scene rings it. */
+  selected?: boolean;
 }
 
 interface BoatEntry {
@@ -133,6 +135,16 @@ function drawHull(ctx: CanvasRenderingContext2D, entry: BoatEntry): void {
     ctx.beginPath();
     ctx.arc(0, 0, 18, 0, Math.PI * 2);
     ctx.stroke();
+  }
+  if (model.selected === true) {
+    // The picked boat: a dashed ring outside the captain's ring.
+    ctx.strokeStyle = color('--sand');
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.arc(0, 0, 23, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
   blit(ctx, boatSprite(model.hull, !model.disarmed), BOAT_ANCHOR, 0, 0);
   ctx.restore();
