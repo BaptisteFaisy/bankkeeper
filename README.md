@@ -6,6 +6,9 @@ prend aujourd'hui décide de ce qu'il restera demain.
 
 Jeu du hackathon NEAR, track *Games With Real Economies*. Le brief fait
 foi : [`tidewater.md`](tidewater.md). Docs : [`docs/`](docs).
+Conformité au track, exigence par exigence, avec ce qui manque encore :
+[`docs/COMPLIANCE.md`](docs/COMPLIANCE.md). Les règles de prix des marchands
+vivent dans un seul fichier : [`crates/rules/src/merchant.rs`](crates/rules/src/merchant.rs).
 
 ## Pipeline
 

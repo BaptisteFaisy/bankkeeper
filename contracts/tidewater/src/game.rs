@@ -8,7 +8,7 @@
 
 use crate::{
     ProposalKind, CATCH_SHARE_BPS, COD_BASE_MILLI, FLOOR_DIVISOR, HERRING_BASE_MILLI,
-    MILLIS_PER_GOLD,
+    MILLIS_PER_GOLD, STOCK_GAIN_BPS,
 };
 
 /// Crates taken by one trip: 0.4 % of the zone stock (TW-N-02).
@@ -35,15 +35,9 @@ pub fn regrow(stock: u64, capacity: u64, rate_bps: u64, small_mesh_share_bps: u6
 /// Buyer limit = base x (1 + 0.5 x relative gap to target) (TW-N-31, S12).
 /// Over target the factor drops below 1 (TW-N-32).
 pub fn buyer_limit_milli(base_milli: u64, stock: u64, target: u64) -> u64 {
-    if target == 0 {
-        return 0;
-    }
-    let gap_bps = (target as i64 - stock as i64) * 10_000 / target as i64;
-    let factor_bps = 10_000 + gap_bps / 2;
-    if factor_bps <= 0 {
-        return 0;
-    }
-    base_milli * factor_bps as u64 / 10_000
+    // Same rule as the sim, same file: `rules::merchant`. Units do not matter,
+    // every step is a ratio.
+    rules::merchant::limit(base_milli, stock, target, STOCK_GAIN_BPS)
 }
 
 /// Base price in milli-gold for a species token.
