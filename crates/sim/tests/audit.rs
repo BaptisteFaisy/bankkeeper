@@ -61,7 +61,6 @@ fn day_balances(game: &mut Game) -> bool {
 /// `evening::serve_species` already moves `locals x base` from the townsfolk
 /// to the buyer, then `drain_gull` moves that same sum a second time.
 #[test]
-#[ignore = "audit defect 1: the Gull is paid twice for the same crates"]
 fn defect_01_the_gull_is_paid_twice_for_the_same_crates() {
     let mut game = quiet_game(7);
     // Only the Gull trades tonight: no landings, no wages, no other drain.
@@ -92,7 +91,6 @@ fn defect_01_the_gull_is_paid_twice_for_the_same_crates() {
 /// check, so one captain can pass the 8-licence ceiling the council rests on
 /// (brief section 13, question 3: no captain can outvote the port alone).
 #[test]
-#[ignore = "audit defect 2: auction_pool bypasses licence_cap_per_captain"]
 fn defect_02_pool_auction_breaks_the_licence_cap() {
     let mut game = seed_game(7);
     game.port.licence_pool = 6;
@@ -116,7 +114,6 @@ fn defect_02_pool_auction_breaks_the_licence_cap() {
 /// `cycle::tick` documents "landing one lot at a time changes the rhythm,
 /// never the result"; the day plan is not frozen at dawn, only the cursor is.
 #[test]
-#[ignore = "audit defect 3: day_plan is recomputed per tick from boats.len()"]
 fn defect_03_hull_bought_at_noon_fishes_finished_rounds() {
     let mut game = quiet_game(7);
     game.port.gold[ActorId::You.idx()] = 100_000;
