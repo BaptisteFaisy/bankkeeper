@@ -10,6 +10,7 @@ import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNewCampaign, d
 import type { GameActions } from './actions';
 import { postLogin } from './api';
 import type { Session } from './session';
+import type { Charter } from './charter';
 import SeaMap from './components/SeaMap';
 import AuctionPanel from './components/AuctionPanel';
 import BoatsPanel from './components/BoatsPanel';
@@ -389,6 +390,14 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
   );
 }
 
+// The charter is kept by the browser and handed to `init`: the next campaign
+// starts one seed further on, under the sentence the player just wrote.
+function sailUnder(actions: GameActions, port: PortState, charter: Charter): void {
+  const seed = Number.parseInt(port.seed ?? '7', 10);
+  const next = { seed: (Number.isFinite(seed) ? seed : 7) + 1, weeks: port.weeksPerSeason ?? 2, charter };
+  void doNewCampaign(actions, next);
+}
+
 function GameScreen({ game, session }: { game: GameState; session: Session }) {
   const port = game.port;
   const selected = findBoat(port, game.selectedBoat);
@@ -397,9 +406,12 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
   const { dayNote, noted } = useDayNote(game);
   const you = port?.captains.find((c) => c.id === 'you') ?? null;
   const end = overState(port, graph, dayNote, you !== null && !you.active);
+  // The campaign's last bilan outranks a bankruptcy: the port still asks for
+  // its charter, so the overlay must not cover the screen that writes it.
+  const campaignDone = port !== null && port.seasonOver === true && port.campaignOver === true;
   return (
     <>
-      {end.seasonOver && you !== null && port !== null && (
+      {(end.seasonOver || campaignDone) && you !== null && port !== null && (
         <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
       <TopBar
@@ -423,16 +435,10 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
       {CHAIN_ENABLED && <ChainBar email={session.email} />}
       <PlayPanels game={game} port={port} selected={selected} judges={judges} youLicences={you?.licences ?? 0} council={end.council} over={end.over} />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
-      {end.seasonOver && port !== null && port.campaignOver === true && (
-        <CharterScreen
-          busy={game.busy !== null}
-          onSail={(charter) => {
-            const seed = Number.parseInt(port.seed ?? '7', 10);
-            void doNewCampaign(noted, { seed: (Number.isFinite(seed) ? seed : 7) + 1, weeks: port.weeksPerSeason ?? 2, charter });
-          }}
-        />
+      {campaignDone && port !== null && (
+        <CharterScreen busy={game.busy !== null} onSail={(charter) => sailUnder(noted, port, charter)} />
       )}
-      {end.bankrupt && you !== null && port !== null && (
+      {end.bankrupt && !campaignDone && you !== null && port !== null && (
         <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver={false} onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
     </>
