@@ -148,10 +148,16 @@ fn settle_licence_trade(game: &mut Game, seller: ActorId, buyer: ActorId, price:
 fn auction_pool(game: &mut Game) -> Vec<String> {
     let mut lines = Vec::new();
     let price = game.licence_price_now();
+    let cap = game.config.licence_cap_per_captain;
     while game.port.licence_pool > 0 {
         let mut best: Option<(ActorId, i64)> = None;
         for captain in ActorId::captains() {
             if game.port.stopped[captain.idx()] {
+                continue;
+            }
+            // The ceiling on the block, like every other licence path: a
+            // captain at the cap takes no pooled licence (brief 13 q3).
+            if cap_reached(game.port.licences[captain.idx()], cap, 1) {
                 continue;
             }
             let gold = game.port.gold[captain.idx()];
