@@ -2,6 +2,10 @@
 # rebasée sur main si en retard (BEHIND) ou en conflit (DIRTY) ; les PR
 # prêtes sont mergées (rebase) dès que les 3 checks requis sont verts.
 # La seule porte reste la CI ; pas de gate humaine.
+# v29 (10/11) : la lecture de `mergeable_state` attend la fin du flapping
+# (~2 min) ouvert par les check-runs du run lui-même, et `UNSTABLE` rejoint
+# la fenêtre de réessai 10 min (sonde near_probe-autosetup PR #6, gelée
+# sur 5 lectures transitoires).
 # v4 (2026-10-27) : vrai rebase (pas de bulle de merge) via PAT (secret
 # AUTOMERGE_PAT) — GITHUB_TOKEN ne suffit pas (ni auto-merge, ni pushes qui
 # relancent la CI : runs fantômes « action_required »). Sans le secret, pause
@@ -347,12 +351,40 @@ jobs:
           # plus large. Une réserve : la liste ne calcule pas `mergeable_state`
           # (null tant que GitHub n'a pas fait le calcul) ; la fiche de la PR,
           # elle, le rend — d'où une lecture par PR, dix au pire.
+          # ── attente de stabilisation (v29, 10/11) ──────────────────────────────
+          # La création des check-runs du run *lui-même* sur la tête de la PR
+          # relance le calcul de `mergeable_state` côté GitHub : la fiche
+          # flappe (clean/unstable/unknown) pendant ~2 min, et la lecture
+          # one-shot tombait dedans à tous les coups sur les dépôts sans
+          # cron ni push (sonde near_probe-autosetup, PR #6 : 5 lectures
+          # UNSTABLE de suite, prouvées transitoires par sonde externe).
+          # v29 : on relit jusqu'à 12 fois à 10 s d'intervalle tant que l'état
+          # est transitoire (la fenêtre de flapping dépasse parfois 45 s —
+          # PR #12 sonde : 4 lectures UNSTABLE de suite malgré l'attente) ;
+          # au-delà, verdict tel quel (le réessai v21 prend le relais au
+          # prochain déclenchement).
+          lire_fiche() { # $1=numéro PR → json fiche stabilisée
+            local n="$1" i fiche etat
+            for i in $(seq 1 12); do
+              fiche="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$n" \
+                2>/dev/null)" || return 1
+              etat="$(printf '%s' "$fiche" | jq -r .mergeable_state \
+                2>/dev/null || echo unknown)"
+              case "$etat" in
+                unknown|unstable)
+                  echo "PR #$n : $etat (lecture $i/12), on attend" >&2
+                  sleep 10 ;;
+                *) printf '%s' "$fiche"; return 0 ;;
+              esac
+            done
+            printf '%s' "$fiche"; return 0
+          }
           inventaire() {
             local n
             gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&base=main&per_page=100" \
               --jq '.[].number' 2>/dev/null \
               | while read -r n; do
-                  gh api "repos/$GITHUB_REPOSITORY/pulls/$n" --jq '{
+                  lire_fiche "$n" | jq '{
                     number: .number, headRefOid: .head.sha, headRefName: .head.ref,
                     mergeStateStatus: (if .draft then "DRAFT"
                       else ({"clean":"CLEAN","dirty":"DIRTY","blocked":"BLOCKED",
@@ -1011,9 +1043,13 @@ jobs:
           # On reprend donc `DIRTY` et `BLOCKED` au plus toutes les 10 min par
           # PR : assez pour ne pas cloner 134 Mo à chaque réveil du balayeur,
           # assez court pour qu'une PR ne pourrisse pas une demi-journée.
+          # v29 : `UNSTABLE` rejoint le réessai — la lecture one-shot tombe
+          # dans la fenêtre de flapping ouverte par les check-runs du run
+          # lui-même (sonde near_probe-autosetup, PR #6) ; sans réessai, un
+          # premier verdict transitoire figeait la PR jusqu'à nouvel ordre.
           if deja_balayee; then
             case "$STATE" in
-              DIRTY|BLOCKED|DRAFT)
+              DIRTY|BLOCKED|DRAFT|UNSTABLE)
                 age="$(age_etat_minutes)"
                 if [ "${age:-999}" -lt 10 ]; then
                   echo "PR #$PR : $STATE, dernière tentative il y a ${age} min (< 10), on attend"
