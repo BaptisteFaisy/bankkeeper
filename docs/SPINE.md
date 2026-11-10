@@ -116,6 +116,10 @@ prix politique.
 **Coût.** Moyen-élevé (1 à 2 jours). **Risque.** Le contentieux peut devenir
 une machine à ralentir le jeu ; une réclamation par saison, pas plus.
 
+> **Règle retenue** : implémentée et chiffrée dans `docs/FALLOW.md` (jachère
+> collective votée `close:<zone>:<weeks>`, indemnisation par le fonds,
+> contentieux à une réclamation par saison, crédibilité liée au vote).
+
 ---
 
 ## Ce que cette colonne absorbe

@@ -44,6 +44,7 @@ fn fat_indemnity_flips_a_vote_and_pays() {
     game.propose(Proposal {
         quota_per_licence: 10,
         close_zone: None,
+        close_weeks: None,
         ban_small_mesh: false,
         indemnity_per_licence_week: 50_000,
         funding: Some(Funding::Fund),

@@ -191,3 +191,20 @@ pub fn reseed(game: &mut Game, body: &Value) -> Value {
         Err(error) => json!({ "error": error }),
     }
 }
+
+/// `claim`: file a claim against the port fund (barreau 5). Exactly one per season.
+pub fn claim(game: &mut Game, body: &Value) -> Value {
+    use rules::state::ActorId;
+    let plaintiff = match text(body, "actor") {
+        Some(name) => match relay::parse_actor_name(name) {
+            Some(actor) => actor,
+            None => return json!({ "error": "E_BAD_CLAIM" }),
+        },
+        None => ActorId::You,
+    };
+    let demanded = number(body, "gold").unwrap_or(0).saturating_mul(100);
+    match game.file_claim(plaintiff, demanded) {
+        Ok(c) => serde_json::to_value(c).unwrap_or_else(|_| json!({ "ok": true })),
+        Err(error) => json!({ "error": error }),
+    }
+}

@@ -13,6 +13,7 @@ pub mod chronicle;
 pub mod cli;
 pub mod cycle;
 mod day_record;
+pub mod dispute;
 mod evening;
 pub mod favours;
 pub mod fastforward;
@@ -156,6 +157,22 @@ pub struct Game {
     /// its counter is above zero and is closed to every boat meanwhile.
     #[serde(default)]
     pub fallow: [u64; 3],
+    /// Barreau 5: claims against the port fund filed this season (max 1 per season).
+    #[serde(default)]
+    pub claims_this_season: u64,
+    /// Barreau 5: the closure the council voted (zone, weeks). A claim must
+    /// rest on a voted rule, never on a rest a captain imposed on himself.
+    #[serde(default)]
+    pub voted_closure: Option<(rules::state::Zone, u64)>,
+    /// Barreau 5: credibility of the player / proposer (affects council admission and votes).
+    #[serde(default)]
+    pub credibility: i32,
+    /// Barreau 5: last claim filed against the port fund, kept for the ledger view.
+    #[serde(default)]
+    pub last_claim: Option<rules::dispute::Claim>,
+    /// Barreau 5: total gold paid out in collective fallow indemnities.
+    #[serde(default)]
+    pub fallow_indemnities_paid: u64,
 }
 
 impl Game {

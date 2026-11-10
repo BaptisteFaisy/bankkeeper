@@ -180,6 +180,18 @@ def validate_reseed_payload(body: object) -> tuple[dict | None, str | None]:
     return {"zone": zone, "crates": crates}, None
 
 
+def validate_claim_payload(body: object) -> tuple[dict | None, str | None]:
+    """Claim compensation from the port fund (barreau 5)."""
+    data = _as_dict(body)
+    if data is None:
+        return None, "E_BAD_JSON"
+    gold = _as_number(data.get("gold", data.get("amount")))
+    if gold is None or gold <= 0:
+        return None, "E_BAD_CLAIM"
+    actor = _as_nonempty_str(data.get("actor")) or "you"
+    return {"actor": actor, "gold": gold}, None
+
+
 def validate_fastforward_payload(body: object) -> tuple[dict | None,
                                                        str | None]:
     data = _as_dict(body)

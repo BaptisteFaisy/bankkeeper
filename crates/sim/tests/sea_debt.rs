@@ -232,7 +232,11 @@ fn the_view_announces_what_a_rest_pays() {
         .find(|row| row["zone"] == "greybank")
         .cloned()
         .expect("the greybank row");
-    assert_eq!(greybank["fallowCredit"], 434, "a week of rest on Greybank");
+    // The panel announces exactly what the engine will pay: the same
+    // regrowth formula, read from the same config (no hardcoded figure).
+    let rate = game.config.regrow_rate(Config::zone_species(Zone::Greybank));
+    let expected = fallow_credit(2_500, 5_000, rate, game.config.days_per_week);
+    assert_eq!(greybank["fallowCredit"], expected, "a week of rest on Greybank");
     let week = greybank["fallowCredit"].as_u64().expect("crates");
     let paid = game.pay_in_fallow(Zone::Greybank, 1).expect("fallow");
     assert_eq!(paid, week, "the panel announced what the engine pays");

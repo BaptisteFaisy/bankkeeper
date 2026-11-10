@@ -13,6 +13,9 @@
 //!   sim buy-note --state state.json --buyer you --loan 100
 //!   sim defer --state state.json --holder bank --loan 100
 //!   sim lease --state state.json --lessor hale --lessee you --weeks 2
+//!   sim fallow --state state.json --zone greybank --weeks 2
+//!   sim reseed --state state.json --zone greybank --crates 200
+//!   sim claim --state state.json --actor you --gold 120
 
 mod cli_chronicle;
 
@@ -56,8 +59,9 @@ fn main() -> ExitCode {
         Some("favour") => cmd_favour(&args),
         Some("fallow") => cmd_fallow(&args),
         Some("reseed") => cmd_reseed(&args),
+        Some("claim") => cmd_claim(&args),
         _ => {
-            eprintln!("usage: sim <init|day|tick|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|next-season|chronicle|charter|harness|state|graph|judges|attribution|fastforward|licence|lease|unlease|debt|council|favour|fallow|reseed> [flags]");
+            eprintln!("usage: sim <init|day|tick|ff|assign|survey|propose|refloat|buy-boat|buy-note|defer|next-season|chronicle|charter|harness|state|graph|judges|attribution|fastforward|licence|lease|unlease|debt|council|favour|fallow|reseed|claim> [flags]");
             ExitCode::from(2)
         }
     }
@@ -168,8 +172,9 @@ fn cmd_propose(args: &[String]) -> ExitCode {
         return ExitCode::from(1);
     }
     let indemnity: u64 = flag(args, "indemnity").and_then(|v| v.parse().ok()).unwrap_or(0);
+    let close_weeks: Option<u64> = flag(args, "weeks").and_then(|v| v.parse().ok());
     game.propose(Proposal {
-        quota_per_licence: quota, close_zone: close, ban_small_mesh: has(args, "ban-mesh"),
+        quota_per_licence: quota, close_zone: close, close_weeks, ban_small_mesh: has(args, "ban-mesh"),
         indemnity_per_licence_week: indemnity * 100,
         funding: None,
         levy_per_crate: flag(args, "levy").map(|raw| levy_cents(&raw)),
@@ -224,6 +229,28 @@ fn cmd_buy_note(args: &[String]) -> ExitCode {
         Ok(()) => {
             write_json(&path, &game);
             println!("{{\"ok\":true}}");
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            println!("{}", serde_json::json!({ "error": error }));
+            ExitCode::from(1)
+        }
+    }
+}
+
+/// Barreau 5: one claim against the port fund per season. `--actor you
+/// --gold 120`. A won claim is paid out of the fund; a lost claim costs the
+/// plaintiff credibility, which the council reads on later motions.
+fn cmd_claim(args: &[String]) -> ExitCode {
+    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
+    let mut game = read_game(&path);
+    let plaintiff = actor_flag(args, "actor");
+    let gold: f64 = flag(args, "gold").and_then(|v| v.parse().ok()).unwrap_or(0.0);
+    let demanded = (gold.max(0.0) * 100.0) as u64;
+    match game.file_claim(plaintiff, demanded) {
+        Ok(claim) => {
+            write_json(&path, &game);
+            println!("{}", serde_json::to_string(&claim).expect("serialize"));
             ExitCode::SUCCESS
         }
         Err(error) => {

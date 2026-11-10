@@ -117,8 +117,35 @@ fn import(body: &Value) -> Value {
     json!({ "ok": true, "seed": seed, "weeks": weeks, "state": state })
 }
 
+/// Cycle and season transitions.
+fn cycle_route(op: &str, body: &Value) -> Option<Value> {
+    match op {
+        "day" => Some(with_game(|game| match try_day(game) {
+            Ok(report) => serde_json::to_value(&report).unwrap_or_else(|_| json!({ "error": "E_SIM_FAILED" })),
+            Err(error) => json!({ "error": error }),
+        })),
+        "tick" => Some(with_game(|game| match sim::cycle::try_tick(game) {
+            Ok(ticked) => serde_json::to_value(&ticked).unwrap_or_else(|_| json!({ "closed": false })),
+            Err(error) => json!({ "error": error }),
+        })),
+        "next-season" => Some(with_game(|game| match sim::season::open_next_season(game) {
+            Ok(season) => json!({ "ok": true, "season": season, "state": views::view_state(game) }),
+            Err(error) => json!({ "error": error }),
+        })),
+        "fastforward" => {
+            let days = ops::number(body, "days").unwrap_or(7);
+            let seed = ops::number(body, "seed");
+            Some(with_game(|game| fastforward_reply(game, days, seed)))
+        }
+        _ => None,
+    }
+}
+
 /// Route one request. `body` is the relay payload, `op` the endpoint name.
 fn route(op: &str, body: &Value) -> Value {
+    if let Some(reply) = cycle_route(op, body) {
+        return reply;
+    }
     match op {
         "health" => json!({ "ok": true, "mode": "wasm", "sim": true }),
         "auth" => json!({ "ok": true, "token": "local", "pseudo": ops::text(body, "pseudo").unwrap_or("captain") }),
@@ -134,8 +161,6 @@ fn route(op: &str, body: &Value) -> Value {
         ),
         "reset" => {
             let (seed, weeks) = SHAPE.with(|shape| *shape.borrow());
-            // A plain reset keeps the charter the harbour is sailing under;
-            // the charter screen sends its own.
             let charter = charter_of(body).or_else(|| with_game(|game| game.charter.clone()));
             reset(ops::number(body, "seed").unwrap_or(seed), ops::number(body, "weeks").unwrap_or(weeks), charter)
         }
@@ -147,23 +172,7 @@ fn route(op: &str, body: &Value) -> Value {
         "council" => with_game(|game| ops::council(game, body)),
         "fallow" => with_game(|game| ops::fallow(game, body)),
         "reseed" => with_game(|game| ops::reseed(game, body)),
-        "day" => with_game(|game| match try_day(game) {
-            Ok(report) => serde_json::to_value(&report).unwrap_or_else(|_| json!({ "error": "E_SIM_FAILED" })),
-            Err(error) => json!({ "error": error }),
-        }),
-        "tick" => with_game(|game| match sim::cycle::try_tick(game) {
-            Ok(ticked) => serde_json::to_value(&ticked).unwrap_or_else(|_| json!({ "closed": false })),
-            Err(error) => json!({ "error": error }),
-        }),
-        "next-season" => with_game(|game| match sim::season::open_next_season(game) {
-            Ok(season) => json!({ "ok": true, "season": season, "state": views::view_state(game) }),
-            Err(error) => json!({ "error": error }),
-        }),
-        "fastforward" => {
-            let days = ops::number(body, "days").unwrap_or(7);
-            let seed = ops::number(body, "seed");
-            with_game(|game| fastforward_reply(game, days, seed))
-        }
+        "claim" => with_game(|game| ops::claim(game, body)),
         other => json!({ "error": "E_UNKNOWN_ENDPOINT", "detail": other }),
     }
 }

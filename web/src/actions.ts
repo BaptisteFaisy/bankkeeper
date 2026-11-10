@@ -1,7 +1,7 @@
 // Relay mutations as small module functions. Each takes the shared
 // action context, runs one mutation, and never throws (errors toast).
 // Mutations return true on success so callers can flash the UI.
-import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postFallow, postInit, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postReseed, postSurvey, postTick } from './api';
+import { postAssign, postClaim, postCouncil, postDebt, postEndDay, postFastForward, postFallow, postInit, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postReseed, postSurvey, postTick } from './api';
 import type { AssignBody, InitBody, MutationResult } from './api';
 import { charterLabel, saveCharter } from './charter';
 import { fmtGold } from './format';
@@ -118,6 +118,20 @@ export async function doReseed(actions: GameActions, zone: ZoneId, crates: numbe
   if (r === null) return false;
   const spent = typeof r.spent === 'number' ? r.spent : 0;
   actions.pushToast('report', `${crates} crates put back into ${ZONE_LABEL[zone]}: ${fmtGold(spent / 100)}g out of the port fund.`);
+  return true;
+}
+
+// Barreau 5: file a claim against the port fund. One per season maximum.
+export async function doClaim(actions: GameActions, actor: string, gold: number): Promise<boolean> {
+  const r = await mutate(actions.deps, 'dispute:claim', () => postClaim(actor, gold));
+  if (r === null) return false;
+  const outcome = r.outcome === 'upheld' ? 'upheld' : 'dismissed';
+  const paid = typeof r.paid === 'number' ? r.paid : 0;
+  actions.pushToast(
+    'report',
+    outcome === 'upheld' ? `Claim upheld: ${fmtGold(paid / 100)}g paid by the fund.` : 'Claim dismissed: credibility lost.',
+    typeof r.summary === 'string' ? r.summary : undefined,
+  );
   return true;
 }
 
