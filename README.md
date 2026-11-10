@@ -56,7 +56,7 @@ séparé sous `/tmp`, aucun processus laissé derrière (brief §8).
 - `server/` — relais HTTP Python (stdlib only).
 - `web/` — React + Vite + TS strict, canvas maison.
 - `tests/`, `fixtures/` — garde structurelle CI et graines de référence.
-- `docs/` — architecture, API, économie, boucle, démo juges, décisions.
+- `docs/` — architecture, API, économie, boucle, tutoriel, démo juges, décisions.
 - `tidewater.md` — le brief, autorité première.
 
 ## Testnet
