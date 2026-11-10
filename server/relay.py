@@ -6,7 +6,7 @@ fast-forwards; serves the built web UI when present. Auth is social
 stored in a disposable file next to the live state.
 
 GET:  health, state, graph, judges. POST: auth, assign, survey,
-licence, debt, council, day, fastforward ({days: 7|28, seed?}).
+licence, debt, council, day, fastforward ({days: 7|14|28, seed?}).
 Errors are stable {"error": code, "message": text} envelopes; a sim
 rule refusal maps to HTTP 409. Fast-forward runs on a temp copy only.
 """
@@ -56,7 +56,7 @@ _MESSAGES = {
     "E_BAD_LICENCE": "A licence move needs buy|sell and a reference.",
     "E_BAD_DEBT": "A debt move needs buy|forbear|seize and a reference.",
     "E_BAD_COUNCIL": "A council move needs propose|vote and a rule.",
-    "E_BAD_FASTFORWARD": "Fast-forward plays 7 or 28 days.",
+    "E_BAD_FASTFORWARD": "Fast-forward plays 7, 14 or 28 days.",
     "E_FASTFORWARD_TIMEOUT": "The fast-forward took too long.",
     "E_NO_JOURNAL": "The fast-forward wrote no journal.",
     "E_NO_SERIES": "The fast-forward wrote no series.",
@@ -96,8 +96,11 @@ def ensure_state() -> None:
     with MUTATION_LOCK:
         if os.path.isfile(path):
             return
-        call_sim([sim_bin(), "init", "--seed", str(sim_seed()),
-                  "--out", path], SIM_TIMEOUT)
+        argv = [sim_bin(), "init", "--seed", str(sim_seed()), "--out", path]
+        weeks = os.environ.get("SIM_WEEKS")
+        if weeks:
+            argv += ["--weeks", weeks]
+        call_sim(argv, SIM_TIMEOUT)
 
 
 def sessions_path() -> str:

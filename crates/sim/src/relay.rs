@@ -7,6 +7,7 @@
 
 use crate::{fmt_gold, Game};
 use rules::council::Proposal;
+use rules::licences::cap_reached;
 use rules::licences::{trade_licences, LicenceError};
 use rules::state::{ActorId, Zone};
 
@@ -71,6 +72,13 @@ impl Game {
         if seller == buyer {
             return Err("cannot trade with yourself".to_string());
         }
+        let cap = self.config.licence_cap_per_captain;
+        if cap_reached(self.port.licences[buyer.idx()], cap, 1) {
+            return Err(format!(
+                "{} already holds {cap} licences, the ceiling for one captain",
+                buyer.name()
+            ));
+        }
         let price = self.licence_price_now();
         let (_, (seller_left, buyer_left, seller_gold, buyer_gold)) = trade_licences(
             self.port.licences[seller.idx()],
@@ -106,6 +114,13 @@ impl Game {
     fn buy_from_pool(&mut self, buyer: ActorId, price: i64) -> Result<String, String> {
         if self.port.licence_pool == 0 {
             return Err("no pooled licences for sale".to_string());
+        }
+        let cap = self.config.licence_cap_per_captain;
+        if cap_reached(self.port.licences[buyer.idx()], cap, 1) {
+            return Err(format!(
+                "{} already holds {cap} licences, the ceiling for one captain",
+                buyer.name()
+            ));
         }
         if self.port.gold[buyer.idx()] < price {
             return Err(format!(

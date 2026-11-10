@@ -90,3 +90,45 @@ la limite est la cotation, le marteau est le prix exact.
   `DayReport` (`season_over`, `bilan`) et `view_state` (`seasonOver`,
   `bilan`). Les anciennes sauvegardes chargent avec `over: false` et des
   champs manquants par défaut (serde `default`).
+
+## 2026-11-10 — Les cinq questions ouvertes du brief §13, tranchées
+
+- **Q1, conservation (glace, fumoir) : non.** TW-N-12 reste seul maître :
+  le lot est vendu à la criée dès le débarquement, le poisson ne se garde
+  pas. Stocker pour attendre la hausse supprimerait la seule pression qui
+  force à choisir entre pêcher aujourd'hui et pêcher demain. Rien à coder.
+- **Q2, score : valeur nette seule.** Le bilan ne note que la bourse, les
+  licences au prix courant et les coques (§ B5 ci-dessus). Le stock réel
+  reste dans le bilan comme **statistique** révélée aux juges, jamais
+  comme multiplicateur : une mer vide ne rapporte simplement plus rien
+  (brief §11, « le jeu ne juge pas »).
+- **Q3, plafond de licences : 8 par capitaine** (`licence_cap_per_captain`,
+  sur 20 en circulation). Sans plafond, le joueur achète le port et le
+  vote du conseil devient un tampon. Appliqué aux trois entrées
+  possibles : achat au pool, échange de gré à gré, achats du lundi des
+  NPC ; refus explicite (`CapReached`) et rien ne bouge. Le contrat
+  applique le même plafond dans `buy_licence` (`E_LICENCE_CAP`).
+- **Q4, défaite : bilan puis nouvelle saison.** Un capitaine à zéro en
+  fin de semaine désarme ses bateaux (TW-N-50) ; si c'est le joueur, la
+  partie s'arrête sur le bilan et `sim init` reseed immédiatement une
+  nouvelle saison. « Reprendre comme équipier d'un NPC » serait un mode
+  entier, hors du temps d'une démo.
+- **Q5, durée de saison : paramétrable.** `weeks_per_season` existait
+  déjà dans `Config` (4 → 28 jours) ; il devient réglable à la création
+  (`sim init --weeks 2`, `SIM_WEEKS` côté relais) et le fast-forward
+  accepte 7, 14 et 28 jours. Démo : **2 semaines**, le vote du conseil
+  arrive au bout de 70 minutes au lieu de 2 h 20. Jeu complet : 4.
+
+## 2026-11-10 — La graine doit choisir (correctif, branche `feat/seed-variety`)
+
+- Constat : `Rng` existait, était exporté, et aucune règle ne l'appelait.
+  Graines 7, 11 et 23 → saison identique au hash près, et une seule zone
+  pêchée sur 28 jours (`best_zone_yesterday` ignore les zones à
+  `trips == 0`, donc personne ne découvre jamais un banc déserté).
+- Décision : tirages **sans état** `seed::draw(seed, day, purpose, salt)`.
+  Rien à sérialiser, aucun flux à désynchroniser, reprise exacte depuis
+  une sauvegarde. Les égalités (« meilleure zone hier », « meilleur
+  capitaine hier ») sont tranchées par la graine, plus par l'ordre du
+  tableau. Okoro, suiveur, tente un banc que personne n'a pêché depuis
+  deux semaines un jour sur cinq, et l'annonce dans sa ligne de
+  raisonnement. TW-J-04 tient : même graine, même saison.
