@@ -14,10 +14,11 @@ cargo build --release -p sim
 ./target/release/sim harness --seeds 50 --seasons 3 --json docs/balance-50.json
 ```
 
-Durée mesurée : **3,4 s de jeu** pour 50 graines × 4 politiques × 3 saisons de
-28 jours (200 campagnes, 16 800 journées), plus ~5 s de compilation
-incrémentale. Build release à froid : ~70 s, donc `make balance` reste sous les
-deux minutes dans tous les cas.
+Durée mesurée : **0,8 s à 4,4 s de jeu** selon la charge de la machine, pour
+50 graines × 4 politiques × 3 saisons de 28 jours (200 campagnes, 16 800
+journées), plus 5 à 15 s de compilation incrémentale : `make balance` complet
+tient entre 6 s et 20 s observés. Build release à froid : ~70 s, donc la cible
+reste sous les deux minutes dans tous les cas.
 
 Chaque campagne part d'un état neuf (`seed_game`), joue 3 saisons de 28 jours
 (`days_per_week` 7 × `weeks_per_season` 4) et s'arrête à la fin de la campagne.
