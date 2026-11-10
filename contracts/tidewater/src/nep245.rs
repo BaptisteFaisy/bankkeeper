@@ -8,7 +8,7 @@
 
 use crate::{log_event, Tidewater, TidewaterExt};
 use near_sdk::json_types::U128;
-use near_sdk::{env, near, AccountId, NearToken};
+use near_sdk::{env, near, require, AccountId, NearToken, Promise};
 
 /// NEP-245 Token view (fungible items: no single owner, no approvals).
 #[near(serializers = [json])]
@@ -31,6 +31,11 @@ pub struct TokenMetadata {
 #[near]
 impl Tidewater {
     /// Transfer `amount` of `token_id` to `receiver_id`.
+    ///
+    /// NEP-245 core requires one yocto attached "for security purposes". We
+    /// accept one *or more* and refund the excess to the predecessor, so a
+    /// wallet that rounds the deposit up never loses more than that yocto.
+    #[payable]
     pub fn mt_transfer(
         &mut self,
         receiver_id: AccountId,
@@ -40,28 +45,31 @@ impl Tidewater {
         memo: Option<String>,
     ) {
         Self::assert_no_approval(&approval);
-        Self::assert_yocto();
-        assert!(self.token(&token_id).is_some(), "E_UNKNOWN_TOKEN");
-        let sender = env::predecessor_account_id().to_string();
-        assert!(sender != receiver_id.to_string(), "E_SELF_TRANSFER");
-        let have = self.balance_of(&sender, &token_id);
-        assert!(have >= amount.0, "E_INSUFFICIENT");
-        self.move_balance(&sender, receiver_id.as_str(), &token_id, amount.0);
+        let excess = Self::assert_yocto();
+        require!(self.token(&token_id).is_some(), "E_UNKNOWN_TOKEN");
+        let sender = env::predecessor_account_id();
+        let sender_id = sender.to_string();
+        require!(sender_id != receiver_id.to_string(), "E_SELF_TRANSFER");
+        let have = self.balance_of(&sender_id, &token_id);
+        require!(have >= amount.0, "E_INSUFFICIENT");
+        self.move_balance(&sender_id, receiver_id.as_str(), &token_id, amount.0);
         log_event(
             "nep245",
             "mt_transfer",
             &format!(
                 "[{{\"old_owner_id\":\"{}\",\"new_owner_id\":\"{}\",\"token_ids\":[\"{}\"],\"amounts\":[\"{}\"],\"memo\":{}}}]",
-                sender,
+                sender_id,
                 receiver_id,
                 token_id,
                 amount.0,
                 Self::memo_json(&memo),
             ),
         );
+        Self::refund_excess(sender, excess);
     }
 
     /// Batch variant: all legs move or the call panics before moving any.
+    #[payable]
     pub fn mt_batch_transfer(
         &mut self,
         receiver_id: AccountId,
@@ -71,34 +79,35 @@ impl Tidewater {
         memo: Option<String>,
     ) {
         if let Some(list) = &approvals {
-            assert!(list.iter().all(|a| a.is_none()), "E_APPROVALS_UNSUPPORTED");
+            require!(list.iter().all(|a| a.is_none()), "E_APPROVALS_UNSUPPORTED");
         }
-        let _ = approvals;
-        Self::assert_yocto();
-        assert_eq!(token_ids.len(), amounts.len(), "E_LENGTH_MISMATCH");
-        let sender = env::predecessor_account_id().to_string();
-        assert!(sender != receiver_id.to_string(), "E_SELF_TRANSFER");
+        let excess = Self::assert_yocto();
+        require!(token_ids.len() == amounts.len(), "E_LENGTH_MISMATCH");
+        let sender = env::predecessor_account_id();
+        let sender_id = sender.to_string();
+        require!(sender_id != receiver_id.to_string(), "E_SELF_TRANSFER");
         for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
-            assert!(self.token(token_id).is_some(), "E_UNKNOWN_TOKEN");
-            assert!(
-                self.balance_of(&sender, token_id) >= amount.0,
+            require!(self.token(token_id).is_some(), "E_UNKNOWN_TOKEN");
+            require!(
+                self.balance_of(&sender_id, token_id) >= amount.0,
                 "E_INSUFFICIENT"
             );
         }
         for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
-            self.move_balance(&sender, receiver_id.as_str(), token_id, amount.0);
+            self.move_balance(&sender_id, receiver_id.as_str(), token_id, amount.0);
         }
         log_event(
             "nep245",
             "mt_batch_transfer",
             &format!(
                 "[{{\"old_owner_id\":\"{}\",\"new_owner_id\":\"{}\",\"token_ids\":{:?},\"memo\":{}}}]",
-                sender,
+                sender_id,
                 receiver_id,
                 token_ids,
                 Self::memo_json(&memo),
             ),
         );
+        Self::refund_excess(sender, excess);
     }
 
     /// Tokens for the given ids, `None` when unknown.
@@ -144,15 +153,25 @@ impl Tidewater {
 }
 
 impl Tidewater {
-    fn assert_yocto() {
-        assert!(
-            env::attached_deposit() >= NearToken::from_yoctonear(1),
-            "E_YOCTO_REQUIRED"
-        );
+    /// NEP-245 core asks for one yocto "for security purposes". Exact-one is
+    /// one reading of it, "at least one" the other: we take the second and
+    /// return the excess, so a transfer is never rejected for attaching more.
+    /// Returns the excess to hand back; panics with `E_YOCTO_REQUIRED` at 0.
+    fn assert_yocto() -> NearToken {
+        let attached = env::attached_deposit();
+        require!(attached >= NearToken::from_yoctonear(1), "E_YOCTO_REQUIRED");
+        NearToken::from_yoctonear(attached.as_yoctonear() - 1)
+    }
+
+    /// Refund everything above the anti-abuse yocto to the predecessor.
+    fn refund_excess(predecessor: AccountId, excess: NearToken) {
+        if excess.as_yoctonear() > 0 {
+            let _ = Promise::new(predecessor).transfer(excess);
+        }
     }
 
     fn assert_no_approval(approval: &Option<(AccountId, u64)>) {
-        assert!(approval.is_none(), "E_APPROVALS_UNSUPPORTED");
+        require!(approval.is_none(), "E_APPROVALS_UNSUPPORTED");
     }
 
     fn memo_json(memo: &Option<String>) -> String {
@@ -249,5 +268,123 @@ mod tests {
         assert_eq!(game.mt_tokens(None, None).len(), 15);
         assert_eq!(game.mt_tokens(Some(14), None).len(), 1);
         assert!(game.mt_supply("99".to_string()).is_none());
+    }
+
+    /// Every licence holder in the day-0 seed.
+    fn licence_holders(player: &AccountId) -> Vec<String> {
+        vec![
+            player.to_string(),
+            crate::npc_owner("marta"),
+            crate::npc_owner("brandt"),
+            crate::npc_owner("okoro"),
+            crate::npc_owner("bank"),
+        ]
+    }
+
+    fn licence_total(game: &Tidewater, holders: &[String]) -> u128 {
+        holders
+            .iter()
+            .map(|h| game.balance_of(h, crate::LICENCE_TOKEN))
+            .sum()
+    }
+
+    #[test]
+    fn five_yocto_transfer_is_refunded_down_to_one() {
+        let (mut game, _, player) = setup();
+        let buyer = accounts(2);
+        as_caller(player.clone(), 5);
+        game.mt_transfer(buyer.clone(), "3".to_string(), U128(1), None, None);
+        assert_eq!(game.mt_balance_of(player.clone(), "3".to_string()).0, 3);
+        assert_eq!(game.mt_balance_of(buyer, "3".to_string()).0, 1);
+        let receipts = near_sdk::test_utils::get_created_receipts();
+        let refund = receipts
+            .iter()
+            .find(|r| {
+                r.receiver_id == player
+                    && r.actions.iter().any(|a| matches!(
+                        a,
+                        near_sdk::mock::MockAction::Transfer { deposit, .. }
+                            if deposit.as_yoctonear() == 4
+                    ))
+            })
+            .expect("excess yocto refunded to the predecessor");
+        assert_eq!(refund.actions.len(), 1);
+    }
+
+    #[test]
+    fn one_yocto_transfer_creates_the_unknown_receiver() {
+        let (mut game, _, player) = setup();
+        let newcomer = accounts(5);
+        as_caller(player.clone(), 1);
+        game.mt_transfer(newcomer.clone(), "3".to_string(), U128(1), None, None);
+        assert_eq!(game.mt_balance_of(newcomer, "3".to_string()).0, 1);
+        assert!(near_sdk::test_utils::get_created_receipts().is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "E_SELF_TRANSFER")]
+    fn self_transfer_is_refused() {
+        let (mut game, _, player) = setup();
+        as_caller(player.clone(), 1);
+        game.mt_transfer(player, "3".to_string(), U128(1), None, None);
+    }
+
+    #[test]
+    fn transfer_logs_the_nep245_event() {
+        let (mut game, _, player) = setup();
+        as_caller(player, 1);
+        game.mt_transfer(accounts(2), "3".to_string(), U128(1), None, Some("hi".to_string()));
+        let log = near_sdk::test_utils::get_logs().join("\n");
+        assert!(log.starts_with("EVENT_JSON:"));
+        assert!(log.contains("\"standard\":\"nep245\""));
+        assert!(log.contains("\"event\":\"mt_transfer\""));
+        assert!(log.contains("\"amounts\":[\"1\"]"));
+        assert!(log.contains("\"memo\":\"hi\""));
+    }
+
+    #[test]
+    fn batch_transfer_takes_a_yocto_and_refunds_the_rest() {
+        let (mut game, _, player) = setup();
+        as_caller(player.clone(), 3);
+        game.mt_batch_transfer(
+            accounts(2),
+            vec!["3".to_string(), "11".to_string()],
+            vec![U128(1), U128(1)],
+            None,
+            None,
+        );
+        assert_eq!(game.mt_balance_of(accounts(2), "3".to_string()).0, 1);
+        assert_eq!(game.mt_balance_of(accounts(2), "11".to_string()).0, 1);
+        assert_eq!(game.mt_supply("3".to_string()).unwrap().0, 20);
+    }
+
+    #[test]
+    fn seed_keeps_twenty_licences_and_funds_the_bank_pool() {
+        let (game, _, player) = setup();
+        let holders = licence_holders(&player);
+        assert_eq!(
+            game.mt_supply("3".to_string()).unwrap().0,
+            crate::LICENCE_SUPPLY as u128
+        );
+        assert_eq!(licence_total(&game, &holders), crate::LICENCE_SUPPLY as u128);
+        assert_eq!(
+            game.get_ledger(crate::npc_owner("bank"), "3".to_string()).0,
+            crate::BANK_LICENCE_POOL as u128
+        );
+    }
+
+    #[test]
+    fn a_transfer_conserves_the_licence_supply() {
+        let (mut game, _, player) = setup();
+        let holders = licence_holders(&player);
+        as_caller(player, 1);
+        game.mt_transfer(accounts(3), "3".to_string(), U128(2), None, None);
+        let mut all = holders.clone();
+        all.push(accounts(3).to_string());
+        assert_eq!(licence_total(&game, &all), crate::LICENCE_SUPPLY as u128);
+        assert_eq!(
+            game.mt_supply("3".to_string()).unwrap().0,
+            crate::LICENCE_SUPPLY as u128
+        );
     }
 }
