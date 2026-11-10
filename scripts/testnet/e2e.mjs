@@ -48,6 +48,7 @@ function check(label, condition, detail) {
 async function must(action, caller, account, method, args = {}, options = {}) {
   const result = await call(account, C, method, args, options);
   if (!result.ok) throw new Error(`${action} failed from ${caller}: ${result.error ?? JSON.stringify(result.raw).slice(0, 300)}`);
+  if (result.txHash) hashes.push(`${action} · ${result.txHash}`);
   return result;
 }
 
