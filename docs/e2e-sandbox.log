@@ -1,0 +1,94 @@
+# Tidewater — scénario rejoué sur un near-sandbox local (PAS le testnet)
+# 2026-11-10T21:19:22.585Z
+# chaîne locale 127.0.0.1:3033 · contrat bankkeeper.test.near
+# commande : node scripts/testnet/sandbox-rehearsal.mjs
+# 75 transactions, 75 hashs distincts
+
+  get_day()                  view                               —                → day 0, week 0, season_day 0, council false
+  get_gold_totals()          view                               —                → 10650000000 milli in the harbour, outside in 0 / out 0
+  get_zone(1)                view                               —                → Greybank, stock 5000/5000, steady, 20 crates a trip
+  get_licence_price()        view                               —                → 280.0 gold
+  assign_boat(10, 1)         player.bankkeeper.test.near        HLrCyR3s…i56d    → zone 1, small mesh false
+  assign_boat(11, 1)         player.bankkeeper.test.near        96u7YWec…Jfju    → zone 1, small mesh false
+  day  0 land_lot(10)        player.bankkeeper.test.near        4h75pXAL…W1fr    → 20 crates 1 at 4.0 gold = 80.0 gold
+  day  0 land_lot(11)        player.bankkeeper.test.near        8yy62M6E…jd3V    → 19 crates 1 at 4.0 gold = 76.0 gold
+  day  0 run_day             bankkeeper.test.near               FhnTgy7D…T88d    → day 1, regrowth [0, 1, 0], upkeep 60.0 gold, player 150000.0 gold → 150136.0 gold
+  day  1 land_lot(10)        player.bankkeeper.test.near        J2m2uMVa…VDUX    → 19 crates 1 at 4.0 gold = 76.7 gold
+  day  1 land_lot(11)        player.bankkeeper.test.near        E5PjzwPk…qLx6    → 19 crates 1 at 3.8 gold = 72.2 gold
+  day  1 run_day             bankkeeper.test.near               7RAsJZHe…b25x    → day 2, regrowth [0, 3, 0], upkeep 60.0 gold, player 150136.0 gold → 150264.9 gold
+  day  2 land_lot(10)        player.bankkeeper.test.near        4BmgPDyh…uKoP    → 19 crates 1 at 4.0 gold = 77.5 gold
+  day  2 land_lot(11)        player.bankkeeper.test.near        22SCRY2J…SvEc    → 19 crates 1 at 3.8 gold = 72.6 gold
+  day  2 run_day             bankkeeper.test.near               7HrSBPzr…MPrL    → day 3, regrowth [0, 5, 0], upkeep 60.0 gold, player 150264.9 gold → 150395.1 gold
+  day  3 land_lot(10)        player.bankkeeper.test.near        7e5Kq11G…riBy    → 19 crates 1 at 3.9 gold = 74.5 gold
+  day  3 land_lot(11)        player.bankkeeper.test.near        HHwpKvHy…NfPE    → 19 crates 1 at 3.8 gold = 73.4 gold
+  day  3 run_day             bankkeeper.test.near               5g3TfjYM…KMZC    → day 4, regrowth [0, 6, 0], upkeep 60.0 gold, player 150395.1 gold → 150523.2 gold
+  day  4 land_lot(10)        player.bankkeeper.test.near        BdTTCXUY…ZX53    → 19 crates 1 at 3.9 gold = 74.2 gold
+  day  4 land_lot(11)        player.bankkeeper.test.near        fvH244nu…K2Yr    → 19 crates 1 at 3.7 gold = 71.2 gold
+  day  4 run_day             bankkeeper.test.near               BiLQWXzL…9Xbd    → day 5, regrowth [0, 8, 0], upkeep 60.0 gold, player 150523.2 gold → 150648.6 gold
+  day  5 land_lot(10)        player.bankkeeper.test.near        5zgWw1SX…AG3Q    → 19 crates 1 at 3.9 gold = 74.9 gold
+  day  5 land_lot(11)        player.bankkeeper.test.near        5jpLenCE…Wkkr    → 19 crates 1 at 3.6 gold = 70.1 gold
+  day  5 run_day             bankkeeper.test.near               7eSpyQNx…RHDJ    → day 6, regrowth [0, 9, 0], upkeep 60.0 gold, player 150648.6 gold → 150773.8 gold
+  day  6 land_lot(10)        player.bankkeeper.test.near        H88pVWLc…vCp8    → 19 crates 1 at 3.8 gold = 73.6 gold
+  day  6 land_lot(11)        player.bankkeeper.test.near        AHyaxfFP…Us6E    → 19 crates 1 at 3.7 gold = 70.9 gold
+  day  6 run_day             bankkeeper.test.near               CHSMVz4Q…fvqx    → day 7, regrowth [0, 11, 0], upkeep 60.0 gold, player 150773.8 gold → 150898.3 gold
+  day  7 land_lot(10)        player.bankkeeper.test.near        FWUHECio…NWti    → 19 crates 1 at 3.7 gold = 71.6 gold
+  day  7 land_lot(11)        player.bankkeeper.test.near        AumVkERu…hgCW    → 19 crates 1 at 3.7 gold = 70.3 gold
+  day  7 run_day             bankkeeper.test.near               7PWD2aJB…dQkP    → day 8, regrowth [0, 12, 0], upkeep 60.0 gold, player 150898.3 gold → 151020.3 gold
+  day  8 land_lot(10)        player.bankkeeper.test.near        2CVztqcL…1CNr    → 19 crates 1 at 3.8 gold = 72.4 gold
+  day  8 land_lot(11)        player.bankkeeper.test.near        G7UXwjWD…qkqK    → 18 crates 1 at 3.5 gold = 64.0 gold
+  day  8 run_day             bankkeeper.test.near               8dfXRLJW…RDMM    → day 9, regrowth [0, 13, 0], upkeep 60.0 gold, player 151020.3 gold → 151136.8 gold
+  day  9 land_lot(10)        player.bankkeeper.test.near        9LAwXEJS…LfzK    → 18 crates 1 at 3.8 gold = 68.8 gold
+  day  9 land_lot(11)        player.bankkeeper.test.near        8MyULqik…nmh5    → 18 crates 1 at 3.6 gold = 65.0 gold
+  day  9 run_day             bankkeeper.test.near               4uHSnUCV…Cw26    → day 10, regrowth [0, 14, 0], upkeep 60.0 gold, player 151136.8 gold → 151250.7 gold
+  day 10 land_lot(10)        player.bankkeeper.test.near        D9WaZNLh…xSg7    → 18 crates 1 at 3.6 gold = 66.1 gold
+  day 10 land_lot(11)        player.bankkeeper.test.near        2YkNeFb5…K7UY    → 18 crates 1 at 3.6 gold = 65.9 gold
+  day 10 run_day             bankkeeper.test.near               dtqjgTNt…LiyU    → day 11, regrowth [0, 15, 0], upkeep 60.0 gold, player 151250.7 gold → 151362.8 gold
+  day 11 land_lot(10)        player.bankkeeper.test.near        9nameDx3…uVcn    → 18 crates 1 at 3.7 gold = 66.9 gold
+  day 11 land_lot(11)        player.bankkeeper.test.near        34b6ptxS…RoQ6    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 11 run_day             bankkeeper.test.near               2ZPyxxWr…rNgT    → day 12, regrowth [0, 16, 0], upkeep 60.0 gold, player 151362.8 gold → 151473.3 gold
+  day 12 land_lot(10)        player.bankkeeper.test.near        8pEYVyvk…9Lxs    → 18 crates 1 at 3.7 gold = 67.9 gold
+  day 12 land_lot(11)        player.bankkeeper.test.near        DZzrXyeZ…QyJK    → 18 crates 1 at 3.5 gold = 63.5 gold
+  day 12 run_day             bankkeeper.test.near               6KRrKNfw…mdXB    → day 13, regrowth [0, 17, 0], upkeep 60.0 gold, player 151473.3 gold → 151584.8 gold
+  day 13 land_lot(10)        player.bankkeeper.test.near        MAJgP98Q…d9KK    → 18 crates 1 at 3.6 gold = 66.1 gold
+  day 13 land_lot(11)        player.bankkeeper.test.near        HSYS4Lct…ZaoE    → 18 crates 1 at 3.5 gold = 64.5 gold
+  day 13 run_day             bankkeeper.test.near               FEMqTecx…koFU    → day 14, regrowth [0, 18, 0], upkeep 60.0 gold, player 151584.8 gold → 151695.5 gold
+  day 14 land_lot(10)        player.bankkeeper.test.near        GbSZU7rT…z8ND    → 18 crates 1 at 3.6 gold = 65.5 gold
+  day 14 land_lot(11)        player.bankkeeper.test.near        J3gmnrrV…vwXN    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 14 run_day             bankkeeper.test.near               5s9xWMXF…1P6K    → day 15, regrowth [0, 18, 0], upkeep 60.0 gold, player 151695.5 gold → 151804.4 gold
+  day 15 land_lot(10)        player.bankkeeper.test.near        9o3LynWa…yGjh    → 18 crates 1 at 3.6 gold = 66.4 gold
+  day 15 land_lot(11)        player.bankkeeper.test.near        HriskkFn…5uhP    → 18 crates 1 at 3.4 gold = 62.1 gold
+  day 15 run_day             bankkeeper.test.near               22r9CmmK…nTff    → day 16, regrowth [0, 19, 0], upkeep 60.0 gold, player 151804.4 gold → 151913.1 gold
+  day 16 land_lot(10)        player.bankkeeper.test.near        mu1frGE1…PjhQ    → 18 crates 1 at 3.6 gold = 66.1 gold
+  day 16 land_lot(11)        player.bankkeeper.test.near        Dyi5HXuY…og2w    → 18 crates 1 at 3.5 gold = 63.1 gold
+  day 16 run_day             bankkeeper.test.near               D4d5fVee…eMts    → day 17, regrowth [0, 20, 0], upkeep 60.0 gold, player 151913.1 gold → 152022.3 gold
+  day 17 land_lot(10)        player.bankkeeper.test.near        D6KkeN2U…NT5n    → 18 crates 1 at 3.5 gold = 64.0 gold
+  day 17 land_lot(11)        player.bankkeeper.test.near        GQ3nu6aE…5pfo    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 17 run_day             bankkeeper.test.near               2CCUzA6f…GxcD    → day 18, regrowth [0, 20, 0], upkeep 60.0 gold, player 152022.3 gold → 152129.8 gold
+  day 18 land_lot(10)        player.bankkeeper.test.near        D6DhdZEs…D7KL    → 18 crates 1 at 3.6 gold = 65.0 gold
+  day 18 land_lot(11)        player.bankkeeper.test.near        C9ecpChA…A3yb    → 18 crates 1 at 3.3 gold = 60.7 gold
+  day 18 run_day             bankkeeper.test.near               AH9u4nti…KzrM    → day 19, regrowth [0, 21, 0], upkeep 60.0 gold, player 152129.8 gold → 152235.6 gold
+  day 19 land_lot(10)        player.bankkeeper.test.near        AcmRoLLs…8uhy    → 18 crates 1 at 3.6 gold = 65.9 gold
+  day 19 land_lot(11)        player.bankkeeper.test.near        CU1Vg4ds…gNWS    → 18 crates 1 at 3.4 gold = 61.6 gold
+  day 19 run_day             bankkeeper.test.near               Gy9cpcRX…pZpA    → day 20, regrowth [0, 22, 0], upkeep 60.0 gold, player 152235.6 gold → 152343.3 gold
+  day 20 land_lot(10)        player.bankkeeper.test.near        6AvggT37…W14V    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 20 land_lot(11)        player.bankkeeper.test.near        5GBfHBcr…TGq9    → 18 crates 1 at 3.4 gold = 62.6 gold
+  day 20 run_day             bankkeeper.test.near               7hq6BmXc…2GLu    → day 21, regrowth [0, 22, 0], upkeep 60.0 gold, player 152343.3 gold → 152449.4 gold
+  — reached day 21 (council week)
+  player gold after 21 days: 152449.4 gold
+  buy_licence()              player.bankkeeper.test.near        FirXWMEk…LrE2    → Licence bought for 232.8 gold.
+  mt_transfer(3, 1)          player.bankkeeper.test.near        BFmFqipJ…2ZkH    → player.bankkeeper.test.near 4, captain.bankkeeper.test.near 1
+    event: EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"player.bankkeeper.test.near","new_owner_id":"captain.
+  buy_loan(100)              player.bankkeeper.test.near        7xzLdi3p…cV6X    → lender player.bankkeeper.test.near, owed 672.0 gold, boat deed 14
+  forbear_loan(100)          player.bankkeeper.test.near        9JZpjWUT…VwzD    → missed 0, owed 672.0 gold
+  propose_rule(80)           player.bankkeeper.test.near        2mwQFtKx…Bd5U    → proposal 1, author player.bankkeeper.test.near, escrow 0.0 gold
+  vote(1, yes) x2            player.bankkeeper.test.near + captain.bankkeeper.test.near 3zLspHt8…9ngx    → yes 5, no 0, voters [player.bankkeeper.test.near, captain.bankkeeper.test.near]
+    player vote tx AzanZDJV…KmCT · weighted by licences, one licence one vote
+  cast_npc_votes(1)          bankkeeper.test.near               CRKbJzWy…W1j7    → yes 9, no 8, voters 5
+  resolve_council(1)         bankkeeper.test.near               ASwGPboH…dtYG    → CouncilOutcome {"proposal_id":1,"passed":true,"yes_weight":9,"no_weight":8,"indemnities_milli":0}
+    quota_per_licence 70 → 80 (get_day), council still open true
+  run_day()                  bankkeeper.test.near               ANdreaVJ…FNRf    → day 21 → 22, council true, quota 80
+  player gas balance: 5.488 NEAR · licences held by the player and the captain: 5
+
+all steps passed — 75 transactions, 75 distinct hashes
+
+all steps passed
