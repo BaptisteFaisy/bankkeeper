@@ -14,7 +14,7 @@
 
 use rules::council::Proposal;
 use rules::state::{ActorId, Mesh};
-use sim::cycle::run_day;
+use sim::cycle::try_day;
 use sim::fastforward::{history_hash, run};
 use sim::{relay, seed_game, views, Game};
 use std::collections::HashMap;
@@ -108,7 +108,13 @@ fn cmd_init(args: &[String]) -> ExitCode {
 fn cmd_day(args: &[String]) -> ExitCode {
     let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
     let mut game = read_game(&path);
-    let report = run_day(&mut game);
+    let report = match try_day(&mut game) {
+        Ok(report) => report,
+        Err(error) => {
+            println!("{}", serde_json::json!({ "error": error }));
+            return ExitCode::from(1);
+        }
+    };
     write_json(&path, &game);
     if let Some(rp) = flag(args, "report") {
         write_json(&rp, &report);

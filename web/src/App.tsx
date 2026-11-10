@@ -2,11 +2,12 @@
 // Top bar, sea chart, auction, boats, ledger and the judges drawer.
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import type { BoatView, FFResponse, GraphLive, JudgesLive, Mesh, PortState, ZoneId } from './types';
-import { EMPTY_AUCTION, ZONE_LABEL } from './types';
+import type { BoatView, CouncilOutcome, DayNote, FFResponse, GraphLive, JudgesLive, Mesh, PortState, SeasonBilan, ZoneId } from './types';
+import { EMPTY_AUCTION, ZONE_LABEL, parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
 import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doReset, doRunFF, doSurvey } from './actions';
+import type { GameActions } from './actions';
 import { postLogin } from './api';
 import type { Session } from './session';
 import SeaMap from './components/SeaMap';
@@ -19,7 +20,7 @@ import type { JudgeRun } from './components/JudgesPanel';
 import type { StockPoint } from './components/Chart';
 import { fmtGold } from './format';
 
-function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, onReset }: {
+function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBusy, over, onReset }: {
   port: PortState | null;
   session: Session;
   onLogout: () => void;
@@ -27,6 +28,7 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
   onJudges: (open: boolean) => void;
   onEndDay: () => void;
   dayBusy: boolean;
+  over: boolean;
   onReset: () => void;
 }) {
   return (
@@ -36,7 +38,7 @@ function TopBar({ port, session, onLogout, judgesOpen, onJudges, onEndDay, dayBu
       <span className="tide-stat gold">{port === null ? '—' : `${fmtGold(port.playerGold)}g`}</span>
       <span className="tide-stat">Quota left: {port?.quotaLeft ?? '—'}</span>
       <span className="muted">{session.name}</span>
-      <button type="button" disabled={dayBusy} onClick={onEndDay}>
+      <button type="button" disabled={dayBusy || over} title={over ? 'The season is over' : undefined} onClick={onEndDay}>
         End the day
       </button>
       <button type="button" className="ghost" disabled={dayBusy} onClick={onReset}>
@@ -161,13 +163,21 @@ function JudgeBench({ game, port, judges, graph }: { game: GameState; port: Port
         run={run}
         playerView={playerView}
         live={livePoint(graph, judges)}
+        harbourSeed={String(port?.seed ?? judges?.seed ?? 'tidewater')}
         onRun={(days, seedText) => { void doRunFF(game.actions, days === 28 ? 28 : 7, seedText); }}
       />
     </section>
   );
 }
 
-function Board({ game, port, selected }: { game: GameState; port: PortState | null; selected: BoatView | null }) {
+function Board({ game, port, selected, over }: { game: GameState; port: PortState | null; selected: BoatView | null; over: boolean }) {
+  function chartAssign(zone: ZoneId | null): void {
+    if (over) {
+      game.actions.pushToast('info', 'The season is over. Start a new harbour to sail again.');
+      return;
+    }
+    guardedAssign(game, selected, zone);
+  }
   return (
     <main className="board">
       <section className="panel chart-panel" aria-label="Sea chart">
@@ -186,8 +196,8 @@ function Board({ game, port, selected }: { game: GameState; port: PortState | nu
             }
             game.setSelectedBoat(id === game.selectedBoat ? null : id);
           }}
-          onPickZone={(zone) => guardedAssign(game, selected, zone)}
-          onPickQuay={() => guardedAssign(game, selected, null)}
+          onPickZone={(zone) => chartAssign(zone)}
+          onPickQuay={() => chartAssign(null)}
         />
       </section>
       <div className="side">
@@ -200,7 +210,7 @@ function Board({ game, port, selected }: { game: GameState; port: PortState | nu
         <BoatsPanel
           boats={port?.boats ?? []}
           selectedBoat={game.selectedBoat}
-          busy={game.busy !== null}
+          busy={game.busy !== null || over}
           onSelectBoat={game.setSelectedBoat}
           onAssign={(boat, zone) => guardedAssign(game, boat, zone)}
           onMesh={(boat, mesh) => guardedMesh(game, boat, mesh)}
@@ -210,22 +220,131 @@ function Board({ game, port, selected }: { game: GameState; port: PortState | nu
   );
 }
 
-function EndScreen({ port, you, onReset }: { port: PortState; you: { gold: number; licences: number }; onReset: () => void }) {
+function councilLine(council: CouncilOutcome | null): string {
+  if (council === null) return 'No council this season.';
+  if (!council.tabled) return `Season ${council.season}: no motion tabled.`;
+  return `Season ${council.season}: ${council.forVotes} for, ${council.againstVotes} against — ${council.passed ? 'passed' : 'rejected'}.`;
+}
+
+interface EndProps {
+  port: PortState;
+  you: { gold: number; licences: number };
+  bilan: SeasonBilan | null;
+  stocks: [number, number, number];
+  council: CouncilOutcome | null;
+  seasonOver: boolean;
+  onReset: () => void;
+}
+
+function EndCardBody({ port, you, bilan, stocks, council, seasonOver, onReset }: EndProps) {
   return (
-    <section className="end-screen" aria-label="Season over">
-      <div className="panel end-card">
-        <h2>The harbour lets you go</h2>
-        <p className="muted">Week {port.week} · {port.day}. Your boats are laid up.</p>
-        <ul className="harbour-list">
-          <li><span>Net worth</span><span className="num">{fmtGold(port.netWorth)}g</span></li>
-          <li><span>Gold</span><span className="num">{fmtGold(you.gold)}g</span></li>
-          <li><span>Licences</span><span className="num">{you.licences}</span></li>
-        </ul>
-        <button type="button" onClick={onReset}>
-          New harbour
-        </button>
-      </div>
+    <>
+      <h2>{seasonOver ? 'Season over — the bilan' : 'The harbour lets you go'}</h2>
+      <p className="muted">
+        Week {port.week} · {port.day}. {seasonOver ? 'The books are closed.' : 'Your boats are laid up.'}
+      </p>
+      <ul className="harbour-list">
+        <li><span>Net worth</span><span className="num">{fmtGold(bilan?.netWorth ?? port.netWorth)}g</span></li>
+        <li><span>Gold</span><span className="num">{fmtGold(you.gold)}g</span></li>
+        <li><span>Licences</span><span className="num">{bilan?.licences ?? you.licences}</span></li>
+        <li><span>Stocks left</span><span className="num">{stocks[0]} · {stocks[1]} · {stocks[2]}</span></li>
+        <li><span>Last council</span><span>{councilLine(council)}</span></li>
+      </ul>
+      <button type="button" onClick={onReset}>
+        New harbour
+      </button>
+    </>
+  );
+}
+
+// Bankruptcy keeps the full overlay; season over shows the same card
+// in flow so the judges bench stays readable.
+function EndScreen(props: EndProps) {
+  if (!props.seasonOver) {
+    return (
+      <section className="end-screen" aria-label="Season over">
+        <div className="panel end-card">
+          <EndCardBody {...props} />
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="panel" aria-label="Season over">
+      <EndCardBody {...props} />
     </section>
+  );
+}
+
+function graphStocks(graph: GraphLive | null): [number, number, number] {
+  const s = graph?.stocks;
+  if (Array.isArray(s) && s.length >= 3 && s.every((n) => typeof n === 'number')) {
+    return [Math.round(s[0]), Math.round(s[1]), Math.round(s[2])];
+  }
+  return [0, 0, 0];
+}
+
+interface OverState {
+  bankrupt: boolean;
+  seasonOver: boolean;
+  over: boolean;
+  council: CouncilOutcome | null;
+  bilan: SeasonBilan | null;
+  stocks: [number, number, number];
+}
+
+// Season over arrives from state (seasonOver) or the last day
+// (season_over); the bilan and the council minutes prefer the day
+// snapshot, then state (state survives a reload).
+function overState(port: PortState | null, graph: GraphLive | null, dayNote: DayNote | null, bankrupt: boolean): OverState {
+  const seasonOver = !bankrupt && (port?.seasonOver === true || dayNote?.seasonOver === true);
+  const bilan = parseBilan(dayNote?.bilan ?? port?.bilan ?? null, port?.netWorth);
+  return {
+    bankrupt,
+    seasonOver,
+    over: bankrupt || seasonOver,
+    council: dayNote?.council ?? parseCouncilOutcome(port?.lastCouncil ?? null),
+    bilan,
+    stocks: bilan?.stocks ?? graphStocks(graph),
+  };
+}
+
+function useDayNote(game: GameState): { dayNote: DayNote | null; noted: GameActions } {
+  const [dayNote, setDayNote] = useState<DayNote | null>(null);
+  const noted: GameActions = { ...game.actions, noteDay: (note: DayNote) => setDayNote(note) };
+  return { dayNote, noted };
+}
+
+function PlayPanels({ game, port, selected, judges, youLicences, council, over }: {
+  game: GameState;
+  port: PortState | null;
+  selected: BoatView | null;
+  judges: JudgesLive | null;
+  youLicences: number;
+  council: CouncilOutcome | null;
+  over: boolean;
+}) {
+  return (
+    <>
+      <Board game={game} port={port} selected={selected} over={over} />
+      <LedgerPanel landings={port?.landings ?? []} reasoning={port?.reasoning ?? []} />
+      <HarbourPanel
+        captains={port?.captains ?? []}
+        loans={judges?.loans ?? []}
+        licencePool={judges?.licence_pool ?? 0}
+        proposal={judges?.proposal ?? null}
+        lastCouncil={council}
+        playerGold={port?.playerGold ?? 0}
+        licencePrice={port?.licencePrice}
+        youLicences={youLicences}
+        busy={game.busy !== null || over}
+        onSurvey={(zone) => { void doSurvey(game.actions, zone); }}
+        onLicence={(action, ref) => { void doLicenceTrade(game.actions, action, ref); }}
+        onDebt={(action, ref) => { void doDebt(game.actions, action, ref); }}
+        onPropose={(rule, indemnity) => { void doCouncil(game.actions, 'propose', rule, indemnity); }}
+        onVote={(yes) => { void doCouncil(game.actions, 'vote', yes ? 'yes' : 'no'); }}
+      />
+    </>
   );
 }
 
@@ -234,42 +353,32 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
   const selected = findBoat(port, game.selectedBoat);
   const dayKey = `${port?.week ?? 0}-${port?.day ?? ''}`;
   const { judges, graph } = useJudges(dayKey, game.busy);
+  const { dayNote, noted } = useDayNote(game);
   const you = port?.captains.find((c) => c.id === 'you') ?? null;
-  const ended = you !== null && !you.active;
+  const end = overState(port, graph, dayNote, you !== null && !you.active);
   return (
     <>
+      {end.seasonOver && you !== null && port !== null && (
+        <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver onReset={() => { void doReset(noted); }} />
+      )}
       <TopBar
         port={port}
         session={session}
         onLogout={game.logout}
         judgesOpen={game.judgesOpen}
         onJudges={game.setJudgesOpen}
-        onEndDay={() => { void doEndDay(game.actions); }}
+        onEndDay={() => { void doEndDay(noted); }}
         dayBusy={game.busy !== null}
-        onReset={() => { void doReset(game.actions); }}
+        over={end.over}
+        onReset={() => { void doReset(noted); }}
       />
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
       )}
-      <Board game={game} port={port} selected={selected} />
-      <LedgerPanel landings={port?.landings ?? []} reasoning={port?.reasoning ?? []} />
-      <HarbourPanel
-        captains={port?.captains ?? []}
-        loans={judges?.loans ?? []}
-        licencePool={judges?.licence_pool ?? 0}
-        proposal={judges?.proposal ?? null}
-        playerGold={port?.playerGold ?? 0}
-        youLicences={you?.licences ?? 0}
-        busy={game.busy !== null}
-        onSurvey={(zone) => { void doSurvey(game.actions, zone); }}
-        onLicence={(action, ref) => { void doLicenceTrade(game.actions, action, ref); }}
-        onDebt={(action, ref) => { void doDebt(game.actions, action, ref); }}
-        onPropose={(rule, indemnity) => { void doCouncil(game.actions, 'propose', rule, indemnity); }}
-        onVote={(yes) => { void doCouncil(game.actions, 'vote', yes ? 'yes' : 'no'); }}
-      />
+      <PlayPanels game={game} port={port} selected={selected} judges={judges} youLicences={you?.licences ?? 0} council={end.council} over={end.over} />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
-      {ended && you !== null && port !== null && (
-        <EndScreen port={port} you={you} onReset={() => { void doReset(game.actions); }} />
+      {end.bankrupt && you !== null && port !== null && (
+        <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver={false} onReset={() => { void doReset(noted); }} />
       )}
     </>
   );

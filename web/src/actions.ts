@@ -3,8 +3,8 @@
 // Mutations return true on success so callers can flash the UI.
 import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postReset, postSurvey } from './api';
 import type { AssignBody, MutationResult } from './api';
-import type { FFResponse, ToastMsg, ZoneId } from './types';
-import { ZONE_LABEL } from './types';
+import type { DayNote, FFResponse, ToastMsg, ZoneId } from './types';
+import { ZONE_LABEL, parseCouncilOutcome } from './types';
 
 export interface MutDeps {
   setBusy: (b: string | null) => void;
@@ -16,6 +16,9 @@ export interface GameActions {
   deps: MutDeps;
   pushToast: (kind: ToastMsg['kind'], title: string, body?: string) => void;
   resetFf: (r: FFResponse | null) => void;
+  // Optional sink for day-response notes (council, season over).
+  // Wired by the app shell; absent in older shells.
+  noteDay?: (note: DayNote) => void;
 }
 
 export async function mutate<T>(deps: MutDeps, label: string, fn: () => Promise<T>): Promise<T | null> {
@@ -57,10 +60,16 @@ export async function doLicenceTrade(actions: GameActions, action: 'buy' | 'sell
   return true;
 }
 
+function debtSummary(action: 'buy' | 'forbear' | 'seize', ref: string): string {
+  if (action === 'buy') return `Note ${ref} bought from the bank.`;
+  if (action === 'forbear') return `Note ${ref}: instalments deferred.`;
+  return `Note ${ref} seized against the boat.`;
+}
+
 export async function doDebt(actions: GameActions, action: 'buy' | 'forbear' | 'seize', ref: string): Promise<boolean> {
   const r = await mutate(actions.deps, 'debt', () => postDebt(action, ref));
   if (r === null) return false;
-  actions.pushToast('info', `Note ${ref}: ${action}.`);
+  actions.pushToast('info', debtSummary(action, ref));
   return true;
 }
 
@@ -83,11 +92,18 @@ export async function doEndDay(actions: GameActions): Promise<boolean> {
   const r = await mutate(actions.deps, 'day', () => postEndDay());
   if (r === null) return false;
   const landings = Array.isArray(r.landings) ? r.landings.length : 0;
-  actions.pushToast('report', `Day ${r.day} ends: ${landings} landings.`);
-  if (r.council !== null && r.council !== undefined) {
-    const tally = r.council.tally;
-    actions.pushToast('report', `Season ${r.council.season} council: ${tally.for_votes} for, ${tally.against_votes} against — ${tally.passed ? 'passed' : 'rejected'}.`);
+  // Sim days are zero-based; players count from day 1.
+  const dayNo = typeof r.day === 'number' ? r.day + 1 : '?';
+  actions.pushToast('report', `Day ${dayNo} ends: ${landings} landings.`);
+  const council = r.council === null || r.council === undefined ? null : parseCouncilOutcome(r.council);
+  if (council !== null) {
+    if (!council.tabled) {
+      actions.pushToast('report', `Season ${council.season} council: no motion tabled; standing rules continue.`);
+    } else {
+      actions.pushToast('report', `Season ${council.season} council: ${council.forVotes} for, ${council.againstVotes} against — ${council.passed ? 'passed' : 'rejected'}.`);
+    }
   }
+  actions.noteDay?.({ council, seasonOver: r.season_over === true, bilan: r.bilan ?? null });
   return true;
 }
 
@@ -95,6 +111,7 @@ export async function doReset(actions: GameActions): Promise<boolean> {
   const r = await mutate(actions.deps, 'reset', () => postReset());
   if (r === null) return false;
   actions.resetFf(null);
+  actions.noteDay?.({ council: null, seasonOver: false, bilan: null });
   actions.pushToast('report', 'New harbour seeded. Fair winds.');
   return true;
 }

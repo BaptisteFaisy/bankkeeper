@@ -24,6 +24,14 @@ export const MESH_LABEL: Record<Mesh, string> = {
   small: 'Small mesh',
 };
 
+// Net reported per landing (sim landing.mesh). Accepts the view slug
+// ("large"/"small") and the raw sim spelling ("Large"/"Small").
+export function parseMesh(raw: unknown): Mesh {
+  const word = typeof raw === 'string' ? raw.toLowerCase() : '';
+  if (word.startsWith('small')) return 'small';
+  return 'large';
+}
+
 export type Trend = 'rising' | 'steady' | 'falling';
 
 export interface ZoneView {
@@ -109,6 +117,8 @@ export interface LandingView {
   total: number;
   buyer: string | null;
   start: number;
+  // Net this landing was fished with (sim landing.mesh), not the
+  // boat's current net: a re-rigged boat keeps its old landings.
   mesh: Mesh;
 }
 
@@ -128,6 +138,14 @@ export interface PortState {
   auction: AuctionView;
   landings: LandingView[];
   reasoning: string[];
+  // Going licence price in gold pieces, when the sim reports it.
+  licencePrice?: number;
+  // True once the season is over (sim view_state seasonOver).
+  seasonOver?: boolean;
+  // Season bilan payload (sim bilan, centigold); parsed via parseBilan.
+  bilan?: unknown;
+  // Last council report (sim view_state lastCouncil); parsed via parseCouncilOutcome.
+  lastCouncil?: unknown;
 }
 
 export interface FFSummary {
@@ -235,4 +253,107 @@ export interface GraphLive {
   history: Array<Record<string, unknown>>;
   stocks: [number, number, number];
   capacity: [number, number, number];
+}
+
+// Season council as the day report tells it: outcome, per-voter
+// lines (TW-C4-05) and whether a motion was tabled at all.
+export interface CouncilOutcome {
+  season: number;
+  tabled: boolean;
+  passed: boolean;
+  forVotes: number;
+  againstVotes: number;
+  lines: string[];
+}
+
+// What the app keeps from each day response: the council outcome
+// (if any), the season-over flag and the raw bilan payload.
+export interface DayNote {
+  council: CouncilOutcome | null;
+  seasonOver: boolean;
+  bilan: unknown;
+}
+
+function numOr(raw: unknown, fallback: number): number {
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : fallback;
+}
+
+export function parseCouncilOutcome(raw: unknown): CouncilOutcome | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const o = raw as Record<string, unknown>;
+  if (typeof o['season'] !== 'number') return null;
+  const tally = (typeof o['tally'] === 'object' && o['tally'] !== null
+    ? o['tally'] as Record<string, unknown> : {});
+  const lines = Array.isArray(o['lines'])
+    ? (o['lines'] as unknown[]).filter((l): l is string => typeof l === 'string')
+    : [];
+  return {
+    season: o['season'] as number,
+    tabled: o['tabled'] !== false,
+    passed: tally['passed'] === true,
+    forVotes: numOr(tally['for_votes'], 0),
+    againstVotes: numOr(tally['against_votes'], 0),
+    lines,
+  };
+}
+
+// Season bilan in UI units: net worth in gold pieces, remaining
+// stock per zone (shallows, greybank, deeps), licences held.
+export interface SeasonBilan {
+  netWorth: number;
+  stocks: [number, number, number];
+  licences: number;
+}
+
+function readStocks(raw: unknown): [number, number, number] | null {
+  if (Array.isArray(raw) && raw.length >= 3) {
+    const [a, b, c] = raw;
+    if (typeof a === 'number' && typeof b === 'number' && typeof c === 'number') {
+      return [Math.round(a), Math.round(b), Math.round(c)];
+    }
+    return null;
+  }
+  if (typeof raw === 'object' && raw !== null) {
+    const o = raw as Record<string, unknown>;
+    const byZone = (zone: string): number | null => {
+      for (const key of Object.keys(o)) {
+        if (key.toLowerCase() === zone && typeof o[key] === 'number') {
+          return Math.round(o[key] as number);
+        }
+      }
+      return null;
+    };
+    const a = byZone('shallows');
+    const b = byZone('greybank');
+    const c = byZone('deeps');
+    if (a !== null && b !== null && c !== null) return [a, b, c];
+  }
+  return null;
+}
+
+// Net worth may arrive in gold pieces (view_state) or centigold
+// (day report). The live net worth disambiguates: 100x apart can
+// only be a unit mismatch, never a day of earnings.
+function worthInPieces(worth: number, reference: number | undefined): number {
+  if (reference === undefined || !Number.isFinite(reference) || reference === 0) return worth;
+  const scale = Math.max(1, Math.abs(reference));
+  const direct = Math.abs(worth - reference) / scale;
+  const scaled = Math.abs(worth / 100 - reference) / scale;
+  return scaled < direct ? worth / 100 : worth;
+}
+
+export function parseBilan(raw: unknown, referenceNetWorth?: number): SeasonBilan | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const o = raw as Record<string, unknown>;
+  const worth = o['net_worth'] ?? o['netWorth'];
+  const licences = o['licences'] ?? o['licenses'];
+  const stocks = readStocks(o['stocks']);
+  if (typeof worth !== 'number' || !Number.isFinite(worth)) return null;
+  if (typeof licences !== 'number' || !Number.isFinite(licences)) return null;
+  if (stocks === null) return null;
+  return {
+    netWorth: worthInPieces(worth, referenceNetWorth),
+    stocks,
+    licences: Math.round(licences),
+  };
 }

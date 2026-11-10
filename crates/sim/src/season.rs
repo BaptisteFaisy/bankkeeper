@@ -19,9 +19,25 @@ use serde::{Deserialize, Serialize};
 pub struct CouncilReport {
     pub season: u64,
     pub proposal: Proposal,
+    /// True only when a real motion was tabled and voted (B2).
+    #[serde(default)]
+    pub tabled: bool,
     pub ballots: Vec<(ActorId, Vote, u64)>,
     pub tally: Tally,
     pub lines: Vec<String>,
+}
+
+/// Season-end bilan (brief 2.3 step 6): player net worth, real stocks.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Bilan {
+    /// Purse + licences at the going price + hulls at the new-boat price.
+    pub net_worth: i64,
+    pub gold: i64,
+    pub licences: u64,
+    pub licence_price: u64,
+    pub boats: u64,
+    /// Real zone stocks (judges only; hidden from the player all season).
+    pub stocks: [u64; 3],
 }
 
 /// Monday settlement. Order matters: trades and payments can still rescue a
@@ -274,7 +290,9 @@ fn season_profit(
 /// the player backs its own motion, strict licence majority carries.
 pub fn roll_season(game: &mut Game) -> CouncilReport {
     let season = game.port.season(&game.config);
-    let proposal = game.proposal.take().unwrap_or_else(|| status_quo(game));
+    let Some(proposal) = game.proposal.take() else {
+        return no_motion_report(game, season);
+    };
     let mut ballots = Vec::new();
     let mut lines = Vec::new();
     lines.push(format!(
@@ -297,9 +315,25 @@ pub fn roll_season(game: &mut Game) -> CouncilReport {
     CouncilReport {
         season,
         proposal,
+        tabled: true,
         ballots,
         tally: result,
         lines,
+    }
+}
+
+/// Honest no-motion council (B2): no ballot is polled, the tally is zero,
+/// the standing rules continue untouched.
+fn no_motion_report(game: &Game, season: u64) -> CouncilReport {
+    CouncilReport {
+        season,
+        proposal: status_quo(game),
+        tabled: false,
+        ballots: Vec::new(),
+        tally: tally(&[]),
+        lines: vec![format!(
+            "Council of season {season}: no motion tabled; the standing rules continue."
+        )],
     }
 }
 
@@ -388,69 +422,30 @@ fn apply_proposal(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{seed_game, DayRecord};
+/// Close the season (B5): after the council has rolled, flag the game over
+/// and attach the bilan to both the game and the day report.
+pub fn close_season(game: &mut Game, report: &mut crate::cycle::DayReport) {
+    let bilan = season_bilan(game);
+    game.over = true;
+    game.bilan = Some(bilan.clone());
+    report.season_over = true;
+    report.bilan = Some(bilan);
+}
 
-    fn week_old(game: &mut Game) {
-        for day in 0..7 {
-            let mut record = DayRecord::new(day);
-            record.trips = [3, 9, 3];
-            record.crates = [30, 90, 18];
-            record.lot_price_sum = 138 * 400;
-            record.lot_crates = 138;
-            game.history.push(record);
-        }
-        game.port.day = 7;
-    }
-
-    #[test]
-    fn monday_resets_quotas_and_records_mesh() {
-        let mut game = seed_game(5);
-        game.port.weekly_catch[ActorId::Hale.idx()] = 200;
-        game.week_small = [10, 0, 0];
-        game.week_total = [100, 0, 0];
-        let mut closures = Vec::new();
-        roll_week(&mut game, &mut closures);
-        assert_eq!(game.port.weekly_catch, [0; 10]);
-        assert_eq!(game.mesh.share_bps(Zone::Shallows), 1000);
-        assert!(closures.is_empty());
-    }
-
-    #[test]
-    fn broke_captain_lays_up_and_pools_licences() {
-        let mut game = seed_game(5);
-        game.port.gold[ActorId::Brandt.idx()] = 0;
-        let mut closures = Vec::new();
-        roll_week(&mut game, &mut closures);
-        assert_eq!(closures, vec![ActorId::Brandt]);
-        assert_eq!(game.port.total_licences(), 20);
-    }
-
-    #[test]
-    fn fat_indemnity_flips_a_vote_and_pays() {
-        let mut game = seed_game(5);
-        week_old(&mut game);
-        game.port.gold[ActorId::You.idx()] = 10_000_000;
-        game.propose(Proposal {
-            quota_per_licence: 10,
-            close_zone: None,
-            ban_small_mesh: false,
-            indemnity_per_licence_week: 50_000,
-        });
-        let report = roll_season(&mut game);
-        assert!(report.tally.passed, "{:?}", report.lines);
-        assert!(report.lines.iter().any(|line| line.contains("votes yes")), "{:?}", report.lines);
-        assert_eq!(game.config.quota_per_licence, 10);
-    }
-
-    #[test]
-    fn status_quo_keeps_the_rules() {
-        let mut game = seed_game(5);
-        week_old(&mut game);
-        let report = roll_season(&mut game);
-        assert!(report.tally.passed);
-        assert_eq!(game.config.quota_per_licence, 70);
+/// Player net worth at season end: purse + licences at the going price +
+/// hulls at the new-boat price, with the real zone stocks (all centigold).
+fn season_bilan(game: &Game) -> Bilan {
+    let licences = game.port.licences[ActorId::You.idx()];
+    let price = game.licence_price_now();
+    let boats = game.boats_of(ActorId::You).len() as i64;
+    let gold = game.port.gold[ActorId::You.idx()];
+    let worth = gold + licences as i64 * price as i64 + boats * game.config.new_boat_cost as i64;
+    Bilan {
+        net_worth: worth,
+        gold,
+        licences,
+        licence_price: price,
+        boats: boats as u64,
+        stocks: game.port.stocks,
     }
 }

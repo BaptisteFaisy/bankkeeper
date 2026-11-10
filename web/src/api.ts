@@ -123,12 +123,22 @@ export function postSurvey(zone: ZoneId): Promise<MutationResult> {
   return post<MutationResult>('/api/survey', { zone });
 }
 
+export interface DayCouncil {
+  season: number;
+  tabled?: boolean;
+  tally?: { for_votes: number; against_votes: number; passed: boolean };
+  lines?: string[];
+  [key: string]: unknown;
+}
+
 export interface DayReport {
   day: number;
   landings: Array<Record<string, unknown>>;
   lines: string[];
   week_rolled: boolean;
-  council: { season: number; tally: { for_votes: number; against_votes: number; passed: boolean } } | null;
+  council: DayCouncil | null;
+  season_over?: boolean;
+  bilan?: unknown;
   [key: string]: unknown;
 }
 

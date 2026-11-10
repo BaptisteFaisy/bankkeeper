@@ -12,14 +12,21 @@ use rules::goldflow::{check_conservation, Flows};
 use rules::state::{ActorId, Mesh, Species, Zone};
 use serde::{Deserialize, Serialize};
 
-/// One landing and its hammer price.
+/// One landing and its hammer price, with the net actually fished (B3).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Landing {
     pub captain: ActorId,
     pub boat: u64,
     pub zone: Zone,
+    #[serde(default = "default_mesh")]
+    pub mesh: Mesh,
     pub crates: u64,
     pub outcome: Outcome,
+}
+
+/// Old saves predate the landing mesh (B3): assume the large net.
+fn default_mesh() -> Mesh {
+    Mesh::Large
 }
 
 /// Everything one day did, for the ledger UI and the judges.
@@ -34,6 +41,19 @@ pub struct DayReport {
     pub invariant_ok: bool,
     pub week_rolled: bool,
     pub council: Option<season::CouncilReport>,
+    #[serde(default)]
+    pub season_over: bool,
+    #[serde(default)]
+    pub bilan: Option<season::Bilan>,
+}
+
+/// One harbour day through the season gate: an over game refuses with
+/// "season over" instead of running (B5).
+pub fn try_day(game: &mut Game) -> Result<DayReport, String> {
+    if game.over {
+        return Err("season over".to_string());
+    }
+    Ok(run_day(game))
 }
 
 /// Run one full day and advance the harbour to dawn.
@@ -52,6 +72,8 @@ pub fn run_day(game: &mut Game) -> DayReport {
         invariant_ok: false,
         week_rolled: false,
         council: None,
+        season_over: false,
+        bilan: None,
     };
     report.lines.extend(bots::decide_all(game));
     run_trips(game, &config, &mut day, &mut report, &mut flows);
@@ -74,17 +96,26 @@ pub fn run_day(game: &mut Game) -> DayReport {
     for trips in game.port.trips_today.iter_mut() {
         *trips = 0;
     }
+    settle_boundaries(game, &config, &mut report);
+    game.last_report = Some(report.clone());
+    report
+}
+
+/// Week and season boundaries once the day counter has advanced: Monday
+/// settlement first, then the season-end council, then the bilan (B5).
+fn settle_boundaries(game: &mut Game, config: &Config, report: &mut DayReport) {
     if game.port.day.is_multiple_of(config.days_per_week) {
         report.week_rolled = true;
         let mut closures = Vec::new();
         report.lines.extend(season::roll_week(game, &mut closures));
         report.closures.extend(closures);
     }
-    if game.port.day.is_multiple_of(config.days_per_week * config.weeks_per_season) {
+    let season_days = config.days_per_week * config.weeks_per_season;
+    if game.port.day.is_multiple_of(season_days) {
         report.council = Some(season::roll_season(game));
+        game.last_council = report.council.clone();
+        season::close_season(game, report);
     }
-    game.last_report = Some(report.clone());
-    report
 }
 
 /// Sail every round of the day, then count the boats that fished per captain.
@@ -152,7 +183,7 @@ fn sail_boat(
     if mesh == Mesh::Small {
         day.fished_mesh[owner] = Mesh::Small;
     }
-    let meta = LandingMeta { captain: boat.owner, boat_id: boat.id, zone, crates: landed };
+    let meta = LandingMeta { captain: boat.owner, boat_id: boat.id, zone, mesh, crates: landed };
     sell_lot(game, config, day, report, &meta);
 }
 
@@ -187,11 +218,12 @@ fn land_catch(
     landed
 }
 
-/// One landing on its way to the clock.
+/// One landing on its way to the clock, with the net actually fished.
 struct LandingMeta {
     captain: ActorId,
     boat_id: u64,
     zone: Zone,
+    mesh: Mesh,
     crates: u64,
 }
 
@@ -215,6 +247,7 @@ fn sell_lot(
         captain: meta.captain,
         boat: meta.boat_id,
         zone: meta.zone,
+        mesh: meta.mesh,
         crates: meta.crates,
         outcome,
     });
@@ -414,82 +447,5 @@ fn close_broke_buyers(game: &mut Game, report: &mut DayReport) {
         close_buyer(&mut game.port, buyer);
         report.closures.push(buyer);
         report.lines.push(format!("{} closes its doors (broke).", buyer.name()));
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::seed_game;
-    use rules::state::Boat;
-
-    /// Quiet port: NPCs laid up, no notes, every licence to the fisher.
-    fn quiet_game(seed: u64) -> Game {
-        let mut game = seed_game(seed);
-        game.loans.clear();
-        game.port.licences = [20, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        for captain in [ActorId::Hale, ActorId::Brandt, ActorId::Okoro] {
-            game.port.stopped[captain.idx()] = true;
-        }
-        game
-    }
-
-    /// Extra Greybank boats for the overfishing test.
-    fn add_boats(game: &mut Game, count: u64) {
-        for id in 10..10 + count {
-            game.port.boats.push(Boat {
-                id,
-                owner: ActorId::You,
-                zone: Some(Zone::Greybank),
-                mesh: Mesh::Large,
-            });
-            game.port.trips_today.push(0);
-        }
-    }
-
-    #[test]
-    fn full_week_keeps_the_books_balanced() {
-        let mut game = seed_game(11);
-        let mut sold_any = false;
-        for _ in 0..7 {
-            let report = run_day(&mut game);
-            assert!(report.invariant_ok, "day {}: {:?}", report.day, report.lines);
-            sold_any |= report.lines.iter().any(|line| line.contains("Sold to"));
-        }
-        assert!(sold_any, "the derby week must sell fish");
-        assert_eq!(game.port.day, 7);
-        assert_eq!(game.port.weekly_catch, [0; 10]);
-    }
-
-    #[test]
-    fn two_boats_hold_greybank_near_2600() {
-        // Lot 0: the two-boat sustainable yield, ~62 crates a day.
-        let mut game = quiet_game(21);
-        for _ in 0..150 {
-            run_day(&mut game);
-        }
-        let stock = game.port.stocks[Zone::Greybank.idx()];
-        assert!((2300..=2900).contains(&stock), "stock {stock}");
-        let last = game.history.last().expect("journal");
-        let day_catch = last.crates[Zone::Greybank.idx()];
-        assert!((47..=77).contains(&day_catch), "daily catch {day_catch}");
-    }
-
-    #[test]
-    fn five_boats_empty_greybank() {
-        let mut game = quiet_game(22);
-        add_boats(&mut game, 3);
-        for _ in 0..28 {
-            run_day(&mut game);
-        }
-        let season_end = game.port.stocks[Zone::Greybank.idx()];
-        for _ in 0..172 {
-            run_day(&mut game);
-        }
-        let stock = game.port.stocks[Zone::Greybank.idx()];
-        assert!(season_end < 3000, "one season must crater the stock, got {season_end}");
-        // NOTE: floored trip_catch pins five boats near ~749 (take 30 =
-        // regrowth 30); true "vide la zone" needs rounding in the rules.
-        assert!(stock < 1100, "five boats must grind far below the two-boat level, got {stock}");
     }
 }

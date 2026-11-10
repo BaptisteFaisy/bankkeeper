@@ -243,13 +243,8 @@ fn landing_view(game: &Game, landing: &Landing) -> Value {
         "total": total,
         "buyer": buyer,
         "start": gold_pieces(game.config.clock_start(species) as i64),
-        "mesh": mesh_id(boat_mesh(game, landing.boat)),
+        "mesh": mesh_id(landing.mesh),
     })
-}
-
-/// Net of a hull, large when the hull is gone (sold or seized).
-fn boat_mesh(game: &Game, boat_id: u64) -> Mesh {
-    game.port.boats.iter().find(|boat| boat.id == boat_id).map(|boat| boat.mesh).unwrap_or(Mesh::Large)
 }
 
 /// Auction panel: no live lot, plus the last hammer fall and its line.
@@ -305,6 +300,7 @@ pub fn view_state(game: &Game) -> Value {
         "seed": game.port.seed.to_string(),
         "playerGold": gold_pieces(game.port.gold[ActorId::You.idx()]),
         "netWorth": gold_pieces(net_worth(game, ActorId::You)),
+        "licencePrice": gold_pieces(game.licence_price_now() as i64),
         "quotaLeft": quota_left(held, game.port.weekly_catch[ActorId::You.idx()], &game.config),
         "licences": held,
         "zones": Zone::all().iter().map(|zone| zone_view(game, *zone)).collect::<Vec<_>>(),
@@ -314,6 +310,9 @@ pub fn view_state(game: &Game) -> Value {
         "auction": auction_view(game),
         "landings": landing_views(game),
         "reasoning": game.last_report.as_ref().map(|report| report.lines.clone()).unwrap_or_default(),
+        "seasonOver": game.over,
+        "bilan": game.bilan,
+        "lastCouncil": game.last_council,
     })
 }
 

@@ -42,11 +42,14 @@ interface Props {
   run: JudgeRun | null;
   playerView: ZoneView[];
   live: StockPoint | null;
+  // Live harbour seed: the input prefills with it, not an opaque word.
+  harbourSeed?: string;
   onRun: (days: number, seed: string) => void;
 }
 
 const RUN_KEY = 'tidewater-judges-run-v1';
 const SEED_KEY = 'tidewater-judges-seed-v1';
+const LEGACY_DEFAULT_SEED = 'judges-1';
 
 export function loadJudgeRun(): JudgeRun | null {
   try {
@@ -67,12 +70,19 @@ export function saveJudgeRun(run: JudgeRun | null): void {
   }
 }
 
-function loadSeed(): string {
+function loadSeed(harbourSeed: string | undefined): string {
+  let stored: string | null = null;
   try {
-    return localStorage.getItem(SEED_KEY) ?? 'judges-1';
+    stored = localStorage.getItem(SEED_KEY);
   } catch {
-    return 'judges-1';
+    stored = null;
   }
+  // A stored custom seed wins; the legacy opaque default yields to
+  // the live harbour seed whenever one is known.
+  if (stored !== null && stored !== '' && (stored !== LEGACY_DEFAULT_SEED || harbourSeed === undefined)) {
+    return stored;
+  }
+  return harbourSeed ?? LEGACY_DEFAULT_SEED;
 }
 
 function stockKeyOf(zone: string): keyof Pick<StockPoint, 'shallows' | 'greybank' | 'deeps'> {
@@ -136,8 +146,69 @@ function ActorsTable({ actors }: { actors: ActorStanding[] }) {
   );
 }
 
-export default function JudgesPanel({ running, run, playerView, live, onRun }: Props) {
-  const [seed, setSeed] = useState(loadSeed);
+function SeedRow({ seed, running, harbourSeed, onSeed, onRun }: {
+  seed: string;
+  running: boolean;
+  harbourSeed: string | undefined;
+  onSeed: (value: string) => void;
+  onRun: (days: number, seed: string) => void;
+}) {
+  function start(days: number): void {
+    const clean = seed.trim() === '' ? (harbourSeed ?? LEGACY_DEFAULT_SEED) : seed.trim();
+    try {
+      localStorage.setItem(SEED_KEY, clean);
+    } catch {
+      // Non-critical: the seed input just resets on reload.
+    }
+    onRun(days, clean);
+  }
+  return (
+    <div className="run-row">
+      <label>
+        Seed
+        <input value={seed} onChange={(e) => onSeed(e.target.value)} maxLength={64} data-testid="judges-seed" />
+      </label>
+      <button onClick={() => start(7)} disabled={running} type="button" data-testid="ff-7">
+        {running ? 'Simulating…' : 'Fast-forward 7 days'}
+      </button>
+      <button onClick={() => start(28)} disabled={running} type="button" data-testid="ff-28">
+        {running ? 'Simulating…' : 'Fast-forward 28 days'}
+      </button>
+    </div>
+  );
+}
+
+function RunSummary({ shown }: { shown: JudgeRun }) {
+  return (
+    <>
+      <p className="muted" data-testid="judges-summary">
+        Seed {shown.seed} · {shown.days} days · {shown.events.length} event(s)
+      </p>
+      <p className="muted" data-testid="judges-signature">
+        Deterministic replay signature: {shown.hash}
+      </p>
+    </>
+  );
+}
+
+function RunCurves({ shown, live }: { shown: JudgeRun; live: StockPoint | null }) {
+  return (
+    <>
+      <h4>Run curves</h4>
+      <Chart history={shown.history} events={shown.events} live={live} />
+      <p className="muted" data-testid="judges-gold">
+        Live gold in port: {fmtGold(shown.goldTotal)} · outside in: {fmtGold(shown.outsideIn)} · outside out: {fmtGold(shown.outsideOut)} ·
+        net {fmtGold(shown.outsideIn - shown.outsideOut)}
+      </p>
+      <h4>Live standings</h4>
+      <ActorsTable actors={shown.actors} />
+    </>
+  );
+}
+
+export default function JudgesPanel({ running, run, playerView, live, harbourSeed, onRun }: Props) {
+  const [seed, setSeed] = useState(() => loadSeed(harbourSeed));
+  const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState<JudgeRun | null>(loadJudgeRun);
 
   useEffect(() => {
@@ -147,15 +218,11 @@ export default function JudgesPanel({ running, run, playerView, live, onRun }: P
     }
   }, [run]);
 
-  function start(days: number): void {
-    const clean = seed.trim() === '' ? 'judges-1' : seed.trim();
-    try {
-      localStorage.setItem(SEED_KEY, clean);
-    } catch {
-      // Non-critical: the seed input just resets on reload.
-    }
-    onRun(days, clean);
-  }
+  // The harbour seed arrives after first paint; follow it until the
+  // player types their own.
+  useEffect(() => {
+    if (!dirty && harbourSeed !== undefined) setSeed(loadSeed(harbourSeed));
+  }, [harbourSeed, dirty]);
 
   const shown = run ?? saved;
   const last = shown !== null && shown.history.length > 0 ? shown.history[shown.history.length - 1] : null;
@@ -163,36 +230,12 @@ export default function JudgesPanel({ running, run, playerView, live, onRun }: P
   return (
     <div className="judges">
       <h3 className="judges-title">Judges bench</h3>
-      <div className="run-row">
-        <label>
-          Seed
-          <input value={seed} onChange={(e) => setSeed(e.target.value)} maxLength={64} data-testid="judges-seed" />
-        </label>
-        <button onClick={() => start(7)} disabled={running} type="button" data-testid="ff-7">
-          {running ? 'Simulating…' : 'Fast-forward 7 days'}
-        </button>
-        <button onClick={() => start(28)} disabled={running} type="button" data-testid="ff-28">
-          {running ? 'Simulating…' : 'Fast-forward 28 days'}
-        </button>
-      </div>
-      {shown && (
-        <p className="muted" data-testid="judges-summary">
-          Seed {shown.seed} · {shown.days} days · hash {shown.hash.slice(0, 12)} · {shown.events.length} event(s)
-        </p>
-      )}
+      <SeedRow seed={seed} running={running} harbourSeed={harbourSeed} onSeed={(value) => { setDirty(true); setSeed(value); }} onRun={onRun} />
+      {shown !== null && <RunSummary shown={shown} />}
       {shown === null ? (
         <p className="muted">No simulation yet. Judges run the harbour forward to audit the shared stock.</p>
       ) : (
-        <>
-          <h4>Run curves</h4>
-          <Chart history={shown.history} events={shown.events} live={live} />
-          <p className="muted" data-testid="judges-gold">
-            Live gold in port: {fmtGold(shown.goldTotal)} · outside in: {fmtGold(shown.outsideIn)} · outside out: {fmtGold(shown.outsideOut)} ·
-            net {fmtGold(shown.outsideIn - shown.outsideOut)}
-          </p>
-          <h4>Live standings</h4>
-          <ActorsTable actors={shown.actors} />
-        </>
+        <RunCurves shown={shown} live={live} />
       )}
       {playerView.length > 0 && <TruthTable playerView={playerView} last={live ?? last} />}
     </div>
