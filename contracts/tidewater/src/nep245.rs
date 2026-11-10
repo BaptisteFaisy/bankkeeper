@@ -176,8 +176,15 @@ impl Tidewater {
         require!(approval.is_none(), "E_APPROVALS_UNSUPPORTED");
     }
 
+    /// A JSON string literal for the memo, or `null`. `serde_json` does the
+    /// escaping: a memo holding a quote, a backslash or a newline stays inside
+    /// one well-formed JSON value, so it can no longer break the event or forge
+    /// a second NEP-297 line.
     fn memo_json(memo: &Option<String>) -> String {
-        memo.as_ref().map(|m| format!("\"{}\"", m)).unwrap_or("null".to_string())
+        match memo {
+            Some(m) => near_sdk::serde_json::to_string(m).expect("a string serialises"),
+            None => "null".to_string(),
+        }
     }
 
     /// A JSON array of strings. NEP-245 indexes `token_ids` and `amounts` in
