@@ -7,6 +7,11 @@
 //! section 7). Buyer limits and trip prices come straight from the rules at
 //! the auction; townsfolk spend their wages in the evening drain.
 
+use crate::reading::{
+    best_captain_yesterday, best_zone_yesterday, untried_zone, TRIES_EVERY, TRY_DAY,
+    UNFISHED_DAYS,
+};
+use crate::seed::draw_below;
 use crate::{fmt_gold, fmt_tenths, Game, SEIZED_BOAT_PRICE};
 use rules::auction;
 use rules::debt::{apply_payment, desperate_for_cash, weekly_due, Payment};
@@ -115,26 +120,6 @@ fn hale_plan(game: &Game) -> (Option<Zone>, Mesh, String) {
     }
 }
 
-/// Best zone by yesterday's port catch per trip (canonical order wins ties).
-fn best_zone_yesterday(game: &Game) -> Option<Zone> {
-    let yesterday = game.history.last()?;
-    let mut best: Option<(Zone, u64)> = None;
-    for zone in Zone::all() {
-        if game.closed[zone.idx()] {
-            continue;
-        }
-        let trips = yesterday.trips[zone.idx()];
-        if trips == 0 {
-            continue;
-        }
-        let cpt = yesterday.crates[zone.idx()].saturating_mul(10) / trips;
-        if best.map(|(_, top)| cpt > top).unwrap_or(true) {
-            best = Some((zone, cpt));
-        }
-    }
-    best.map(|(zone, _)| zone)
-}
-
 /// Brandt fishes the best zone yesterday, every boat. Short of the next loan
 /// instalment, the whole fleet goes out on small mesh (TW-C3-04).
 fn brandt_plan(game: &Game) -> (Option<Zone>, Mesh, String) {
@@ -176,29 +161,19 @@ fn brandt_plan(game: &Game) -> (Option<Zone>, Mesh, String) {
     )
 }
 
-/// Best gold-per-boat captain yesterday (canonical order wins ties).
-fn best_captain_yesterday(game: &Game) -> Option<ActorId> {
-    let yesterday = game.history.last()?;
-    let mut best: Option<(ActorId, i64, u64)> = None;
-    for captain in ActorId::captains() {
-        let boats = yesterday.boats_fished[captain.idx()];
-        if boats == 0 {
-            continue;
-        }
-        let earned = yesterday.gold_earned[captain.idx()];
-        let better = best
-            .map(|(_, top_earned, top_boats)| earned * top_boats as i64 > top_earned * boats as i64)
-            .unwrap_or(true);
-        if better {
-            best = Some((captain, earned, boats));
-        }
-    }
-    best.map(|(captain, _, _)| captain)
-}
-
 /// Okoro copies yesterday's best gold-per-boat captain, zone and mesh.
 fn okoro_plan(game: &Game) -> (Option<Zone>, Mesh, String) {
     let boats = game.boats_of(ActorId::Okoro).len() as u64;
+    if draw_below(game.port.seed, game.port.day, TRY_DAY, 0, TRIES_EVERY) == 0 {
+        if let Some(zone) = untried_zone(game) {
+            let weeks = UNFISHED_DAYS / game.config.days_per_week.max(1) as usize;
+            return (
+                Some(zone),
+                Mesh::Large,
+                format!("Okoro tries {}: nobody has fished it for {weeks} weeks.", zone.name()),
+            );
+        }
+    }
     let Some(best) = best_captain_yesterday(game) else {
         let zone = fallback_zone(game);
         let name = zone.map(|zone| zone.name()).unwrap_or("nowhere");
@@ -406,13 +381,39 @@ mod tests {
         assert!(line.contains("small mesh"), "{line}");
     }
 
+    /// First day where the follower's seeded draw says "copy today".
+    fn copy_day(seed: u64) -> u64 {
+        (0..64)
+            .find(|day| draw_below(seed, *day, TRY_DAY, 0, TRIES_EVERY) != 0)
+            .expect("some day is a copying day")
+    }
+
+    /// First day where the follower's seeded draw says "try somewhere new".
+    fn try_day(seed: u64) -> u64 {
+        (0..64)
+            .find(|day| draw_below(seed, *day, TRY_DAY, 0, TRIES_EVERY) == 0)
+            .expect("one day in five is a trying day")
+    }
+
     #[test]
     fn okoro_copies_the_best_gold_per_boat() {
         let mut game = seed_game(3);
+        game.port.day = copy_day(3);
         fished_yesterday(&mut game, ActorId::Brandt, Zone::Deeps, 40, 4);
         let (zone, _, line) = okoro_plan(&game);
         assert_eq!(zone, Some(Zone::Deeps));
         assert!(line.contains("copies Brandt"), "{line}");
+    }
+
+    #[test]
+    fn okoro_tries_a_ground_nobody_fishes() {
+        let mut game = seed_game(3);
+        game.port.day = try_day(3);
+        fished_yesterday(&mut game, ActorId::Brandt, Zone::Greybank, 40, 4);
+        let (zone, mesh, line) = okoro_plan(&game);
+        assert!(zone.is_some_and(|zone| zone != Zone::Greybank), "{zone:?} {line}");
+        assert_eq!(mesh, Mesh::Large, "a try is never on small mesh");
+        assert!(line.contains("nobody has fished it"), "{line}");
     }
 
     #[test]
