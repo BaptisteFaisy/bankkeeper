@@ -35,14 +35,6 @@ function say(text) {
   log.push(text.replace(/\x1b\[[0-9;]*m/g, ""));
 }
 
-/** One printed step: action, caller, transaction hash, then what was read. */
-function step(action, caller, result, readBack) {
-  const hash = short(result?.txHash);
-  if (result?.txHash) hashes.push(`${action} · ${short(result.txHash)}`);
-  say(`  ${action.padEnd(26)} ${caller.padEnd(34)} ${hash.padEnd(16)} → ${readBack}`);
-}
-
-/** U128 arrives as a string, u64 as a number, a struct as an object: one reader. */
 function num(value) {
   if (value === null || value === undefined) return 0;
   if (typeof value === "object") return Number(value[0] ?? value["0"] ?? 0);
