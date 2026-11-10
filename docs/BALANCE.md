@@ -109,9 +109,11 @@ graine 1 :
 
 ## Verdict 1 — la mer tient-elle ? **Non.**
 
-Sous toute politique active, les trois bancs finissent entre **6 % et 18 % de
-leur capacité** (Greybank 469 en `greedy`, 732 en `steward` pour 5 000 au
-départ ; Deeps 318–365 pour 2 000). La pente ne s'inverse pas pendant la
+Sous toute politique active, les deux bancs réellement exploités finissent entre
+**9 % et 18 % de leur capacité** : Greybank 469 en `greedy`, 732 en `steward`
+pour 5 000 au départ (9,4 % et 14,6 %) ; Deeps 318–365 pour 2 000 (16–18 %).
+Les Shallows, moins pêchés, s'en sortent mieux mais restent à 27 % (`greedy`) et
+48 % (`steward`) de leurs 3 000 caisses. La pente ne s'inverse pas pendant la
 campagne : entre la saison 2 et la saison 3, `greedy` reperd 28 % de Greybank et
 `steward` 32 %. Aucun plancher n'est atteint — le stock continue de descendre
 tant que quelqu'un pêche.
