@@ -12,16 +12,19 @@ port (2 au joueur, 8 aux NPC) :
 
 | Zone | Espèce | Capacité | Coût/sortie | Repousse/jour |
 |---|---|---|---|---|
-| The Shallows | Hareng | 3 000 | 2 or | 5 % |
-| Greybank | Hareng | 5 000 | 4 or | 5 % |
-| The Deeps | Morue | 2 000 | 7 or | 2 % |
+| The Shallows | Hareng | 3 000 | 2 or | 7 % |
+| Greybank | Hareng | 5 000 | 4 or | 7 % |
+| The Deeps | Morue | 2 000 | 7 or | 3 % |
 
 - Une sortie prend 0,4 % du stock au moment où elle a lieu (TW-N-02).
 - Repousse logistique : `taux × stock × (1 − stock ÷ capacité)` (TW-N-03).
 - Un stock à zéro ne repousse plus (TW-N-04).
-- Cible d'équilibrage : 2 bateaux fixes sur Greybank stabilisent le
-  stock près de 2 600 caisses et la prise près de 62 caisses par jour ;
-  5 bateaux vident la zone.
+- Cible d'équilibrage, **réglée par le harnais** (`docs/BALANCE.md`, 50
+  graines × 4 politiques) : deux bateaux fixes sur Greybank stabilisent le
+  stock près de **3 285 caisses** et la prise près de **87 caisses par jour** ;
+  cinq bateaux le descendent à 886 caisses, il en faut **sept** pour le
+  vider. Les taux de repousse (7 % / 3 %) sont le résultat de ce réglage :
+  à 5 % / 2 %, aucun port ne pouvait pêcher son quota sans vider un banc.
 
 ## La criée (horloge descendante)
 

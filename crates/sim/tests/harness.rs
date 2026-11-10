@@ -5,7 +5,7 @@
 //! moves the player's boats, and a hostile seed does not panic the grid.
 
 use rules::state::{ActorId, Mesh, Zone};
-use sim::harness::{percentile, run_one, summarise, RunResult, Stats};
+use sim::harness::{percentile, run_harness, run_one, summarise, Report, RunResult, Stats};
 use sim::policies::{self, Policy};
 use sim::seed_game;
 
@@ -50,6 +50,15 @@ fn aggregates_count_bankruptcies_per_policy() {
         boats: 2,
         stocks: [1_000, 500, 200],
         season_stocks: vec![[1_000, 500, 200]],
+        min_stocks: [900, 480, 190],
+        season_debts: vec![120],
+        sea_debt: 120,
+        fund_balance: 4_000,
+        npc_net: 90_000,
+        motions_carried: 1,
+        crate_price: 380,
+        price_avg: 390,
+        season_prices: vec![390],
         bankruptcies: u64::from(bankrupt),
         first_bankruptcy_day: bankrupt.then_some(13),
         days_played: 84,
@@ -63,6 +72,14 @@ fn aggregates_count_bankruptcies_per_policy() {
     assert_eq!(summary.median_first_bankruptcy_day, Some(13));
     assert_eq!(summary.stocks["greybank"].median, 500);
     assert_eq!(summary.stocks["deeps"].min, 200);
+    assert_eq!(summary.sea_debt.median, 120);
+    assert_eq!(summary.fund_balance.median, 4_000);
+    assert_eq!(summary.npc_net.median, 90_000);
+    assert_eq!(summary.motions_median, 1);
+    assert_eq!(summary.price_avg.median, 390);
+    // 480 of 5 000 is under the 10% collapse line: every run collapsed.
+    assert_eq!(summary.collapse_runs, 3);
+    assert_eq!(summary.collapse_share_bps, 10_000);
 }
 
 #[test]
@@ -121,4 +138,105 @@ fn degenerate_seeds_do_not_panic() {
     let hostile = run_one(u64::MAX, Policy::Mixed, 1);
     assert!(hostile.days_played >= 28);
     assert!(!hostile.history_hash.is_empty());
+}
+/// The reference game: the committed 50-seed x 4-policy grid the balance
+/// docs quote. It is the yardstick every drift is measured against.
+fn reference() -> Report {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../docs/balance-50.json");
+    let text = std::fs::read_to_string(&path).expect("the reference game is committed");
+    serde_json::from_str(&text).expect("the reference game parses")
+}
+
+/// Tolerances, in bps of the reference figure. A drift beyond them means the
+/// balance moved: the game changed and the reference was not regenerated.
+const NET_WORTH_TOLERANCE_BPS: i64 = 1_000;
+const SEA_DEBT_TOLERANCE_BPS: i64 = 2_000;
+const STOCK_TOLERANCE_BPS: i64 = 2_000;
+const FUND_TOLERANCE_BPS: i64 = 3_000;
+const COLLAPSE_TOLERANCE_BPS: u64 = 1_500;
+
+/// Two figures are close enough when they differ by less than `tolerance`
+/// bps of the reference (a floor of one keeps a zero reference honest).
+fn close(label: &str, metric: &str, now: i64, was: i64, tolerance_bps: i64) {
+    let span = was.abs().max(1);
+    let drift = (now - was).abs().saturating_mul(10_000);
+    assert!(
+        drift <= span.saturating_mul(tolerance_bps),
+        "{label} {metric}: {now} against the reference {was} (tolerance {tolerance_bps} bps)"
+    );
+}
+
+#[test]
+fn the_balance_does_not_drift_from_the_reference_game() {
+    let reference = reference();
+    let fresh = run_harness(50, 1, 3, &Policy::all());
+    for policy in Policy::all() {
+        let name = policy.name();
+        let was = reference.aggregates.get(name).expect("a reference policy");
+        let now = fresh.aggregates.get(name).expect("a fresh policy");
+        close(name, "net worth", now.net_worth.median, was.net_worth.median, NET_WORTH_TOLERANCE_BPS);
+        close(name, "sea debt", now.sea_debt.median, was.sea_debt.median, SEA_DEBT_TOLERANCE_BPS);
+        close(name, "port fund", now.fund_balance.median, was.fund_balance.median, FUND_TOLERANCE_BPS);
+        close(name, "NPC net worth", now.npc_net.median, was.npc_net.median, NET_WORTH_TOLERANCE_BPS);
+        for zone in ["shallows", "greybank", "deeps"] {
+            close(
+                name,
+                zone,
+                now.stocks[zone].median,
+                was.stocks[zone].median,
+                STOCK_TOLERANCE_BPS,
+            );
+        }
+        assert!(
+            now.collapse_share_bps.abs_diff(was.collapse_share_bps) <= COLLAPSE_TOLERANCE_BPS,
+            "{name} collapse: {} bps against the reference {} bps",
+            now.collapse_share_bps,
+            was.collapse_share_bps
+        );
+    }
+}
+
+#[test]
+fn the_balance_keeps_its_verdicts() {
+    let report = run_harness(50, 1, 3, &Policy::all());
+    let greedy = &report.aggregates["greedy"];
+    let steward = &report.aggregates["steward"];
+    let passive = &report.aggregates["passive"];
+
+    // No strategy crushes another: greed pays better, but inside a quarter.
+    let gap = greedy.net_worth.median - steward.net_worth.median;
+    assert!(gap > 0, "greed must still pay better than caution");
+    assert!(
+        gap * 100 <= 25 * steward.net_worth.median,
+        "greed must not crush caution: {gap} centigold ahead"
+    );
+
+    // Overfishing costs: twice the debt, a lower bank, more collapses.
+    assert!(
+        greedy.sea_debt.median >= 2 * steward.sea_debt.median,
+        "greed must owe the sea at least twice what caution owes"
+    );
+    assert!(
+        greedy.stocks["greybank"].median < steward.stocks["greybank"].median,
+        "greed must leave a poorer bank than caution"
+    );
+    assert!(
+        greedy.collapse_share_bps > steward.collapse_share_bps,
+        "greed must collapse a bank more often than caution"
+    );
+
+    // Caution leaves a living port: a quarter of the capacity at least.
+    assert!(
+        steward.stocks["greybank"].median * 4 >= 5_000,
+        "caution must leave Greybank above a quarter of its capacity"
+    );
+    // And the sea is never left untouched either.
+    assert!(
+        passive.stocks["greybank"].median * 2 < 5_000,
+        "an idle port still draws the bank down"
+    );
+
+    // Inaction still loses: the port's charges do not wait for a sailor.
+    assert_eq!(passive.bankrupt_share_bps, 10_000);
 }

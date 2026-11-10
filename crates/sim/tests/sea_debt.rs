@@ -40,10 +40,11 @@ fn ceiling(game: &Game) -> u64 {
 /// (a) A season that stays under the sustainable catch owes the sea nothing.
 #[test]
 fn a_season_under_the_ceiling_owes_nothing() {
-    // Greybank at 2,500 of 5,000 gives back 62 crates a day; 60 taken a day
-    // over a 28-day season is 1,680 against a budget of 1,736.
+    // Greybank at 2,500 of 5,000 gives back 87 crates a day at the tuned
+    // 7% regrowth; 60 taken a day over a 28-day season is 1,680 against a
+    // budget of 2,436.
     let mut game = harbour(2_500);
-    assert_eq!(ceiling(&game), 62);
+    assert_eq!(ceiling(&game), 87);
     for _ in 0..season_days(&game) {
         day(&mut game, Zone::Greybank, 60);
     }
@@ -58,8 +59,8 @@ fn a_season_under_the_ceiling_owes_nothing() {
 /// (b) A season over the ceiling owes exactly the surplus, crate for crate.
 #[test]
 fn a_season_over_the_ceiling_owes_the_surplus() {
-    // 100 taken a day for 28 days: 2,800 against the 1,736 the zone can give
-    // back, so 1,064 crates of debt — and no more, no less.
+    // 100 taken a day for 28 days: 2,800 against the 2,436 the zone can give
+    // back, so 364 crates of debt — and no more, no less.
     let mut game = harbour(2_500);
     for _ in 0..season_days(&game) {
         day(&mut game, Zone::Greybank, 100);
@@ -68,17 +69,17 @@ fn a_season_over_the_ceiling_owes_the_surplus() {
     let budget = ceiling(&game) * season_days(&game);
     assert_eq!(bill.taken[Zone::Greybank.idx()], 2_800);
     assert_eq!(bill.zones[Zone::Greybank.idx()], 2_800 - budget);
-    assert_eq!(bill.total, 1_064);
-    assert_eq!(bill.total, season_debt(2_800, 62, 28));
+    assert_eq!(bill.total, 364);
+    assert_eq!(bill.total, season_debt(2_800, 87, 28));
 
     let carried = accrue(&mut game).carried;
-    assert_eq!(carried, 1_064);
-    assert_eq!(game.sea_debt, 1_064, "the season's bill is written down once");
+    assert_eq!(carried, 364);
+    assert_eq!(game.sea_debt, 364, "the season's bill is written down once");
 
     // Accruing twice must not double-count: the second reading is the same
     // bill, so the liability stays where the first one put it.
     let again = accrue(&mut game);
-    assert_eq!(again.total, 1_064);
+    assert_eq!(again.total, 364);
 }
 
 /// A second season adds to the first: the campaign accumulates, it never
@@ -89,9 +90,9 @@ fn two_seasons_accumulate() {
     for _ in 0..season_days(&game) {
         day(&mut game, Zone::Greybank, 100);
     }
-    assert_eq!(accrue(&mut game).carried, 1_064);
-    assert_eq!(accrue(&mut game).carried, 2_128);
-    assert_eq!(game.sea_debt, 2_128);
+    assert_eq!(accrue(&mut game).carried, 364);
+    assert_eq!(accrue(&mut game).carried, 728);
+    assert_eq!(game.sea_debt, 728);
 }
 
 /// (c) The debt is a campaign liability: `open_next_season` carries it, the
@@ -122,18 +123,18 @@ fn fallow_pays_with_the_regrowth_it_buys() {
     game.sea_debt = 5_000;
     let rate = game.config.regrow_rate(Config::zone_species(Zone::Greybank));
 
-    // One week of rest on Greybank: 62 crates a day x 7 = 434.
+    // One week of rest on Greybank: 87 crates a day x 7 = 609.
     let expected = fallow_credit(2_500, 5_000, rate, game.config.days_per_week);
-    assert_eq!(expected, 434);
+    assert_eq!(expected, 609);
     let paid = game.pay_in_fallow(Zone::Greybank, 1).expect("fallow");
-    assert_eq!(paid, 434);
-    assert_eq!(game.sea_debt, 5_000 - 434);
+    assert_eq!(paid, 609);
+    assert_eq!(game.sea_debt, 5_000 - 609);
     assert!(game.closed[Zone::Greybank.idx()], "the zone is shut");
     assert_eq!(game.fallow_left(Zone::Greybank), 1);
 
-    // Four weeks: 1,736 crates, and the counter stacks.
+    // Four weeks: 2,436 crates, and the counter stacks.
     let paid = game.pay_in_fallow(Zone::Greybank, 4).expect("fallow");
-    assert_eq!(paid, 434 * 4);
+    assert_eq!(paid, 609 * 4);
     assert_eq!(game.fallow_left(Zone::Greybank), 5);
 
     // A debt smaller than the credit is paid off, not driven negative.

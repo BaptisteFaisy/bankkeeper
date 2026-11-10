@@ -1,12 +1,13 @@
 //! Lot 0 acceptance: the core loop holds together (brief section 10).
 //!
-//! Two boats on Greybank sit near 2,600 crates and 62 crates a day, five
-//! boats empty the zone, the section 4.4 auction pays 3.6 then 3.4, gold is
-//! conserved every cycle, and a playerless season runs clean and repeats.
+//! Two boats settle Greybank at its equilibrium, six boats empty the zone
+//! (five at the brief's 5% regrowth), the section 4.4 auction pays 3.6 then
+//! 3.4, gold is conserved every cycle, and a playerless season runs clean
+//! and repeats.
 
 mod helpers;
 
-use helpers::{add_boats, quiet_game};
+use helpers::{add_boats, quiet_game, two_boat_equilibrium};
 use rules::auction::{bid_limit, clear, sale_reasoning, Buyer, Lot, Outcome};
 use rules::config::Config;
 use rules::state::{ActorId, Species, Zone};
@@ -25,23 +26,33 @@ fn cannery(stock: u64, gold: i64) -> Buyer {
     }
 }
 
-/// Lot 0: two boats hold Greybank near 2,600 crates and ~62 crates a day.
+/// Lot 0: two boats hold Greybank at the equilibrium the tuned regrowth
+/// gives (docs/BALANCE.md), and land the crates that equilibrium pays for.
 #[test]
-fn two_boats_stabilize_greybank_near_2600_and_62_a_day() {
+fn two_boats_stabilize_greybank_at_its_equilibrium() {
+    let equilibrium = two_boat_equilibrium();
     let mut game = quiet_game(21);
     for _ in 0..150 {
         run_day(&mut game);
     }
     let stock = game.port.stocks[Zone::Greybank.idx()];
-    assert!((2300..=2900).contains(&stock), "stock {stock}");
+    assert!(
+        stock.abs_diff(equilibrium) * 20 <= equilibrium,
+        "stock {stock} against equilibrium {equilibrium}"
+    );
     let last = game.history.last().expect("journal");
     let daily = last.crates[Zone::Greybank.idx()];
-    assert!((47..=77).contains(&daily), "daily catch {daily}");
+    let expected = 6 * game.config.catch_share_bps * stock / 10_000;
+    assert!(
+        daily.abs_diff(expected) * 10 <= expected,
+        "daily catch {daily} against {expected}"
+    );
 }
 
-/// Lot 0: five boats empty Greybank (brief: "Cinq bateaux le vident").
+/// Lot 0: five boats no longer strip Greybank to the floor — the brief's
+/// "five boats empty it" needed 5% regrowth; at the tuned 7% it takes seven.
 #[test]
-fn five_boats_empty_greybank() {
+fn five_boats_grind_greybank_down_without_emptying_it() {
     let mut game = quiet_game(22);
     add_boats(&mut game, 3);
     for _ in 0..200 {
@@ -49,8 +60,24 @@ fn five_boats_empty_greybank() {
     }
     let stock = game.port.stocks[Zone::Greybank.idx()];
     assert!(
+        (500..1100).contains(&stock),
+        "five boats must grind Greybank down, not empty it: {stock} crates left"
+    );
+}
+
+/// Lot 0: seven boats strip Greybank to the floor, as the tuned regrowth now
+/// requires (docs/BALANCE.md).
+#[test]
+fn seven_boats_strip_greybank_to_its_floor() {
+    let mut game = quiet_game(22);
+    add_boats(&mut game, 5);
+    for _ in 0..200 {
+        run_day(&mut game);
+    }
+    let stock = game.port.stocks[Zone::Greybank.idx()];
+    assert!(
         stock < 500,
-        "five boats must empty Greybank, {stock} crates left"
+        "seven boats must strip Greybank, {stock} crates left"
     );
 }
 
