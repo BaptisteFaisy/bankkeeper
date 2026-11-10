@@ -2,6 +2,7 @@
 // compose into one GameState object via useGame.
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, getGraph, getJudges, getState } from './api';
+import { autosave } from './boot';
 import type { FFResponse, GraphLive, JudgesLive, PortState, ToastMsg } from './types';
 import { EMPTY_AUCTION } from './types';
 import { clearSession, loadFf, loadSession, saveFf, saveSession } from './session';
@@ -146,6 +147,7 @@ export function usePortPoll(): { port: PortState | null; offline: boolean; refre
       const state = await getState();
       setPort({ ...state, auction: state.auction ?? EMPTY_AUCTION });
       setOffline(false);
+      void autosave(state);
     } catch {
       setOffline(true);
     }

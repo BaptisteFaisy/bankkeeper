@@ -201,6 +201,28 @@ fn fastforward_reply(game: &Game, days: u64, seed: Option<u64>) -> Value {
     })
 }
 
+/// `export`: the whole harbour as JSON, for the browser to keep.
+fn export(game: &mut Game) -> Value {
+    let shape = SHAPE.with(|shape| *shape.borrow());
+    json!({ "ok": true, "seed": game.port.seed, "weeks": game.config.weeks_per_season, "game": game, "storedSeed": shape.0 })
+}
+
+/// `import`: put a saved harbour back in memory, refusing anything unreadable.
+fn import(body: &Value) -> Value {
+    let Some(raw) = body.get("game") else {
+        return json!({ "error": "E_IMPORT" });
+    };
+    let Ok(game) = serde_json::from_value::<Game>(raw.clone()) else {
+        return json!({ "error": "E_IMPORT" });
+    };
+    let seed = game.port.seed;
+    let weeks = game.config.weeks_per_season;
+    SHAPE.with(|shape| *shape.borrow_mut() = (seed, weeks));
+    let state = views::view_state(&game);
+    GAME.with(|slot| *slot.borrow_mut() = Some(game));
+    json!({ "ok": true, "seed": seed, "weeks": weeks, "state": state })
+}
+
 /// Route one request. `body` is the relay payload, `op` the endpoint name.
 fn route(op: &str, body: &Value) -> Value {
     match op {
@@ -209,6 +231,8 @@ fn route(op: &str, body: &Value) -> Value {
         "state" => with_game(|game| views::view_state(game)),
         "graph" => with_game(|game| views::view_graph(game)),
         "judges" => with_game(|game| views::view_judges(game)),
+        "export" => with_game(export),
+        "import" => import(body),
         "init" => reset(
             number(body, "seed").unwrap_or(DEFAULT_SEED),
             number(body, "weeks").unwrap_or(DEFAULT_WEEKS),
@@ -312,6 +336,27 @@ mod tests {
     fn unknown_endpoints_are_refused_not_guessed() {
         assert_eq!(call(r#"{"op":"nope"}"#)["error"], "E_UNKNOWN_ENDPOINT");
         assert_eq!(call(r#"{"op":"fastforward","body":{"days":9}}"#)["error"], "E_BAD_FASTFORWARD");
+    }
+
+    #[test]
+    fn a_saved_harbour_comes_back_the_same() {
+        call(r#"{"op":"init","body":{"seed":7,"weeks":2}}"#);
+        for _ in 0..3 {
+            call(r#"{"op":"day"}"#);
+        }
+        let saved = call(r#"{"op":"export"}"#);
+        let day = saved["state"].as_object().is_none();
+        assert!(day, "export carries the game, not a view");
+        call(r#"{"op":"init","body":{"seed":11,"weeks":4}}"#);
+        let moved = call(r#"{"op":"state"}"#);
+        assert_eq!(moved["seed"], "11");
+        let restored = {
+            let request = serde_json::json!({ "op": "import", "body": { "game": saved["game"] } });
+            serde_json::from_str::<Value>(&dispatch(&request.to_string())).expect("reply")
+        };
+        assert_eq!(restored["seed"], 7);
+        let after = call(r#"{"op":"state"}"#);
+        assert_eq!(after["seasonDays"], 14, "the saved fortnight came back");
     }
 
     #[test]
