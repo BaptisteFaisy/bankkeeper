@@ -10,11 +10,11 @@ use crate::{
     GOLD_TOKEN, LICENCE_SUPPLY, SEASON_DAYS,
 };
 use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near};
 
 /// Outcome of a resolved council proposal (TW-C4-01..03).
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct CouncilOutcome {
     pub proposal_id: u64,
     pub passed: bool,

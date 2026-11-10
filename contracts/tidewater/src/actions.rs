@@ -14,11 +14,11 @@ use crate::{
     format_gold, npc_owner, Tidewater, TidewaterExt, CLOCK_MULT_BPS, COUNCIL_WEEK_START, GOLD_TOKEN,
     LICENCE_TOKEN, TRIPS_PER_DAY, UPKEEP_MILLI_PER_DAY,
 };
-use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near};
 
 /// Receipt for one landing and its instant auction (TW-N-12, TW-N-30).
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct LotReceipt {
     pub deed: String,
     pub crates: u64,
@@ -30,7 +30,8 @@ pub struct LotReceipt {
 }
 
 /// Outcome of one harbour day (TW-N-03, TW-C3-01, TW-N-50..51).
-#[derive(Clone, Serialize, Deserialize)]
+#[near(serializers = [json])]
+#[derive(Clone)]
 pub struct DayOutcome {
     pub day: u64,
     pub regrowth: Vec<u64>,
