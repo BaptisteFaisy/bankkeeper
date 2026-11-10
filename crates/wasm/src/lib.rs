@@ -12,7 +12,8 @@
 use std::cell::RefCell;
 
 use serde_json::{json, Value};
-use sim::{cycle::try_day, fastforward, relay, seed_game, views, Game};
+use sim::charter::Charter;
+use sim::{cycle::try_day, fastforward, relay, seed_game, seed_game_with, views, Game};
 
 thread_local! {
     static GAME: RefCell<Option<Game>> = RefCell::new(None);
@@ -46,9 +47,20 @@ fn with_game<T>(body: impl FnOnce(&mut Game) -> T) -> T {
     })
 }
 
-/// Seed a new harbour and return its first state.
-fn reset(seed: u64, weeks: u64) -> Value {
-    let mut fresh = seed_game(seed);
+/// The charter a request carries, when it writes at least one rule.
+fn charter_of(body: &Value) -> Option<Charter> {
+    let raw = body.get("charter")?;
+    let charter: Charter = serde_json::from_value(raw.clone()).ok()?;
+    if charter.is_empty() {
+        None
+    } else {
+        Some(charter)
+    }
+}
+
+/// Seed a new campaign under `charter` and return its first state.
+fn reset(seed: u64, weeks: u64, charter: Option<Charter>) -> Value {
+    let mut fresh = seed_game_with(seed, charter);
     fresh.config.weeks_per_season = weeks.clamp(1, 12);
     fresh.config.trips_per_boat_day = DEMO_TRIPS;
     fresh.config.levy_per_crate = DEMO_LEVY;
@@ -261,10 +273,14 @@ fn route(op: &str, body: &Value) -> Value {
         "init" => reset(
             number(body, "seed").unwrap_or(DEFAULT_SEED),
             number(body, "weeks").unwrap_or(DEFAULT_WEEKS),
+            charter_of(body),
         ),
         "reset" => {
             let (seed, weeks) = SHAPE.with(|shape| *shape.borrow());
-            reset(number(body, "seed").unwrap_or(seed), number(body, "weeks").unwrap_or(weeks))
+            // A plain reset keeps the charter the harbour is sailing under;
+            // the charter screen sends its own.
+            let charter = charter_of(body).or_else(|| with_game(|game| game.charter.clone()));
+            reset(number(body, "seed").unwrap_or(seed), number(body, "weeks").unwrap_or(weeks), charter)
         }
         "assign" => with_game(|game| assign(game, body)),
         "survey" => with_game(|game| survey(game, body)),
@@ -404,6 +420,42 @@ mod tests {
         let ended = call(r#"{"op":"lease","body":{"action":"unlease","lessor":"hale","lessee":"you"}}"#);
         assert_eq!(ended["ok"], true);
         assert_eq!(call(r#"{"op":"lease","body":{"lessor":"hale"}}"#)["error"], "E_BAD_LEASE");
+    }
+
+    #[test]
+    fn the_chronicle_survives_next_season_and_a_save() {
+        call(r#"{"op":"init","body":{"seed":7,"weeks":2}}"#);
+        for _ in 0..14 {
+            call(r#"{"op":"day"}"#);
+        }
+        let closed = call(r#"{"op":"state"}"#);
+        assert_eq!(closed["seasonOver"], true);
+        assert_eq!(closed["chronicle"].as_array().map(Vec::len), Some(1));
+        assert_eq!(closed["chronicle"][0]["season"], 1);
+        call(r#"{"op":"next-season"}"#);
+        let opened = call(r#"{"op":"state"}"#);
+        assert_eq!(opened["chronicle"].as_array().map(Vec::len), Some(1), "the port remembers");
+        let saved = call(r#"{"op":"export"}"#);
+        call(r#"{"op":"init","body":{"seed":11,"weeks":4}}"#);
+        let request = serde_json::json!({ "op": "import", "body": { "game": saved["game"] } });
+        serde_json::from_str::<Value>(&dispatch(&request.to_string())).expect("reply");
+        let back = call(r#"{"op":"state"}"#);
+        assert_eq!(back["chronicle"].as_array().map(Vec::len), Some(1), "the memory came back");
+        assert_eq!(back["chronicle"][0]["season"], 1);
+        assert_eq!(back["campaignSeasons"], 3);
+    }
+
+    #[test]
+    fn a_charter_handed_to_init_rules_the_new_campaign() {
+        let opened = call(r#"{"op":"init","body":{"seed":7,"weeks":2,"charter":{"quota_per_licence":50}}}"#);
+        assert_eq!(opened["ok"], true);
+        let state = call(r#"{"op":"state"}"#);
+        assert_eq!(state["quotaLeft"], 200, "four licences at fifty crates");
+        assert_eq!(state["charter"]["quota_per_licence"], 50);
+        let banned = call(r#"{"op":"init","body":{"seed":7,"weeks":2,"charter":{"ban_small_mesh":true}}}"#);
+        assert_eq!(banned["ok"], true);
+        let refused = call(r#"{"op":"assign","body":{"boat":0,"quay":true,"mesh":"small"}}"#);
+        assert_eq!(refused["error"], "small mesh is banned by the council");
     }
 
     #[test]

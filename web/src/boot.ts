@@ -5,6 +5,7 @@
 // Only the in-browser engine can do this; the relay mode keeps its own state.
 import { engineEnabled } from './engine';
 import { getExport, postImport, postInit } from './api';
+import { loadCharter } from './charter';
 import { loadSaved, saveGame, shapeFromUrl } from './persistence';
 import type { Shape } from './persistence';
 import type { PortState } from './types';
@@ -16,15 +17,18 @@ export async function bootHarbour(): Promise<Shape | null> {
   if (!engineEnabled()) return null;
   const fromUrl = shapeFromUrl(window.location.search);
   const saved = loadSaved();
+  // A campaign the player opens here sails under the charter this browser
+  // keeps; an imported save keeps its own (it travels inside the game JSON).
+  const charter = loadCharter();
   if (fromUrl !== null && (saved === null || saved.seed !== fromUrl.seed || saved.weeks !== fromUrl.weeks)) {
-    await postInit(fromUrl);
+    await postInit({ ...fromUrl, charter });
     return fromUrl;
   }
   if (saved !== null) {
     await postImport(saved.game);
     return { seed: saved.seed, weeks: saved.weeks };
   }
-  await postInit(DEFAULT_SHAPE);
+  await postInit({ ...DEFAULT_SHAPE, charter });
   return DEFAULT_SHAPE;
 }
 
