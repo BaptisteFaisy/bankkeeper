@@ -114,7 +114,6 @@ fn defect_02_pool_auction_breaks_the_licence_cap() {
 /// `cycle::tick` documents "landing one lot at a time changes the rhythm,
 /// never the result"; the day plan is not frozen at dawn, only the cursor is.
 #[test]
-#[ignore = "audit defect 3: day_plan is recomputed per tick from boats.len()"]
 fn defect_03_hull_bought_at_noon_fishes_finished_rounds() {
     let mut game = quiet_game(7);
     game.port.gold[ActorId::You.idx()] = 100_000;
