@@ -2,32 +2,27 @@
 // Top bar, sea chart, auction, boats, ledger and the judges drawer.
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, RefObject } from 'react';
-import type { BoatView, CouncilOutcome, DayNote, FFResponse, GraphLive, JudgesLive, Mesh, PortState, SeasonBilan, ZoneId } from './types';
-import { EMPTY_AUCTION, ZONE_LABEL, parseBilan, parseCouncilOutcome } from './types';
+import type { BoatView, CouncilOutcome, DayNote, GraphLive, JudgesLive, Mesh, PortState, SeasonBilan, ZoneId } from './types';
+import { parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
-import { doAssign, doClaim, doCouncil, doDebt, doEndDay, doFallow, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doReseed, doRunFF, doSurvey } from './actions';
+import { doAssign, doClaim, doCouncil, doDebt, doEndDay, doFallow, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doReseed, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
 import type { BootResult } from './boot';
 import type { Session } from './session';
 import type { Charter } from './charter';
-import SeaMap from './components/SeaMap';
-import AuctionPanel from './components/AuctionPanel';
-import BoatsPanel from './components/BoatsPanel';
+import Stage from './components/Stage';
 import LedgerPanel from './components/LedgerPanel';
 import HarbourPanel from './components/HarbourPanel';
 import ChainBar from './components/ChainBar';
 import ChroniclePanel from './components/ChroniclePanel';
 import CharterScreen from './components/CharterScreen';
-import { CopyLink } from './components/HeaderControls';
 import { Tutorial, useTutorial } from './components/Tutorial';
 import TopBar from './components/TopBar';
-import JudgesPanel from './components/JudgesPanel';
+import JudgeBench from './components/JudgeBench';
 import SeedOffer from './components/SeedOffer';
 import ToastStack from './components/Toasts';
-import type { JudgeRun } from './components/JudgesPanel';
-import type { StockPoint } from './components/Chart';
 import { fmtCrates, fmtGold } from './format';
 import { CHAIN_ENABLED } from './near/chain';
 
@@ -95,111 +90,6 @@ function guardedMesh(game: GameState, boat: BoatView, mesh: Mesh): void {
     return;
   }
   void doAssign(game.actions, { boat: boat.id, zone: null, net: mesh }, boat.name);
-}
-
-function ffToRun(ff: FFResponse, live: JudgesLive | null): JudgeRun {
-  const days: number[] = Array.isArray(ff.series?.days) ? ff.series.days : [];
-  const stocks: number[][] = Array.isArray(ff.series?.stocks) ? ff.series.stocks : [];
-  const prices: number[] = Array.isArray(ff.series?.herring_price) ? ff.series.herring_price : [];
-  const history: StockPoint[] = days.map((day, i) => ({
-    day,
-    shallows: stocks[i]?.[0] ?? 0,
-    greybank: stocks[i]?.[1] ?? 0,
-    deeps: stocks[i]?.[2] ?? 0,
-    herringPrice: prices[i] ?? 0,
-  }));
-  return {
-    seed: String(ff.summary?.seed ?? ''),
-    days: ff.summary?.days_run ?? 0,
-    hash: String(ff.summary?.history_hash ?? ''),
-    history,
-    events: Array.isArray(ff.journal) ? ff.journal : [],
-    actors: (live?.actors ?? []).map((a) => ({ id: a.id, name: a.name, gold: a.gold, licences: a.licences, stopped: a.stopped })),
-    goldTotal: live?.gold_total ?? 0,
-    outsideIn: live?.ext_in ?? 0,
-    outsideOut: live?.ext_out ?? 0,
-  };
-}
-
-function livePoint(graph: GraphLive | null, judges: JudgesLive | null): StockPoint | null {
-  if (graph === null || judges === null) return null;
-  if (!Array.isArray(graph.stocks) || !Array.isArray(graph.history)) return null;
-  const last = graph.history[graph.history.length - 1] as { herring_price?: unknown } | undefined;
-  const price = typeof last?.herring_price === 'number' ? (last.herring_price as number) : 0;
-  return { day: judges.day, shallows: graph.stocks[0] ?? 0, greybank: graph.stocks[1] ?? 0, deeps: graph.stocks[2] ?? 0, herringPrice: price };
-}
-
-function JudgeBench({ game, port, judges, graph }: { game: GameState; port: PortState | null; judges: JudgesLive | null; graph: GraphLive | null }) {
-  const seed = port?.seed ?? 'tidewater';
-  const seasonDays = port?.seasonDays ?? 28;
-  const run = game.ff === null ? null : ffToRun(game.ff, judges);
-  const playerView = (port?.zones ?? []).map((z) => ({ zone: ZONE_LABEL[z.id], catchPerTrip: z.catchPerTrip, trend: z.trend }));
-  return (
-    <section className="panel judges" id="judges-bench" aria-label="Judges">
-      <h2>Judges</h2>
-      <p className="muted">
-        Seed {seed}, {seasonDays} days a season: same seed, same season. <CopyLink game={game} port={port} />
-      </p>
-      <JudgesPanel
-        running={game.busy === 'ff'}
-        run={run}
-        playerView={playerView}
-        live={livePoint(graph, judges)}
-        harbourSeed={String(port?.seed ?? judges?.seed ?? 'tidewater')}
-        onRun={(days, seedText) => { void doRunFF(game.actions, days === 28 ? 28 : 7, seedText); }}
-      />
-    </section>
-  );
-}
-
-function Board({ game, port, selected, over }: { game: GameState; port: PortState | null; selected: BoatView | null; over: boolean }) {
-  function chartAssign(zone: ZoneId | null): void {
-    if (over) {
-      game.actions.pushToast('info', 'The season is over. Start a new harbour to sail again.');
-      return;
-    }
-    guardedAssign(game, selected, zone);
-  }
-  return (
-    <main className="board">
-      <section className="panel chart-panel" aria-label="Sea chart">
-        <h2>Sea chart</h2>
-        <SeaMap
-          zones={port?.zones ?? []}
-          boats={port?.boats ?? []}
-          buyers={port?.buyers ?? []}
-          captains={port?.captains ?? []}
-          selectedBoat={game.selectedBoat}
-          onPickBoat={(id) => {
-            const boat = findBoat(port, id);
-            if (boat !== null && !boat.mine) {
-              game.actions.pushToast('info', `${boat.name} sails for ${boat.captain}.`);
-              return;
-            }
-            game.setSelectedBoat(id === game.selectedBoat ? null : id);
-          }}
-          onPickZone={(zone) => chartAssign(zone)}
-          onPickQuay={() => chartAssign(null)}
-        />
-      </section>
-      <div className="side">
-        <AuctionPanel
-          auction={port?.auction ?? EMPTY_AUCTION}
-          buyers={port?.buyers ?? []}
-          landings={port?.landings ?? []}
-          dayKey={`${port?.week ?? 0}-${port?.day ?? ''}`}
-        />
-        <BoatsPanel
-          boats={port?.boats ?? []}
-          selectedBoat={game.selectedBoat}
-          busy={game.busy !== null || over}
-          onSelectBoat={game.setSelectedBoat}
-          onAssign={(boat, zone) => guardedAssign(game, boat, zone)}
-          onMesh={(boat, mesh) => guardedMesh(game, boat, mesh)}
-        />
-      </div>
-    </main>
-  );
 }
 
 function councilLine(council: CouncilOutcome | null): string {
@@ -320,6 +210,75 @@ function useDayNote(game: GameState): { dayNote: DayNote | null; noted: GameActi
   return { dayNote, noted };
 }
 
+// The harbour office, wired to the shared actions: surveys, licences, the
+// sea debt and the council. Split out so PlayPanels stays about layout.
+function HarbourOffice({ game, port, judges, youLicences, council, over }: {
+  game: GameState;
+  port: PortState | null;
+  judges: JudgesLive | null;
+  youLicences: number;
+  council: CouncilOutcome | null;
+  over: boolean;
+}) {
+  return (
+    <HarbourPanel
+      captains={port?.captains ?? []}
+      loans={judges?.loans ?? []}
+      licencePool={judges?.licence_pool ?? 0}
+      proposal={judges?.proposal ?? null}
+      lastCouncil={council}
+      playerGold={port?.playerGold ?? 0}
+      licencePrice={port?.licencePrice}
+      youLicences={youLicences}
+      busy={game.busy !== null || over}
+      onSurvey={(zone) => { void doSurvey(game.actions, zone); }}
+      onLicence={(action, ref) => { void doLicenceTrade(game.actions, action, ref); }}
+      onDebt={(action, ref) => { void doDebt(game.actions, action, ref); }}
+      onPropose={(rule, indemnity) => { void doCouncil(game.actions, 'propose', rule, indemnity); }}
+      onVote={(yes) => { void doCouncil(game.actions, 'vote', yes ? 'yes' : 'no'); }}
+    />
+  );
+}
+
+// The sea chart is a scene now: Stage owns the replay so the criee panel
+// and the canvas instruments show the same lot at the same centime.
+function PlayStage({ game, port, selected, over }: {
+  game: GameState;
+  port: PortState | null;
+  selected: BoatView | null;
+  over: boolean;
+}) {
+  function chartAssign(zone: ZoneId | null): void {
+    if (over) {
+      game.actions.pushToast('info', 'The season is over. Start a new harbour to sail again.');
+      return;
+    }
+    guardedAssign(game, selected, zone);
+  }
+  function pickBoat(id: string): void {
+    const boat = findBoat(port, id);
+    if (boat !== null && !boat.mine) {
+      game.actions.pushToast('info', `${boat.name} sails for ${boat.captain}.`);
+      return;
+    }
+    game.setSelectedBoat(id === game.selectedBoat ? null : id);
+  }
+  return (
+    <Stage
+      port={port}
+      selectedBoat={game.selectedBoat}
+      busy={game.busy !== null}
+      over={over}
+      onPickBoat={pickBoat}
+      onPickZone={(zone) => chartAssign(zone)}
+      onPickQuay={() => chartAssign(null)}
+      onSelectBoat={game.setSelectedBoat}
+      onAssign={(boat, zone) => guardedAssign(game, boat, zone)}
+      onMesh={(boat, mesh) => guardedMesh(game, boat, mesh)}
+    />
+  );
+}
+
 function PlayPanels({ game, port, selected, judges, youLicences, council, over }: {
   game: GameState;
   port: PortState | null;
@@ -331,34 +290,21 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
 }) {
   return (
     <>
-      <Board game={game} port={port} selected={selected} over={over} />
-      <LedgerPanel
-        landings={port?.landings ?? []}
-        reasoning={port?.reasoning ?? []}
-        sea={port?.sea ?? null}
-        dispute={port?.dispute ?? null}
-        busy={game.busy !== null}
-        onFallow={(zone, weeks) => { void doFallow(game.actions, zone, weeks); }}
-        onReseed={(zone, crates) => { void doReseed(game.actions, zone, crates); }}
-        onClaim={(actor, gold) => { void doClaim(game.actions, actor, gold); }}
-      />
-      <ChroniclePanel entries={port?.chronicle ?? []} charter={port?.charter ?? null} />
-      <HarbourPanel
-        captains={port?.captains ?? []}
-        loans={judges?.loans ?? []}
-        licencePool={judges?.licence_pool ?? 0}
-        proposal={judges?.proposal ?? null}
-        lastCouncil={council}
-        playerGold={port?.playerGold ?? 0}
-        licencePrice={port?.licencePrice}
-        youLicences={youLicences}
-        busy={game.busy !== null || over}
-        onSurvey={(zone) => { void doSurvey(game.actions, zone); }}
-        onLicence={(action, ref) => { void doLicenceTrade(game.actions, action, ref); }}
-        onDebt={(action, ref) => { void doDebt(game.actions, action, ref); }}
-        onPropose={(rule, indemnity) => { void doCouncil(game.actions, 'propose', rule, indemnity); }}
-        onVote={(yes) => { void doCouncil(game.actions, 'vote', yes ? 'yes' : 'no'); }}
-      />
+      <PlayStage game={game} port={port} selected={selected} over={over} />
+      <div className="panels">
+        <LedgerPanel
+          landings={port?.landings ?? []}
+          reasoning={port?.reasoning ?? []}
+          sea={port?.sea ?? null}
+          dispute={port?.dispute ?? null}
+          busy={game.busy !== null}
+          onFallow={(zone, weeks) => { void doFallow(game.actions, zone, weeks); }}
+          onReseed={(zone, crates) => { void doReseed(game.actions, zone, crates); }}
+          onClaim={(actor, gold) => { void doClaim(game.actions, actor, gold); }}
+        />
+        <HarbourOffice game={game} port={port} judges={judges} youLicences={youLicences} council={council} over={over} />
+        <ChroniclePanel entries={port?.chronicle ?? []} charter={port?.charter ?? null} />
+      </div>
     </>
   );
 }
