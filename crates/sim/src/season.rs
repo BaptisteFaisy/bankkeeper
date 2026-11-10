@@ -48,6 +48,9 @@ pub fn roll_week(game: &mut Game, closures: &mut Vec<ActorId>) -> Vec<String> {
     game.week_small = [0; 3];
     game.week_total = [0; 3];
     lines.extend(game.settle_leases());
+    // The charter's Monday levy comes before any trade: pooled licences can
+    // then be auctioned the same morning.
+    lines.extend(crate::charter::levy_idle_tax(game));
     lines.extend(trade_licences_week(game));
     lines.extend(crate::bots::settle_loans(game));
     for captain in broke_captains(&game.port) {
@@ -386,18 +389,13 @@ fn poll_captains(
 
 /// The player's ballot: an explicit no stands, silence backs the motion.
 fn player_ballot(vote: Option<bool>) -> Vote {
-    match vote {
-        Some(false) => Vote::Against,
-        _ => Vote::For,
-    }
+    if vote == Some(false) { Vote::Against } else { Vote::For }
 }
 
 /// Reasoning line for the player's ballot (TW-C4-05).
 fn player_ballot_line(ballot: Vote) -> String {
-    match ballot {
-        Vote::For => "You vote yes: your own motion.".to_string(),
-        Vote::Against => "You vote no: against the motion.".to_string(),
-    }
+    let reason = if ballot == Vote::Against { "against the motion." } else { "your own motion." };
+    format!("You vote {}: {reason}", if ballot == Vote::Against { "no" } else { "yes" })
 }
 
 /// Carry a passed motion: new quota, closure, mesh ban, and the indemnity bill
@@ -438,14 +436,17 @@ fn apply_proposal(game: &mut Game, proposal: &Proposal, ballots: &[(ActorId, Vot
     }
 }
 
-/// Close the season (B5): after the council has rolled, flag the game over
-/// and attach the bilan to both the game and the day report.
+/// Close the season (B5): after the council has rolled, flag the game over,
+/// attach the bilan to both the game and the day report, and write the
+/// season into the port's chronicle.
 pub fn close_season(game: &mut Game, report: &mut crate::cycle::DayReport) {
     let bilan = season_bilan(game);
     game.over = true;
     game.bilan = Some(bilan.clone());
     report.season_over = true;
-    report.bilan = Some(bilan);
+    report.bilan = Some(bilan.clone());
+    let entry = crate::chronicle::entry_for_closed_season(game, bilan.net_worth);
+    game.chronicle.push(entry);
 }
 
 /// Open the next season of the campaign (brief section 13, question 4).

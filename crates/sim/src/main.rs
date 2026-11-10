@@ -1,7 +1,8 @@
 //! `sim` CLI: the relay shells out to this binary.
 //!
 //! Commands (gold flags are whole pieces):
-//!   sim init --seed 7 --out state.json [--levy 0.4]
+//!   sim init --seed 7 --out state.json [--weeks 2] [--levy 0.4] [--charter quota|'{"ban_small_mesh":true}']
+//!   sim chronicle --state state.json
 //!   sim day --state state.json [--report report.json]
 //!   sim ff --state state.json --days 7|28 [--history h.json --events e.json]
 //!   sim assign --state state.json --captain you --boat 0 --zone greybank [--mesh small]
@@ -13,19 +14,21 @@
 //!   sim defer --state state.json --holder bank --loan 100
 //!   sim lease --state state.json --lessor hale --lessee you --weeks 2
 
+mod cli_chronicle;
+
 use rules::council::Proposal;
 use rules::state::{ActorId, Mesh};
 use sim::cycle::try_day;
 use sim::fastforward::{history_hash, run};
 use sim::fund::levy_cents;
-use sim::{relay, seed_game, views, Game};
+use sim::{relay, views, Game};
 use std::collections::HashMap;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(|s| s.as_str()) {
-        Some("init") => cmd_init(&args),
+        Some("init") => cli_chronicle::cmd_init(&args),
         Some("day") => cmd_day(&args),
         Some("tick") => cmd_tick(&args),
         Some("ff") => cmd_ff(&args),
@@ -36,8 +39,10 @@ fn main() -> ExitCode {
         Some("buy-boat") => cmd_buy_boat(&args),
         Some("buy-note") => cmd_buy_note(&args),
         Some("defer") => cmd_defer(&args),
-        Some("next-season") => cmd_next_season(&args),
+        Some("next-season") => cli_chronicle::cmd_next_season(&args),
         Some("harness") => sim::harness::cli(&args),
+        Some("chronicle") => cli_chronicle::cmd_chronicle(&args),
+        Some("charter") => cli_chronicle::cmd_charter(),
         Some("state") => cmd_view(&args, views::view_state),
         Some("graph") => cmd_view(&args, views::view_graph),
         Some("judges") => cmd_view(&args, views::view_judges),
@@ -55,7 +60,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn flag(args: &[String], name: &str) -> Option<String> {
+pub(crate) fn flag(args: &[String], name: &str) -> Option<String> {
     args.windows(2)
         .find(|w| w[0] == format!("--{name}"))
         .map(|w| w[1].clone())
@@ -65,7 +70,7 @@ fn has(args: &[String], name: &str) -> bool {
     args.iter().any(|arg| arg == &format!("--{name}"))
 }
 
-fn read_game(path: &str) -> Game {
+pub(crate) fn read_game(path: &str) -> Game {
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| {
         eprintln!("cannot read {path}: {e}");
         std::process::exit(1);
@@ -76,7 +81,7 @@ fn read_game(path: &str) -> Game {
     })
 }
 
-fn write_json(path: &str, value: &impl serde::Serialize) {
+pub(crate) fn write_json(path: &str, value: &impl serde::Serialize) {
     let text = serde_json::to_string_pretty(value).expect("serialize");
     if let Err(e) = std::fs::write(path, text) {
         eprintln!("cannot write {path}: {e}");
@@ -103,25 +108,6 @@ fn actor_flag(args: &[String], name: &str) -> ActorId {
 /// Net a boat already carries (large when the hull number is unknown).
 fn current_mesh(game: &Game, captain: ActorId, boat: u64) -> Mesh {
     game.port.boats.iter().find(|hull| hull.id == boat && hull.owner == captain).map(|hull| hull.mesh).unwrap_or(Mesh::Large)
-}
-
-fn cmd_init(args: &[String]) -> ExitCode {
-    let seed: u64 = flag(args, "seed").and_then(|v| v.parse().ok()).unwrap_or(7);
-    let out = flag(args, "out").unwrap_or_else(|| "state.json".to_string());
-    let mut game = seed_game(seed);
-    if let Some(weeks) = flag(args, "weeks").and_then(|v| v.parse::<u64>().ok()) {
-        if !(1..=12).contains(&weeks) {
-            eprintln!("weeks must be between 1 and 12");
-            return ExitCode::from(1);
-        }
-        game.config.weeks_per_season = weeks;
-    }
-    if let Some(levy) = flag(args, "levy") {
-        game.config.levy_per_crate = levy_cents(&levy);
-    }
-    write_json(&out, &game);
-    println!("seeded {out} with seed {seed}, {} days a season", game.config.days_per_week * game.config.weeks_per_season);
-    ExitCode::SUCCESS
 }
 
 fn cmd_day(args: &[String]) -> ExitCode {
@@ -312,23 +298,6 @@ fn cmd_defer(args: &[String]) -> ExitCode {
 }
 
 /// Read-only relay query: print one player view as JSON.
-/// Open the next season of the campaign: assets stay, the sea stays where it is.
-fn cmd_next_season(args: &[String]) -> ExitCode {
-    let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
-    let mut game = read_game(&path);
-    match sim::season::open_next_season(&mut game) {
-        Ok(season) => {
-            write_json(&path, &game);
-            println!("{}", serde_json::json!({ "ok": true, "season": season }));
-            ExitCode::SUCCESS
-        }
-        Err(error) => {
-            println!("{}", serde_json::json!({ "error": error }));
-            ExitCode::from(1)
-        }
-    }
-}
-
 fn cmd_view(args: &[String], view: fn(&Game) -> serde_json::Value) -> ExitCode {
     let path = flag(args, "state").unwrap_or_else(|| "state.json".to_string());
     let game = read_game(&path);

@@ -6,6 +6,7 @@
 //! rules (notably [`buy_estimate`](rules::survey::buy_estimate)); [`Rng`] is
 //! the sim's splitmix64 stream for seeded draws on top of the rules.
 
+use crate::charter::Charter;
 use crate::{Fund, Game};
 use rules::config::Config;
 use rules::debt::Loan;
@@ -101,14 +102,23 @@ fn brandt_seed_loan() -> Loan {
 }
 
 /// Fresh game on `seed`: full stocks, section 3 purses and fleet, Brandt in
-/// debt, every boat opening on Greybank.
+/// debt, every boat opening on Greybank, no charter.
 pub fn seed_game(seed: u64) -> Game {
+    seed_game_with(seed, None)
+}
+
+/// Fresh campaign on `seed` under a written charter.
+///
+/// The charter is the institution the previous campaign left behind: it is
+/// applied here, at the founding of a campaign, and never again — a campaign
+/// runs all its seasons under the same rule (see [`crate::charter`]).
+pub fn seed_game_with(seed: u64, charter: Option<Charter>) -> Game {
     let config = Config::default();
     let mut port = Harbour::foundation(&config, seed);
     for boat in port.boats.iter_mut() {
         boat.zone = Some(Zone::Greybank);
     }
-    Game {
+    let mut game = Game {
         config,
         port,
         loans: vec![brandt_seed_loan()],
@@ -131,11 +141,18 @@ pub fn seed_game(seed: u64) -> Game {
         bilan: None,
         last_council: None,
         campaign: Vec::new(),
+        chronicle: Vec::new(),
+        charter: None,
         pending: None,
         lots_landed: 0,
         leases: Vec::new(),
         fund: Fund::default(),
+    };
+    if let Some(written) = charter {
+        written.apply(&mut game);
+        game.charter = Some(written);
     }
+    game
 }
 
 #[cfg(test)]

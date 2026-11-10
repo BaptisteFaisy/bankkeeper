@@ -1,8 +1,9 @@
 // Relay mutations as small module functions. Each takes the shared
 // action context, runs one mutation, and never throws (errors toast).
 // Mutations return true on success so callers can flash the UI.
-import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postSurvey, postTick } from './api';
-import type { AssignBody, MutationResult } from './api';
+import { postAssign, postCouncil, postDebt, postEndDay, postFastForward, postInit, postLicenceBuy, postLicenceTrade, postNextSeason, postReset, postSurvey, postTick } from './api';
+import type { AssignBody, InitBody, MutationResult } from './api';
+import { charterLabel, saveCharter } from './charter';
 import type { DayNote, FFResponse, ToastMsg, ZoneId } from './types';
 import { ZONE_LABEL, parseCouncilOutcome } from './types';
 
@@ -116,6 +117,18 @@ export async function doNextSeason(actions: GameActions): Promise<boolean> {
   actions.resetFf(null);
   actions.noteDay?.({ council: null, seasonOver: false, bilan: null });
   actions.pushToast('report', season === null ? 'Next season opens.' : `Season ${season} opens: the sea remembers.`);
+  return true;
+}
+
+/// Write the charter and open the campaign it rules: a fresh harbour, seeded
+/// under the sentence the player just chose, kept for the next reload.
+export async function doNewCampaign(actions: GameActions, body: InitBody): Promise<boolean> {
+  const r = await mutate(actions.deps, 'reset', () => postInit(body));
+  if (r === null) return false;
+  saveCharter(body.charter ?? {});
+  actions.resetFf(null);
+  actions.noteDay?.({ council: null, seasonOver: false, bilan: null });
+  actions.pushToast('report', 'A new campaign opens.', `The charter: ${charterLabel(body.charter ?? {})}.`);
   return true;
 }
 

@@ -7,7 +7,6 @@
 
 use crate::cycle::Landing;
 use crate::merchant_views::buyer_limits;
-use crate::fastforward::{DayPoint, FfEvent};
 use crate::Game;
 use rules::auction::Outcome;
 use rules::config::Config;
@@ -18,6 +17,9 @@ use serde_json::{json, Value};
 
 /// Rung 1 (SEE): who took what, per zone, against the sustainable catch.
 pub use crate::attribution::attribution;
+
+/// Fast-forward graph views, re-exported so `views::` keeps one entry point.
+pub use crate::views_ff::{ff_markers, ff_series};
 
 /// Centigold as whole pieces with one decimal: 5040 -> 50.4.
 pub fn gold_pieces(cents: i64) -> f64 {
@@ -345,6 +347,8 @@ pub fn view_state(game: &Game) -> Value {
         "campaignSeasons": game.config.campaign_seasons,
         "campaignOver": closed_seasons(game) >= game.config.campaign_seasons,
         "campaign": game.campaign,
+        "chronicle": game.chronicle,
+        "charter": game.charter,
         "seasonOver": game.over,
         "bilan": game.bilan,
         "lastCouncil": game.last_council,
@@ -441,23 +445,6 @@ pub fn view_judges(game: &Game) -> Value {
         "loans": loans,
         "fund": crate::fund::fund_view(game),
     })
-}
-
-/// Columnar graph series from a fast-forward run, for --series.
-pub fn ff_series(history: &[DayPoint]) -> Value {
-    json!({
-        "days": history.iter().map(|p| p.day).collect::<Vec<_>>(),
-        "stocks": history.iter().map(|p| p.stocks).collect::<Vec<_>>(),
-        "herring_price": history.iter().map(|p| p.herring_price).collect::<Vec<_>>(),
-        "gold_total": history.iter().map(|p| p.gold_total).collect::<Vec<_>>(),
-    })
-}
-
-/// Graph markers from a fast-forward journal: closures and seizures only.
-pub fn ff_markers(events: &[FfEvent]) -> Value {
-    let markers: Vec<Value> = events.iter().filter(|e| e.kind == "closure" || e.kind == "seizure")
-        .map(|e| json!({"day": e.day, "kind": e.kind, "detail": e.detail})).collect();
-    Value::Array(markers)
 }
 
 #[cfg(test)]

@@ -1,5 +1,6 @@
 // Shared domain types for the Tidewater game UI.
 // Mirrors the relay API shapes; all UI strings stay in components.
+import type { Charter } from './charter';
 
 export type ZoneId = 'shallows' | 'greybank' | 'deeps';
 
@@ -165,6 +166,21 @@ export interface PortState {
   campaignSeasons?: number;
   campaignOver?: boolean;
   campaign?: unknown[];
+  // The port's memory: one entry per closed season, oldest first (sim chronicle).
+  chronicle?: ChronicleEntryView[];
+  // The charter this campaign runs under, when the player wrote one (sim charter).
+  charter?: Charter | null;
+}
+
+// One closed season as the harbour remembers it (sim ChronicleEntry).
+// netWorth is in centigold, like every sim money field; the panel formats it.
+export interface ChronicleEntryView {
+  season: number;
+  net_worth: number;
+  stocks: [number, number, number];
+  closures: string[];
+  rule: string | null;
+  seed: number;
 }
 
 export interface FFSummary {

@@ -6,7 +6,7 @@ import type { BoatView, CouncilOutcome, DayNote, FFResponse, GraphLive, JudgesLi
 import { EMPTY_AUCTION, ZONE_LABEL, parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
-import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
+import { doAssign, doCouncil, doDebt, doEndDay, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doRunFF, doSurvey } from './actions';
 import type { GameActions } from './actions';
 import { postLogin } from './api';
 import type { Session } from './session';
@@ -16,6 +16,8 @@ import BoatsPanel from './components/BoatsPanel';
 import LedgerPanel from './components/LedgerPanel';
 import HarbourPanel from './components/HarbourPanel';
 import ChainBar from './components/ChainBar';
+import ChroniclePanel from './components/ChroniclePanel';
+import CharterScreen from './components/CharterScreen';
 import { ClockControls, CopyLink } from './components/HeaderControls';
 import JudgesPanel from './components/JudgesPanel';
 import type { JudgeRun } from './components/JudgesPanel';
@@ -366,6 +368,7 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
     <>
       <Board game={game} port={port} selected={selected} over={over} />
       <LedgerPanel landings={port?.landings ?? []} reasoning={port?.reasoning ?? []} />
+      <ChroniclePanel entries={port?.chronicle ?? []} charter={port?.charter ?? null} />
       <HarbourPanel
         captains={port?.captains ?? []}
         loans={judges?.loans ?? []}
@@ -420,6 +423,15 @@ function GameScreen({ game, session }: { game: GameState; session: Session }) {
       {CHAIN_ENABLED && <ChainBar email={session.email} />}
       <PlayPanels game={game} port={port} selected={selected} judges={judges} youLicences={you?.licences ?? 0} council={end.council} over={end.over} />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
+      {end.seasonOver && port !== null && port.campaignOver === true && (
+        <CharterScreen
+          busy={game.busy !== null}
+          onSail={(charter) => {
+            const seed = Number.parseInt(port.seed ?? '7', 10);
+            void doNewCampaign(noted, { seed: (Number.isFinite(seed) ? seed : 7) + 1, weeks: port.weeksPerSeason ?? 2, charter });
+          }}
+        />
+      )}
       {end.bankrupt && you !== null && port !== null && (
         <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver={false} onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
