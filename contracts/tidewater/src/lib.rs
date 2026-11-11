@@ -13,6 +13,7 @@ pub mod council;
 pub mod game;
 pub mod loans;
 pub mod nep245;
+pub mod rights;
 pub mod views;
 
 use near_sdk::{env, near, AccountId, PanicOnDefault};
@@ -185,6 +186,9 @@ pub struct Proposal {
     pub yes_weight: u64,
     pub no_weight: u64,
     pub voters: Vec<String>,
+    /// Yes-voters with the weight their ballot carried (D07: only they are
+    /// paid, and only what they voted with).
+    pub yes_voters: Vec<(String, u64)>,
     pub resolved: bool,
     pub passed: bool,
 }
