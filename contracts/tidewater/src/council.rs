@@ -10,7 +10,7 @@ use crate::{
     GOLD_TOKEN, LICENCE_SUPPLY, SEASON_DAYS,
 };
 use near_sdk::json_types::U128;
-use near_sdk::{env, near};
+use near_sdk::{env, near, NearToken};
 
 /// Outcome of a resolved council proposal (TW-C4-01..03).
 #[near(serializers = [json])]
@@ -26,8 +26,14 @@ pub struct CouncilOutcome {
 #[near]
 impl Tidewater {
     /// Propose a council rule with an indemnity, escrowed (TW-C4-03).
+    #[payable]
     pub fn propose_rule(&mut self, kind: ProposalKind, indemnity_milli: U128) -> u64 {
         self.assert_council_open();
+        let deposit = env::attached_deposit();
+        assert!(
+            indemnity_milli.0 > 0 || deposit >= NearToken::from_yoctonear(1),
+            "E_STORAGE_DEPOSIT_REQUIRED"
+        );
         let caller = env::predecessor_account_id().to_string();
         let escrow = u64_of(indemnity_milli.0) * LICENCE_SUPPLY * 4;
         assert!(self.gold_of(&caller) >= escrow, "E_SHORT_GOLD");
@@ -44,6 +50,7 @@ impl Tidewater {
                 yes_weight: 0,
                 no_weight: 0,
                 voters: Vec::new(),
+                yes_voters: Vec::new(),
                 resolved: false,
                 passed: false,
             },
@@ -61,7 +68,9 @@ impl Tidewater {
         assert!(!proposal.voters.contains(&caller), "E_ALREADY_VOTED");
         let weight = self.licence_weight(&caller);
         assert!(weight > 0, "E_NO_VOICE");
-        self.record_vote(&key, &caller, weight, approve);
+        let current_tally = proposal.yes_weight + proposal.no_weight;
+        let effective = weight.min(LICENCE_SUPPLY.saturating_sub(current_tally));
+        self.record_vote(&key, &caller, effective, approve);
     }
 
     /// The relayer casts every NPC vote from its own reading (TW-C4-02).
@@ -85,7 +94,9 @@ impl Tidewater {
                 approve = evaluate_vote(&richest, &proposal.kind, &rich_ctx).0;
             }
             if weight > 0 {
-                self.record_vote(&key, &owner, weight, approve);
+                let p = self.proposals.get(&key).unwrap();
+                let effective = weight.min(LICENCE_SUPPLY.saturating_sub(p.yes_weight + p.no_weight));
+                self.record_vote(&key, &owner, effective, approve);
             }
         }
     }
@@ -102,10 +113,10 @@ impl Tidewater {
             self.apply_rule(&proposal.kind);
         }
         let mut paid = 0;
-        if proposal.yes_weight > 0 {
+        if proposal.passed && proposal.yes_weight > 0 {
             paid = self.pay_indemnities(&proposal);
         }
-        let refund = proposal.escrow_milli - paid;
+        let refund = proposal.escrow_milli.saturating_sub(paid);
         if refund > 0 {
             self.move_balance(&npc_owner("escrow"), &proposal.author, GOLD_TOKEN, refund as u128);
         }
@@ -134,6 +145,7 @@ impl Tidewater {
         proposal.voters.push(voter.to_string());
         if approve {
             proposal.yes_weight += weight;
+            proposal.yes_voters.push((voter.to_string(), weight));
         } else {
             proposal.no_weight += weight;
         }
@@ -179,11 +191,14 @@ impl Tidewater {
         }
     }
 
+    /// Only the yes-voters are paid, and only when the motion passed
+    /// (TW-C4-03): the escrow of a rejected motion goes back to the author.
+    /// Each ballot is paid at the weight it carried when it was cast.
     fn pay_indemnities(&mut self, proposal: &Proposal) -> u64 {
         let mut paid = 0;
-        for voter in proposal.voters.clone() {
-            let weight = self.licence_weight(&voter);
-            let amount = proposal.indemnity_milli * weight * 4;
+        for (voter, weight) in proposal.yes_voters.clone() {
+            let amount = (proposal.indemnity_milli * weight * 4)
+                .min(proposal.escrow_milli.saturating_sub(paid));
             if amount > 0 {
                 self.move_balance(&npc_owner("escrow"), &voter, GOLD_TOKEN, amount as u128);
                 paid += amount;
@@ -206,8 +221,13 @@ mod tests {
         (Tidewater::new(owner.clone(), player.clone()), owner, player)
     }
 
+    /// Council calls attach the anti-spam yocto: a motion without indemnity
+    /// must still pay for its storage (D10).
     fn as_caller(caller: AccountId) {
-        testing_env!(VMContextBuilder::new().predecessor_account_id(caller).build());
+        testing_env!(VMContextBuilder::new()
+            .predecessor_account_id(caller)
+            .attached_deposit(NearToken::from_yoctonear(1))
+            .build());
     }
 
     #[test]
