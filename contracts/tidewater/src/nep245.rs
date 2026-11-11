@@ -6,7 +6,7 @@
 //! ledger; [`Tidewater::get_ledger`] reads any owner string, since NPCs
 //! are not NEAR accounts.
 
-use crate::{log_event, Tidewater, TidewaterExt};
+use crate::{log_event, Tidewater, TidewaterExt, LICENCE_TOKEN};
 use near_sdk::json_types::U128;
 use near_sdk::{env, near, require, AccountId, NearToken, Promise};
 use std::collections::BTreeMap;
@@ -53,7 +53,11 @@ impl Tidewater {
         require!(sender_id != receiver_id.to_string(), "E_SELF_TRANSFER");
         let have = self.balance_of(&sender_id, &token_id);
         require!(have >= amount.0, "E_INSUFFICIENT");
+        if token_id == LICENCE_TOKEN {
+            self.assert_licence_cap(receiver_id.as_str(), amount.0);
+        }
         self.move_balance(&sender_id, receiver_id.as_str(), &token_id, amount.0);
+        self.sync_note_holder(&token_id, receiver_id.as_str());
         log_event(
             "nep245",
             "mt_transfer",
@@ -87,20 +91,7 @@ impl Tidewater {
         let sender = env::predecessor_account_id();
         let sender_id = sender.to_string();
         require!(sender_id != receiver_id.to_string(), "E_SELF_TRANSFER");
-        // Two legs of the same token draw on one balance: sum the legs per
-        // token first, or ["3","3"] x [4,4] moves 8 out of a 4-licence purse.
-        let mut totals: BTreeMap<&str, u128> = BTreeMap::new();
-        for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
-            require!(self.token(token_id).is_some(), "E_UNKNOWN_TOKEN");
-            let total = totals.entry(token_id.as_str()).or_insert(0);
-            *total = total.saturating_add(amount.0);
-        }
-        for (token_id, total) in &totals {
-            require!(self.balance_of(&sender_id, token_id) >= *total, "E_INSUFFICIENT");
-        }
-        for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
-            self.move_balance(&sender_id, receiver_id.as_str(), token_id, amount.0);
-        }
+        self.move_batch(&sender_id, receiver_id.as_str(), &token_ids, &amounts);
         let amounts_json: Vec<String> = amounts.iter().map(|a| a.0.to_string()).collect();
         log_event(
             "nep245",
@@ -160,6 +151,33 @@ impl Tidewater {
 }
 
 impl Tidewater {
+    /// Validates every leg of a batch, then moves them (D03, D09).
+    ///
+    /// Two legs of the same token draw on one balance: the legs are summed
+    /// per token first, or `["3","3"] x [4,4]` moves 8 out of a 4-licence
+    /// purse. The receiver's licence ceiling is checked on the summed leg,
+    /// so the cap cannot be walked around with a batch either.
+    fn move_batch(&mut self, sender: &str, receiver: &str, token_ids: &[String], amounts: &[U128]) {
+        let mut totals: BTreeMap<&str, u128> = BTreeMap::new();
+        for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
+            require!(self.token(token_id).is_some(), "E_UNKNOWN_TOKEN");
+            let total = totals.entry(token_id.as_str()).or_insert(0);
+            *total = total.saturating_add(amount.0);
+        }
+        for (token_id, total) in &totals {
+            require!(self.balance_of(sender, token_id) >= *total, "E_INSUFFICIENT");
+            if *token_id == LICENCE_TOKEN {
+                self.assert_licence_cap(receiver, *total);
+            }
+        }
+        for (token_id, amount) in token_ids.iter().zip(amounts.iter()) {
+            self.move_balance(sender, receiver, token_id, amount.0);
+        }
+        for token_id in totals.keys() {
+            self.sync_note_holder(token_id, receiver);
+        }
+    }
+
     /// NEP-245 core asks for one yocto "for security purposes". Exact-one is
     /// one reading of it, "at least one" the other: we take the second and
     /// return the excess, so a transfer is never rejected for attaching more.

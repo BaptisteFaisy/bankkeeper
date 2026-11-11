@@ -24,7 +24,9 @@ impl Tidewater {
     /// The lender grants a delay: missed payments reset to zero (TW-C3-05).
     pub fn forbear_loan(&mut self, token_id: String) {
         let loan = self.loans.get(&token_id).expect("E_UNKNOWN_LOAN").clone();
-        assert_eq!(env::predecessor_account_id().to_string(), loan.lender, "E_NOT_LENDER");
+        let caller = env::predecessor_account_id().to_string();
+        let lender = self.loan_holder(&token_id).unwrap_or(loan.lender);
+        assert_eq!(caller, lender, "E_NOT_LENDER");
         self.loans.get_mut(&token_id).expect("loan exists").missed = 0;
     }
 
@@ -33,9 +35,11 @@ impl Tidewater {
     pub fn seize_boat(&mut self, token_id: String) {
         let loan = self.loans.get(&token_id).expect("E_UNKNOWN_LOAN").clone();
         let caller = env::predecessor_account_id().to_string();
-        assert_eq!(caller, loan.lender, "E_NOT_LENDER");
-        assert!(loan.missed >= 2, "E_NOT_IN_DEFAULT");
-        let borrower_owner = self.captain_owner(&loan.borrower);
+        let lender = self.loan_holder(&token_id).unwrap_or(loan.lender.clone());
+        assert_eq!(caller, lender, "E_NOT_LENDER");
+        let borrower_owner = self
+            .deed_holder(&loan.boat_deed)
+            .unwrap_or_else(|| self.captain_owner(&loan.borrower));
         self.move_balance(&borrower_owner, &caller, &loan.boat_deed, 1);
         self.sub_balance(&caller, &token_id, 1);
         self.loans.remove(&token_id);
@@ -65,17 +69,17 @@ impl Tidewater {
         let ids: Vec<String> = self.loans.keys().cloned().collect();
         for id in ids {
             let loan = self.loans.get(&id).expect("loan exists").clone();
+            let lender = self.loan_holder(&id).unwrap_or(loan.lender.clone());
             let borrower_owner = self.captain_owner(&loan.borrower);
             let interest = loan.owed_milli * 300 / 10_000;
             let due = loan.weekly_due_milli + interest;
             if self.gold_of(&borrower_owner) >= due {
-                self.move_balance(&borrower_owner, &loan.lender, GOLD_TOKEN, due as u128);
+                self.move_balance(&borrower_owner, &lender, GOLD_TOKEN, due as u128);
                 let amortized = loan.weekly_due_milli.min(loan.owed_milli);
                 let slot = self.loans.get_mut(&id).expect("loan exists");
                 slot.owed_milli -= amortized;
                 slot.missed = 0;
                 if slot.owed_milli == 0 {
-                    let lender = slot.lender.clone();
                     self.sub_balance(&lender, &id, 1);
                     self.loans.remove(&id);
                 }
