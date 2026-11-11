@@ -188,6 +188,12 @@ impl Tidewater {
     pub fn get_licences(&self, owner: String) -> u64 {
         crate::u64_of(self.balance_of(&owner, LICENCE_TOKEN))
     }
+
+    /// D09: the ceiling the client must show next to a captain's licences.
+    /// One captain never holds more than this, bought or received.
+    pub fn get_licence_cap(&self) -> u64 {
+        crate::LICENCE_CAP_PER_CAPTAIN
+    }
 }
 
 impl Tidewater {

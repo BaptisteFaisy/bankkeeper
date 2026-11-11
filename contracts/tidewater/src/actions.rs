@@ -45,8 +45,8 @@ pub struct DayOutcome {
 impl Tidewater {
     /// Assign a boat to a zone (or moor it with `None`). Two clicks in UI.
     pub fn assign_boat(&mut self, deed: String, zone: Option<u8>, small_mesh: bool) {
-        let boat = self.boats.get(&deed).expect("E_UNKNOWN_BOAT").clone();
-        self.assert_boat_caller(&boat.captain);
+        assert!(self.boats.contains_key(&deed), "E_UNKNOWN_BOAT");
+        self.assert_deed_caller(&deed);
         if let Some(z) = zone {
             assert!((z as usize) < self.zones.len(), "E_UNKNOWN_ZONE");
             assert!(!self.zones[z as usize].closed_by_council, "E_ZONE_CLOSED");
@@ -62,7 +62,7 @@ impl Tidewater {
     /// Land one trip: pay the trip, take the catch, clear the auction.
     pub fn land_lot(&mut self, deed: String) -> LotReceipt {
         let boat = self.boats.get(&deed).expect("E_UNKNOWN_BOAT").clone();
-        self.assert_boat_caller(&boat.captain);
+        let owner = self.assert_deed_caller(&deed);
         let captain = self.captains.get(&boat.captain).expect("E_UNKNOWN_CAPTAIN").clone();
         assert!(!captain.disarmed, "E_CAPTAIN_DISARMED");
         let zone_id = boat.zone.expect("E_BOAT_MOORED") as usize;
@@ -74,14 +74,14 @@ impl Tidewater {
         }
         let remaining = self.quota_left(&boat.captain);
         assert!(remaining > 0, "E_QUOTA_SPENT");
-        let owner = captain.owner.clone();
-        assert!(self.gold_of(&owner) >= zone.trip_cost_milli, "E_SHORT_GOLD");
-        // Trip cost: 20 % stays with the chandlery, 80 % leaves the
-        // harbour for imported fuel (TW-N-40; the split is ours).
-        let chandlery = npc_owner("chandlery");
-        let margin = zone.trip_cost_milli / 5;
-        self.move_balance(&owner, &chandlery, GOLD_TOKEN, margin as u128);
-        self.burn_outside(&owner, zone.trip_cost_milli - margin);
+        // Trip cost: paid by the deed owner if solvent (D06).
+        let trip_cost = zone.trip_cost_milli.min(self.gold_of(&owner));
+        if trip_cost > 0 {
+            let chandlery = npc_owner("chandlery");
+            let margin = trip_cost / 5;
+            self.move_balance(&owner, &chandlery, GOLD_TOKEN, margin as u128);
+            self.burn_outside(&owner, trip_cost - margin);
+        }
         let take = catch_of(zone.stock, boat.small_mesh).min(remaining).min(zone.stock);
         assert!(take > 0, "E_SEA_EMPTY");
         self.zones[zone_id].stock -= take;
@@ -98,6 +98,7 @@ impl Tidewater {
     /// Buy one bank-held licence at the quoted price (TW-N-50, TW-C4-04).
     pub fn buy_licence(&mut self) -> LotReceipt {
         let caller = env::predecessor_account_id().to_string();
+        self.assert_licence_cap(&caller, 1);
         let bank = npc_owner("bank");
         assert!(self.balance_of(&bank, LICENCE_TOKEN) > 0, "E_NO_LICENCE");
         let price = self.licence_price();
@@ -146,15 +147,6 @@ impl Tidewater {
 }
 
 impl Tidewater {
-    fn assert_boat_caller(&self, captain: &str) {
-        let caller = env::predecessor_account_id();
-        if captain == "player" {
-            assert_eq!(caller, self.player, "E_NOT_YOUR_BOAT");
-        } else {
-            assert_eq!(caller, self.owner, "owner only");
-        }
-    }
-
     fn quota_left(&self, captain: &str) -> u64 {
         let owner = self.captain_owner(captain);
         let quota = quota_of(self.licence_weight(&owner), self.quota_per_licence);
@@ -395,6 +387,17 @@ mod tests {
         assert_eq!(outcome.upkeep_milli, 60_000);
         // +60 upkeep, -72 fishmonger herring, -108 fishmonger cod, -81 gull half.
         assert_eq!(game.get_ledger(npc_owner("residents"), "0".to_string()).0, 1_499_799_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "E_LICENCE_CAP")]
+    fn a_captain_cannot_buy_past_the_cap() {
+        let (mut game, _, player) = setup();
+        as_caller(player.clone());
+        while game.get_licences(player.to_string()) < crate::LICENCE_CAP_PER_CAPTAIN {
+            game.buy_licence();
+        }
+        game.buy_licence();
     }
 
     #[test]
