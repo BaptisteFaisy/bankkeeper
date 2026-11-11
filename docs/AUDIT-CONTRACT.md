@@ -9,7 +9,7 @@
 4 mineurs/remarque) et **7 défauts latents** documentés avec leur commande
 de reproduction (hors périmètre des tests unitaires).
 
-**État au 10/11/2026** — les trois bloquants (D01, D02, D03) et six des huit
+**État au 11/11/2026** — les trois bloquants (D01, D02, D03) et les huit
 majeurs (**D04, D05, D06, D07, D08, D09, D10, D13**) sont corrigés : leur test
 d'audit n'est plus `#[ignore]` et passe dans la CI. Restent ouverts, prouvés et
 `#[ignore]` : **D11, D12, D14, D15** (mineurs). Voir « Correctifs livrés ».
