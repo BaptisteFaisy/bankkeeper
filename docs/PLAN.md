@@ -1,100 +1,63 @@
 # Bankkeeper — état et plan
 
-> Écrit le 10 novembre 2026, 14:50. Ce document dit **ce qui est fait et
-> vérifié**, **ce qui reste** (dans l'ordre), et **comment l'idée continue**.
-> Rien ici n'est une intention : chaque ligne « fait » renvoie à une preuve.
+> Mis à jour le **11 novembre 2026 à 11:00 (Europe/Paris)** par b, sur
+> `main` = **`9c5ae61`** (PR #83, déploiement public de la page de preuves).
+> Ce document dit **ce qui est fait et prouvé**, **ce qui reste** (dans
+> l'ordre), et **l'historique des décisions et horizons**. Rien ici n'est une
+> intention : chaque ligne « fait » renvoie à une preuve vérifiée.
 
-## 1. Ce qui est fait, et vérifié
+## 1. Ce qui est fait, et prouvé (au 11/11/2026, commit `9c5ae61`)
 
-| Domaine | État | Preuve |
+| Domaine | État | Preuve vérifiable |
 |---|---|---|
-| Moteur (règles + sim) | 137 tests verts, déterministe à graine | `cargo test --workspace` |
-| Contrat NEP-245 | compile en wasm, 412 Ko, ABI embarquée, 23 tests | `cargo near build non-reproducible-wasm` |
-| **Le jeu dépense le contrat** | login email → achat de licence → `mt_balance_of` 0 → 1, hash à l'écran | `tests/e2e_onchain.py` (sandbox), PR #25 |
-| Jeu hors-ligne | moteur wasm, 0 serveur, 0 `/api/` | `tests/e2e_offline.py` |
-| Horloge live | 1 lot / 30 s, 10 lots = 5 min / jour | PR #18, vérifié en navigateur |
-| Campagne 3 saisons | capital reporté, la mer garde ce qu'elle a perdu | PR #15 |
-| Persistance + lien de saison | `?seed=&weeks=`, reprise après reload | PR #10 |
-| Conformité au track | 4 exigences sur 6 tenues, 2 à moitié, nommées | `docs/COMPLIANCE.md` |
-| Nom | dépôt **`BaptisteFaisy/bankkeeper`** | GitHub |
+| Suite Rust complète | **270 tests passés, 0 échec**, 4 ignorés volontaires (D11/D12/D14/D15) | `cargo test --workspace` |
+| Gardes structurels | **178 fichiers** < 500 lignes, toute fonction < 50, palette et goût propres | `python3 tests/ci_structural.py` |
+| **Les 5 barreaux du SPINE** | **Tous mergés et exposés** : 1 Voir (`Who took what`), 2 Payer (redevance + fonds), 3 Gouverner (motion financée + preuve par vote), 4 Hériter (dette envers la mer), 5 Réparer (jachère collective + contentieux, PR #76) | `crates/sim/src/{attribution,fund,govern,sea,dispute}.rs` ; `docs/DEBT.md`, `docs/FALLOW.md` |
+| **Contrat NEP-245** | 3 bloquants (PR #42) + **8 majeurs** corrigés (PR #80) ; 14 preuves d'audit en CI (PR #81) ; **433 552 o** wasm, 38 fonctions ABI | `contracts/tidewater/`, `docs/AUDIT-CONTRACT.md`, `cargo near build non-reproducible-wasm` |
+| **Déploiement testnet** | **Déployé sur `bankkeeper.testnet`** (`code_hash` `b3atbgna5Lvi1GGqGz8ecP1wHBwBTC1Pe93VAhqEPZj`, ~8,469 NEAR) ; **75 transactions réelles** confirmées, dont le conseil (`passed: true`, quota `70 → 80`) | `docs/deployments.md`, `docs/e2e-testnet.log`, `docs/TESTNET-RUN.md` |
+| **Jeu 2D + client web** | Scène canvas intégrée (PR #68 + PR #78), accessibilité (`role="application"`, `tabIndex=0`, flèches + Entrée, `aria-live`, `prefers-reduced-motion`) ; `E_IMPORT` + **8 majeurs + 3 mineurs** corrigés (PR #75) ; **14 contrôles verts, 0 défaut** | `web/src/scene/*`, `tests/audit_web.py`, `tests/e2e_offline.py` (`0` erreur console, `0` `/api/`) |
+| **Équilibrage** | 4 curseurs calibrés sur 50 graines × 4 politiques × 3 saisons (PR #69) ; verrouillé par 2 tests de dérive | `docs/BALANCE.md`, `docs/balance-50.json` (md5 `a54e287cddfe613c1484f3ca30cd3f40`), `make balance` |
+| **Site public unique** | `https://tidewater-play.vercel.app` (HTTP 200), `/scene-preview.html` (HTTP 200), `/proofs.html` (HTTP 200, **live sur `bankkeeper.testnet`**) ; `engine.wasm` = **917 429 o** (`9c5ae61`) | `curl`, `tests/e2e_proofs.py` (`75 / 75 TRANSACTIONS CONFIRMÉES`, `mt_supply(3)` = `20`) |
+| **Login réel (sandbox)** | Étude tranchée + **relayeur sponsorisé prouvé sur `near-sandbox`** (PR #71) : email → compte déterministe → `buy_licence` signée sans popup ni gas | `docs/AUTH.md`, `tests/relay_sponsor.py` (tx `GwfdY7nmdTkd5817Ye7XhRN86aJmAr3Vd5c7vNzju5tm`) |
+| **Dossier juges** | Conformité ligne à ligne, 3 parcours chronométrés sans vidéo, texte de soumission | `docs/COMPLIANCE.md`, `docs/DEMO-JUGES.md`, `docs/SUBMISSION.md` |
 
 ## 2. Ce qui reste à faire, dans l'ordre
 
-### Bloquant — cette après-midi
+1. **Brancher la démo web publique sur `bankkeeper.testnet` et sur le relayeur sponsorisé** :
+   - appliquer le diff client écrit dans `docs/AUTH.md` § 7 (`web/src/App.tsx`, `server/relay.py`) et héberger le relayeur avec ses garde-fous (`scripts/relayer/src/guard.mjs`), ou activer `VITE_CHAIN=1` sur une instance dédiée.
+2. **Compléter les manques UI mineurs** relevés dans `docs/COMPLIANCE.md` :
+   - exposer le bouton de renflouement (`refloat`, TW-N-52) et l'état visuel « étal fermé » (TW-N-53) dans `web/src/scene/bridge.ts` ;
+   - renvoyer `fund` dans `fastforward_reply` (`crates/wasm/src/lib.rs`) pour que la ligne `Port fund` du panneau `Judges` cesse d'afficher `—` ;
+   - lire la longueur réelle de saison (`weeksPerSeason`) dans l'aperçu de motion au lieu de `SEASON_WEEKS = 4` (`web/src/types.ts:299`) ;
+   - rafraîchir le libellé « 268 tests » dans `web/src/proofs/Panels.tsx:114` (270 aujourd'hui).
+3. **Fermer les 4 défauts mineurs du contrat** encore `#[ignore]` dans `docs/AUDIT-CONTRACT.md` (D11 transfert de 0, D12 `resolve_council` hors session, D14 deux refus « owner only », D15 `assign_boat` change le filet en mer), puis redéployer si nécessaire.
+4. **Trancher les questions de game design** listées en fin de `docs/BALANCE.md` (seuil 5 vs 7 bateaux, dette de port vs dette joueur, capitalisation du prix des licences, malle du petit maillage au bilan).
 
-1. **Intégrer 10 branches** (prêtes, commits poussés, arbre propre) :
-   `balance`, `market`, `lease`, `chronicle`, `favours`, `proofs`, `pwa`,
-   `tutorial`, `rung1` (attribution), `rung2` (redevance + fonds).
-   Conflits attendus sur `config.rs`, `views.rs`, `season.rs`, `App.tsx`,
-   `hooks.ts`, `styles.css` : résolution à la main, tests après chaque merge.
-2. **Corriger les défauts trouvés par l'audit** (ci-dessous) — chacun avec un
-   test de non-régression, dans des PR séparées.
-3. **Déployer sur testnet** dès que le faucet rend un slot (job automatique à
-   15:35 ; fenêtre à 15:27). Puis rebrancher `docs/ONCHAIN.md` et la page
-   `/proofs.html` sur l'adresse publique.
-4. **Redéployer la démo** (`tidewater-play.vercel.app`) depuis `main`, vérifier
-   le parcours complet en headless.
+---
 
-### Défauts connus à corriger
+## 3. Historique — ce qui a été décidé et livré (conservé)
 
-**Contrat (2, bloquants pour une économie réelle)**
-- `mt_transfer` / `mt_batch_transfer` appellent `assert_yocto()` sans `#[payable]`
-  → aucun or ne circule entre comptes. Correctif : `#[payable]` + rembourser
-  l'excédent.
-- `new()` sème 20 licences aux capitaines, **0 à la banque** → `buy_licence` ne
-  peut rien vendre avant une faillite. Correctif : semer quelques licences à
-  `npc:bank`.
+### Ce qui était bloquant le 10/11 et a été résolu
 
-**Moteur (6, dont 5 majeurs — `crates/sim/tests/audit.rs`)**
-- La criée de l'auberge paie **deux fois** les mêmes caisses (`evening.rs:134`) ;
-- l'adjudication du lundi **ignore le plafond de 8 licences** (`season.rs:151`) ;
-- le plan du jour **n'est pas figé à l'aube** : une coque achetée à midi pêche
-  des rondes déjà closes (`cycle.rs:133`) ;
-- une coque saisie en cours de journée **crédite son acheteur** des trajets de
-  l'ancien propriétaire (`cycle.rs:189`) ;
-- `history_hash` **n'incorpore pas les licences** : deux saisons différentes
-  peuvent avoir la même empreinte (`fastforward.rs:152`) ;
-- `open_next_season` archive le bilan **avant** de refuser : appeler deux fois
-  `next-season` duplique une entrée de campagne (`season.rs:448`).
+- **Intégration des 10 branches initiales** (`balance`, `market`, `lease`, `chronicle`, `favours`, `proofs`, `pwa`, `tutorial`, `rung1`, `rung2`) : mergées.
+- **Défauts d'audit** : les 6 défauts moteur (`crates/sim/tests/audit.rs`) corrigés (PR #43, #44) ; les 3 bloquants + 8 majeurs du contrat corrigés (PR #42, #80) ; le bloquant `E_IMPORT` + 8 majeurs + 3 mineurs web corrigés (PR #75).
+- **Barreaux 3, 4 et 5** : motion financée (PR #56), dette envers la mer (PR #61), jachère collective et contentieux (PR #76) — tous mergés.
+- **Déploiement testnet** : bloqué le 10/11 par le faucet (`429`), débloqué et prouvé le 11/11 sous `bankkeeper.testnet` (PR #82, #83).
+- **Doublon Vercel** : `tidewater-demo` supprimé ; `https://tidewater-play.vercel.app` est le lien canonique unique (PR #60).
+- **Vidéo de soumission** : annulée par décision explicite du propriétaire — la démo passe par le lien public, le fast-forward et `/proofs.html`.
 
-**Interface** : rapport d'audit en cours (`docs/AUDIT-WEB.md`).
-
-### Ensuite — la semaine
-
-5. **Barreaux 3, 4, 5** de la colonne (motion financée, dette envers la mer,
-   jachère et contentieux) : 3 à 4 jours, dans cet ordre.
-6. ~~**Équilibrage** avec le harnais~~ **fait** : 50 graines × 4 politiques,
-   quatre curseurs réglés et mesurés (repousse, part prise par sortie,
-   redevance, seuil de jachère), jeu de référence régénéré
-   (`docs/balance-50.json`), deux tests qui verrouillent la dérive —
-   `docs/BALANCE.md`. Restent des points de game design à trancher (liste
-   en fin de `docs/BALANCE.md`).
-7. **Soumission** : README de présentation, page `/proofs.html` à jour, script
-   de démonstration en 90 secondes (dont le fast-forward), et la vidéo si elle
-   est demandée. **Date d'échéance à confirmer** — 14/11 18:00 UTC était
-   l'échéance d'un autre track.
-
-## 3. Comment l'idée continue
-
-Trois documents, un seul axe : **`docs/SPINE.md`** est le plan de référence.
+### L'axe et les trois phrases (`docs/SPINE.md`)
 
 > L'idée de base : *ce que je prends aujourd'hui coûte à quelqu'un d'autre, et à
 > demain.* Tout le reste est une manière de répondre.
 
-**La colonne (en cours)** — cinq barreaux qui s'empilent :
-
 | Barreau | Ce qu'il ajoute | État |
 |---|---|---|
-| 1. **Voir** | l'attribution : `Greybank −1 200 caisses : toi 46 %, Brandt 31 %` | en cours (branche prête) |
-| 2. **Payer** | redevance de débarquement → fonds du port | en cours (branche prête) |
-| 3. **Gouverner** | toute motion votée avec son financement | à faire |
-| 4. **Hériter** | la dette envers la mer, payée en jachère | à faire (après le harnais) |
-| 5. **Réparer** | jachère collective + contentieux | à faire |
-
-**Ce que la colonne absorbe** : la criée commune devient le prix après
-redevance ; la chronique devient le registre de la dette ; la science devient un
-service payé par le fonds ; les habitants deviennent les ayants droit du fonds.
-On n'ajoute pas de systèmes, on **donne un ordre**.
+| 1. **Voir** | l'attribution : `Greybank −1 200 caisses : toi 46 %, Brandt 31 %` | **fait** (`attribution.rs`) |
+| 2. **Payer** | redevance de débarquement → fonds du port | **fait** (`fund.rs`) |
+| 3. **Gouverner** | toute motion votée avec son financement | **fait** (PR #56) |
+| 4. **Hériter** | la dette envers la mer, payée en jachère ou réensemencement | **fait** (PR #61) |
+| 5. **Réparer** | jachère collective + contentieux | **fait** (PR #76) |
 
 **Le deuxième horizon** (`docs/VISION.md`) — après les cinq barreaux :
 les gens du port comme second score (non monétaire), gagner en devenant rentier
@@ -110,12 +73,14 @@ asynchrone entre joueurs.
 3. « Vous laissez le registre le plus riche et le port le plus vide. » — le
    verdict, jamais prononcé.
 
-## 4. Décisions à prendre
+## 4. Décisions tranchées (et questions ouvertes)
 
-1. **Date de soumission** : à confirmer (14/11 18:00 UTC ?).
-2. **Testnet** : on garde `tidewater26.testnet` comme compte public, ou on le
-   renomme `bankkeeper.testnet` pour la cohérence de marque ?
-3. **Renommage interne** (crates, tokens, clés de stockage) : après le gel, ou
-   jamais ?
-4. **Barreau 4** : la dette envers la mer en caisses (lisible), avec conversion
-   en or au moment de payer — tu confirmes ?
+1. **Testnet** : **`bankkeeper.testnet` retenu** et déployé (11/11/2026).
+2. **Barreau 4** : dette envers la mer comptée en **caisses**, conversion en or
+   au moment du réensemencement (`docs/DEBT.md`).
+3. **Fiction** : le jeu reste un **port de pêche** (`docs/DECISIONS.md`).
+4. **Vidéo** : **aucune vidéo** — démo live + fast-forward + `/proofs.html`.
+5. **Authentification** : voie du **relayeur sponsorisé** retenue et prouvée
+   sur sandbox (`docs/AUTH.md`), couture FastAuth conservée dans `NearSession`.
+6. **Ouvert** : date de soumission finale à confirmer ; renommage interne des
+   crates/clés `tidewater` → `bankkeeper` différé après le gel.

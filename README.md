@@ -17,6 +17,23 @@ Projet pour le hackathon NEAR — track **Games With Real Economies**.
 - 🧭 **La colonne vertébrale du jeu (SPINE)** : [`docs/SPINE.md`](docs/SPINE.md)
 - 🔍 **Preuves publiques** : [`/proofs.html`](https://tidewater-play.vercel.app/proofs.html) et [`docs/deployments.md`](docs/deployments.md)
 - 📋 **Grille de conformité au track** : [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)
+- 📦 **Dossier juges** : [`docs/DEMO-JUGES.md`](docs/DEMO-JUGES.md) · [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
+
+### Voir le jeu en 3 minutes
+
+1. **Ouvrir le lien public** : **<https://tidewater-play.vercel.app/?seed=7&weeks=1>**
+   — saisir un email et un nom de capitaine, cliquer **Set sail**, puis **Skip**
+   sur le tutoriel.
+2. **Parcours 90 s** : cliquer **Go live** (1 lot / 30 s) ou **End the day**,
+   survoler **why** à côté d'un acheteur pour lire sa règle de prix, puis lire
+   **Who took what** dans le registre.
+3. **Parcours 5 min & preuves** : ouvrir **Judges** (**Fast-forward 7 days** /
+   **28 days**), proposer une motion financée dans **Harbour office**, clôturer
+   la saison jusqu'au bilan (**Debt to the sea**), puis consulter
+   **<https://tidewater-play.vercel.app/proofs.html>** (`bankkeeper.testnet`,
+   75 transactions).
+
+Détail bouton par bouton et commandes locales dans [`docs/DEMO-JUGES.md`](docs/DEMO-JUGES.md).
 
 ### Démo publique & redéploiement
 
