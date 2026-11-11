@@ -43,7 +43,6 @@ fn unpayable_yocto_methods() -> Vec<String> {
 }
 
 #[test]
-#[ignore = "bug: D01 mt_transfer/mt_batch_transfer call assert_yocto() but are not #[payable]"]
 fn d01_mt_transfers_that_require_yocto_must_be_payable() {
     let offenders = unpayable_yocto_methods();
     assert!(
@@ -59,7 +58,6 @@ fn d01_mt_transfers_that_require_yocto_must_be_payable() {
 // ---------------------------------------------------------------------------
 
 #[test]
-#[ignore = "bug: D02 new() leaves 0 of the 20 licences with npc:bank, buy_licence is dead code"]
 fn d02_bank_holds_no_licence_so_buy_licence_can_never_sell() {
     let mut w = setup();
     let player = w.player.clone();
