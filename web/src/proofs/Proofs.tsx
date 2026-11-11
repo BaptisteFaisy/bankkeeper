@@ -2,12 +2,25 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import './graphic.css';
 import { contractRef, readSupplies, TOKENS } from './chain';
 import type { SupplyRow } from './chain';
+import { DEPLOYMENT } from './deployment';
 import { sharedSeason } from './season';
 import { loadTimeline } from './timeline';
 import ContractCard from './ContractCard';
 import TokenCards from './TokenCards';
 import Timeline from './Timeline';
 import { Invariants, Ledger, SeasonCard } from './Panels';
+
+/**
+ * The date this page speaks for: the timestamp of the recorded replay, read
+ * from `docs/deployments.md` like everything else. No hand-written date that
+ * could go stale and contradict the document.
+ */
+function footerDate(): string {
+  const at = DEPLOYMENT.replayedAt;
+  if (at === null) return 'Aucun rejeu enregistré';
+  const day = at.slice(0, 10).split('-').reverse().join('/');
+  return `Rejeu on-chain du ${day}`;
+}
 
 /** /proofs.html: the whole proofs page in reading order. */
 export default function Proofs() {
@@ -71,8 +84,8 @@ export default function Proofs() {
       <Ledger />
       <Invariants />
       <footer className="pf-foot">
-        10 novembre 2026 &middot; page statique hors-ligne, aucune dépendance npm,
-        aucun secret dans le dépôt. Direction artistique maritime plate.
+        {footerDate()} &middot; page statique, aucune dépendance npm, aucun secret
+        dans le dépôt. Direction artistique maritime plate.
       </footer>
     </main>
   );

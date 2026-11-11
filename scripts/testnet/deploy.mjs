@@ -21,6 +21,8 @@ import {
   nearBalance,
   near,
   provider,
+  readRecord,
+  saveRecord,
   short,
   signer,
   wasmSize,
@@ -29,12 +31,16 @@ import {
 const line = (label, value) => console.log(`  ${label.padEnd(20)} ${value}`);
 const step = (title) => console.log(`\n\x1b[1m${title}\x1b[0m`);
 
-// Gas dust only: the wasm storage eats the root's faucet grant, so the three
-// scenario accounts get cents of NEAR, enough for a hundred calls each.
+// The wasm storage eats most of the root's faucet grant, so the scenario
+// accounts get change. It is still more than dust: testnet pre-charges
+// 100 Tgas against the signer before every call (measured 2026-11-11:
+// 0.1009 NEAR required, so the 0.1 NEAR the captain used to get made its
+// council ballot fail with `Not enough balance`). Half a NEAR each covers
+// every call in the replay with room to spare, and the unused gas comes back.
 const SUBACCOUNTS = [
   ["player", ids.player, 0.5],
-  ["captain", ids.captain, 0.1],
-  ["bank", ids.bank, 0.1],
+  ["captain", ids.captain, 0.5],
+  ["bank", ids.bank, 0.5],
 ];
 
 async function main() {
@@ -62,14 +68,15 @@ async function main() {
 
   const deployed = await hasCode(ids.contract);
   const initialized = deployed && (await isInitialized());
-  let deployHash = null;
-  let initHash = null;
+  const record = readRecord(ids.contract) ?? {};
+  let deployHash = record.deployHash ?? null;
+  let initHash = record.initHash ?? null;
 
   if (FORCE || !deployed) {
     deployHash = await deployWasm(signer(ids.contract), WASM);
     line("deploy tx", short(deployHash));
   } else {
-    line("deploy", "code already on chain (FORCE_REDEPLOY=1 to replace it)");
+    line("deploy", `code already on chain (deploy tx ${deployHash ? short(deployHash) : "inconnu"})`);
   }
 
   if (FORCE || !initialized) {
@@ -100,12 +107,24 @@ async function main() {
   if (day.day !== 0) console.log(`  \x1b[33mnote\x1b[0m state is not fresh: day ${day.day} (scenario already replayed)`);
 
   step("4. balances");
+  const balances = [];
   for (const accountId of [ids.contract, ids.player, ids.captain, ids.bank]) {
-    line(accountId, near(await nearBalance(accountId)));
+    const balance = near(await nearBalance(accountId));
+    balances.push([accountId, balance]);
+    line(accountId, balance);
   }
 
   step("5. write docs/deployments.md");
-  writeDeployDoc({ digest, codeHash, deployHash, initHash, size: code.length, day, totals, rootAccount });
+  saveRecord(ids.contract, {
+    account: ids.contract,
+    deployHash,
+    initHash,
+    digest,
+    codeHash,
+    size: code.length,
+    updatedAt: new Date().toISOString(),
+  });
+  writeDeployDoc({ digest, codeHash, deployHash, initHash, size: code.length, day, totals, rootAccount, balances });
   line("written", "docs/deployments.md");
 
   console.log("\n  next: make testnet-e2e   (node scripts/testnet/e2e.mjs)\n");
@@ -139,18 +158,68 @@ async function isInitialized() {
   }
 }
 
-function writeDeployDoc({ digest, codeHash, deployHash, initHash, size, day, totals, rootAccount }) {
+function writeDeployDoc(run) {
   const file = path.join(DOCS, "deployments.md");
   const previous = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
-  const scenario = previous.match(/<!-- e2e:begin -->[\s\S]*?<!-- e2e:end -->/)?.[0] ??
-    "<!-- e2e:begin -->\n_No scenario replay recorded yet: run `make testnet-e2e`._\n<!-- e2e:end -->";
+  const doc = [
+    docHeader(run),
+    docContract({ ...run, ...reusedHashes(previous, run) }),
+    docBalances(run.balances),
+    "## Transactions du scénario",
+    "",
+    preserved(previous, "e2e", NO_SCENARIO),
+    "",
+    preserved(previous, "hand", NO_HAND),
+  ].join("\n\n");
+  fs.mkdirSync(DOCS, { recursive: true });
+  fs.writeFileSync(file, `${doc}\n`);
+}
 
-  const doc = `# Déploiement testnet
+/**
+ * Keeps the real deployment and init hashes of the previous run when this run
+ * only reused what is already on chain: the hash of the transaction that put
+ * the code there does not change because the script was run again.
+ */
+function reusedHashes(previous, { deployHash, initHash }) {
+  const row = (label) =>
+    previous.match(new RegExp(`\\| ${label} \\| \`([A-Za-z0-9]{50,})\` \\|`))?.[1] ?? null;
+  return {
+    deployHash: deployHash ?? row("Hash de déploiement"),
+    initHash: initHash ?? row("Hash d'init .*"),
+  };
+}
 
-Écrit par \`node scripts/testnet/deploy.mjs\` le ${new Date().toISOString().slice(0, 10)}.
-Relancer le script est idempotent ; \`FORCE_REDEPLOY=1\` remplace le wasm et
-réinitialise l'état. Aucune clé n'est écrite ici : les credentials vivent dans
-\`~/.near-credentials/testnet/\`, hors du dépôt.
+/** Keeps a hand-written block across runs; the script never invents one. */
+function preserved(previous, name, fallback) {
+  return previous.match(new RegExp(`<!-- ${name}:begin -->[\\s\\S]*?<!-- ${name}:end -->`))?.[0] ?? fallback;
+}
+
+const NO_SCENARIO =
+  "<!-- e2e:begin -->\n_No scenario replay recorded yet: run `make testnet-e2e`._\n<!-- e2e:end -->";
+
+const NO_HAND =
+  "<!-- hand:begin -->\n_Rien d'écrit à la main pour l'instant._\n<!-- hand:end -->";
+
+function docHeader({ rootAccount }) {
+  const origin =
+    rootAccount.mode === "faucet"
+      ? "La racine vient du faucet public de testnet (10 NEAR) et tous les autres comptes en sont des sous-comptes : un seul appel au faucet."
+      : `\`${ids.contract}\` n'a **pas** été créé par le faucet : \`helper.testnet.near.org\`
+a répondu 429 (10 comptes par 3 h et par IP, fenêtre encore fermée), donc il a été
+créé comme sous-compte de \`${rootAccount.parent}\`, un compte déjà financé, via
+\`TIDEWATER_ROOT_PARENT=${rootAccount.parent}\`. Le contrat, l'état et le scénario
+ci-dessous sont identiques au run nominal ; seul le nom du compte change. Une fois
+la fenêtre du faucet rouverte, relancer \`node scripts/testnet/deploy.mjs\` sans
+\`TIDEWATER_ROOT_PARENT\` donne \`${rootAccount.prefix}.testnet\` ; supprimer ce
+compte de repli plus tard rembourse le storage du code à son parent.`;
+  return `# Déploiement testnet
+
+Statut : **déployé**. Écrit par \`node scripts/testnet/deploy.mjs\` le
+${new Date().toISOString()} — relancer le script est idempotent : un compte
+existant et un contrat déjà en place sont réutilisés, et \`FORCE_REDEPLOY=1\`
+n'est **pas** un moyen de repartir de zéro (l'état survit au dépôt du code, le
+\`new\` qui suit panique — voir \`docs/TESTNET-RUN.md\`). Aucune clé n'est écrite
+ici : les credentials vivent dans \`~/.near-credentials/testnet/\`, hors du dépôt.
 
 ## Adresses
 
@@ -163,18 +232,11 @@ réinitialise l'état. Aucune clé n'est écrite ici : les credentials vivent da
 
 Explorateur : <https://testnet.nearblocks.io/address/${ids.contract}>
 
-${rootAccount.mode === "faucet"
-  ? "La racine vient du faucet public de testnet (10 NEAR) et tous les autres comptes en sont des sous-comptes : un seul appel au faucet."
-  : `\`${ids.contract}\` n'a **pas** été créé par le faucet : \`helper.testnet.near.org\`
-a répondu 429 (10 comptes par 3 h et par IP, fenêtre encore fermée), donc il a été
-créé comme sous-compte de \`${rootAccount.parent}\`, un compte déjà financé, via
-\`TIDEWATER_ROOT_PARENT=${rootAccount.parent}\`. Le contrat, l'état et le scénario
-ci-dessous sont identiques au run nominal ; seul le nom du compte change. Une fois
-la fenêtre du faucet rouverte, relancer \`node scripts/testnet/deploy.mjs\` sans
-\`TIDEWATER_ROOT_PARENT\` donne \`${rootAccount.prefix}.testnet\` ; supprimer ce
-compte de repli plus tard rembourse le storage du code à son parent.`}
+${origin}`;
+}
 
-## Contrat
+function docContract({ digest, codeHash, deployHash, initHash, size, day, totals }) {
+  return `## Contrat
 
 | Élément | Valeur |
 |---|---|
@@ -191,22 +253,27 @@ Déployé : les licences (\`3\`), les notes de dette (100+), les actes de bateau
 (10-19), l'or (0) et les poissons (1, 2) sur le registre NEP-245 — plus le
 scrutin du conseil, une voix par licence. Pas on-chain, par construction : les
 stocks de zone, la criée et les pilotes NPC (ils tournent dans le moteur
-wasm/sim ; la chaîne ne règle que ce que le joueur peut échanger).
+wasm/sim ; la chaîne ne règle que ce que le joueur peut échanger).`;
+}
 
-## Transactions du scénario
+function docBalances(balances) {
+  const rows = balances.map(([accountId, amount]) => `| \`${accountId}\` | ${amount} |`);
+  return `## Soldes restants
 
-${scenario}
+| Compte | Solde |
+|---|---|
+${rows.join("\n")}
+
+Le storage du code est staké sur le compte contrat (il n'apparaît pas dans son
+solde liquide) ; le reste est du NEAR disponible pour les appels.
 
 ## Commandes
 
 \`\`\`bash
+make testnet-wasm            # cargo near build non-reproducible-wasm
 make testnet-deploy          # ou : node scripts/testnet/deploy.mjs
 make testnet-e2e             # ou : node scripts/testnet/e2e.mjs
-FORCE_REDEPLOY=1 make testnet-deploy
-\`\`\`
-`;
-  fs.mkdirSync(DOCS, { recursive: true });
-  fs.writeFileSync(file, doc);
+\`\`\``;
 }
 
 main().catch((error) => {
