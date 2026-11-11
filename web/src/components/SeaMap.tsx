@@ -1,19 +1,22 @@
 // SeaMap: the scene, dressed.
 //
-// The drawing lives in `scene/` — this component mounts the canvas, hands
-// the harbour to the renderer and keeps what the chart has always been good
-// for: pick a boat, then a zone or the quay, with the mouse or with the
-// keyboard. The canvas informs, the DOM controls act. Reduced motion and
-// Math.min(window.devicePixelRatio || 1, 2) are honored by the scene engine.
+// The harbour is drawn in 3D (`scene3d/`) and falls back to the 2D chart
+// (`scene/`) when the browser has no WebGL. This component mounts the
+// canvas, hands the harbour to the renderer and keeps what the chart has
+// always been good for: pick a boat, then a zone or the quay, with the
+// mouse or with the keyboard. The canvas informs, the DOM controls act.
+// prefers-reduced-motion and Math.min(window.devicePixelRatio || 1, 2) are
+// honored by both engines.
 import { useEffect, useRef, useState } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
-import type { BoatView, LandingView, PortState, ZoneId } from '../types';
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react';
+import type { LandingView, PortState, ZoneId } from '../types';
 import { reducedMotion } from '../motion';
 import { useChartKeys } from './chartKeys';
 import { createScene, type Scene } from '../scene/scene';
 import { sceneDescription, sceneEvents, sceneNarration, sceneState } from '../scene/bridge';
 import type { SceneInput } from '../scene/bridge';
-import { QUAY, VIEW_H, VIEW_W, ZONE_RECTS, quayMark, zoneMark, type ZoneKey } from '../scene/layout';
+import { createScene3d, type Scene3d } from '../scene3d/scene3d';
+import { pick2d } from './seaPick2d';
 
 interface Props {
   port: PortState | null;
@@ -27,64 +30,41 @@ interface Props {
   onPickQuay: () => void;
 }
 
-/** How near the pointer must be to take a hull. */
-const PICK_RADIUS = 20;
+/** A drag longer than this turns the camera instead of picking. */
+const DRAG_PX = 5;
 
-type Pt = { x: number; y: number };
-
-/** Deterministic spots of the boats, identical to the Fleet math. */
-function boatSpots(boats: BoatView[]): Array<[string, Pt]> {
-  const counts = new Map<string, number>();
-  const out: Array<[string, Pt]> = [];
-  for (const boat of boats) {
-    const key = boat.zone ?? 'quay';
-    const index = counts.get(key) ?? 0;
-    counts.set(key, index + 1);
-    const pt = boat.zone === null ? quayMark(index) : zoneMark(boat.zone, index);
-    out.push([boat.id, pt]);
+function mount(canvas: HTMLCanvasElement, overlay: HTMLElement): { scene: Scene; three: Scene3d | null } {
+  try {
+    const three = createScene3d(canvas, overlay);
+    return { scene: three, three };
+  } catch {
+    return { scene: createScene(canvas), three: null };
   }
-  return out;
-}
-
-/** The point of the click, in the logical marks of the scene. */
-function logicalPoint(canvas: HTMLCanvasElement, event: ReactMouseEvent): Pt {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: ((event.clientX - rect.left) / rect.width) * VIEW_W,
-    y: ((event.clientY - rect.top) / rect.height) * VIEW_H,
-  };
-}
-
-/** The zone under the pointer, if any. */
-function zoneAt(p: Pt): ZoneKey | null {
-  const keys = Object.keys(ZONE_RECTS) as ZoneKey[];
-  return keys.find((id) => {
-    const r = ZONE_RECTS[id];
-    return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
-  }) ?? null;
-}
-
-/** Is the pointer on the quay? */
-function inQuay(p: Pt): boolean {
-  return p.x >= QUAY.x && p.x <= QUAY.x + QUAY.w && p.y >= QUAY.y && p.y <= QUAY.y + QUAY.h;
 }
 
 export default function SeaMap(props: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<Scene | null>(null);
+  const threeRef = useRef<Scene3d | null>(null);
   const previous = useRef<SceneInput | null>(null);
+  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const [said, setSaid] = useState('');
+  const [flat, setFlat] = useState(false);
   const boats = props.port?.boats ?? [];
   const keys = useChartKeys(boats, props.selectedBoat, props.onPickBoat, props.onPickZone, props.onPickQuay);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas === null) return;
-    const scene = createScene(canvas);
-    sceneRef.current = scene;
+    const canvas = canvasRef.current, overlay = overlayRef.current;
+    if (canvas === null || overlay === null) return;
+    const made = mount(canvas, overlay);
+    sceneRef.current = made.scene;
+    threeRef.current = made.three;
+    setFlat(made.three === null);
     return () => {
-      scene.destroy();
+      made.scene.destroy();
       sceneRef.current = null;
+      threeRef.current = null;
       previous.current = null;
     };
   }, []);
@@ -92,65 +72,69 @@ export default function SeaMap(props: Props) {
   useEffect(() => {
     const scene = sceneRef.current;
     if (scene === null) return;
-    const input: SceneInput = {
-      port: props.port,
-      live: props.live,
-      price: props.price,
-      selectedBoat: props.selectedBoat,
-      now: performance.now(),
-    };
+    const input: SceneInput = { port: props.port, live: props.live, price: props.price, selectedBoat: props.selectedBoat, now: performance.now() };
     const events = sceneEvents(previous.current, input);
     const narration = sceneNarration(previous.current, input);
     previous.current = input;
     scene.setState(sceneState(input));
     // prefers-reduced-motion: no tween at all, the picture changes instead.
-    if (!reducedMotion()) {
-      for (const event of events) scene.emit(event);
-    }
+    if (!reducedMotion()) for (const event of events) scene.emit(event);
     if (narration !== null) setSaid(narration);
   }, [props.port, props.live, props.price, props.selectedBoat]);
 
-  function pickBoat(p: Pt): boolean {
-    let best: { id: string; distance: number } | null = null;
-    for (const [id, mark] of boatSpots(boats)) {
-      const distance = Math.hypot(mark.x - p.x, mark.y - p.y);
-      if (distance < PICK_RADIUS && (best === null || distance < best.distance)) {
-        best = { id, distance };
-      }
+  function act(event: ReactMouseEvent): void {
+    const three = threeRef.current;
+    if (three === null) {
+      const canvas = canvasRef.current;
+      if (canvas !== null) pick2d(canvas, event, boats, props, sceneRef.current);
+      return;
     }
-    if (best === null) return false;
-    props.onPickBoat(best.id);
-    return true;
+    const hit = three.pick(event.clientX, event.clientY);
+    if (hit === null) return;
+    if (hit.kind === 'boat') props.onPickBoat(hit.id);
+    else if (hit.kind === 'zone') props.onPickZone(hit.id as ZoneId);
+    else props.onPickQuay();
   }
 
-  function handlePick(event: ReactMouseEvent): void {
-    const canvas = canvasRef.current;
-    if (canvas === null) return;
-    const p = logicalPoint(canvas, event);
-    if (pickBoat(p)) return;
-    const zone = zoneAt(p);
-    if (zone === null && !inQuay(p)) return;
-    const scene = sceneRef.current;
-    if (scene !== null && !reducedMotion()) scene.emit({ type: 'splash', x: p.x, y: p.y });
-    if (zone !== null) props.onPickZone(zone);
-    else props.onPickQuay();
+  function down(e: ReactPointerEvent<HTMLCanvasElement>): void {
+    drag.current = { x: e.clientX, y: e.clientY, moved: false };
+  }
+  function move(e: ReactPointerEvent<HTMLCanvasElement>): void {
+    const three = threeRef.current, d = drag.current;
+    if (three === null) return;
+    if (d !== null && (e.buttons & 1) === 1) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > DRAG_PX) d.moved = true;
+      if (d.moved) three.turn(e.movementX, e.movementY);
+      return;
+    }
+    three.hover(e.clientX, e.clientY);
+  }
+  function up(e: ReactMouseEvent<HTMLCanvasElement>): void {
+    const d = drag.current;
+    drag.current = null;
+    if (d === null || !d.moved) act(e);
+  }
+  function wheel(e: ReactWheelEvent<HTMLCanvasElement>): void {
+    threeRef.current?.zoom(e.deltaY);
   }
 
   const label = `${keys.label} ${sceneDescription(props.port)}`.trim();
   return (
-    <>
+    <div className={flat ? 'sea-stage flat' : 'sea-stage'}>
       <canvas
         ref={canvasRef}
         className="sea-canvas"
-        style={{ width: '100%', height: 'auto', aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
         tabIndex={0}
         role="application"
         aria-label={label}
         onKeyDown={keys.onKeyDown}
-        onClick={handlePick}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onWheel={wheel}
       />
+      <div ref={overlayRef} className="sea-labels" aria-hidden="true" />
       <p className="sr-only" role="status" aria-live="polite">{said}</p>
-    </>
+    </div>
   );
 }
-
