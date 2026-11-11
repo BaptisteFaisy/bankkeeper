@@ -116,7 +116,7 @@ async function openBallot(house, contractId, state) {
   const { hash, outcome } = await send(house, contractId, 'propose_rule', {
     kind: { QuotaPerLicence: 80 },
     indemnity_milli: '0',
-  }, { gas: GAS });
+  }, { gas: GAS, deposit: 1n });
   let proposalId = state.proposalId ?? null;
   try {
     proposalId = Number(getTransactionLastResult(outcome));

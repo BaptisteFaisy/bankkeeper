@@ -146,7 +146,7 @@ async function council() {
   const proposed = await must(`propose_rule(quota ${NEXT_QUOTA})`, PLAYER, player, "propose_rule", {
     kind: { QuotaPerLicence: NEXT_QUOTA },
     indemnity_milli: "0",
-  });
+  }, { deposit: 1n });
   const proposalId = num(proposed.value);
   const open = await view(C, "get_proposal", { proposal_id: proposalId });
   say(`  propose_rule(${NEXT_QUOTA})`.padEnd(28) + ` ${PLAYER.padEnd(34)} ${short(proposed.txHash).padEnd(16)} → proposal ${proposalId}, author ${open.author}, escrow ${gold(open.escrow_milli)}`);
