@@ -19,11 +19,11 @@ export default function HarborFigure({ title, status }: { title: string; status:
   }, []);
 
   const explanation = status === 'absent'
-    ? 'Le contrat NEP-245 n\u2019est pas encore déployé sur le testnet (limite de débit du faucet public NEAR). Le déploiement s\u2019exécute cette nuit sous bankkeeper.testnet.'
+    ? 'Aucun contrat n\u2019est configuré pour cette page : docs/deployments.md ne lui donne aucun compte déployé, et elle n\u2019en invente pas.'
     : 'Un contrat est configuré mais le RPC NEAR testnet n\u2019a pas renvoyé de réponse lisible pour les jetons demandés.';
 
-  const whatWillBeProven = 'Ce qui sera prouvé : soldes mt_supply lus en direct, transfert de licence NEP-245, rachat de note de dette et dépouillement du conseil portuaire.';
-  const whatIsMissing = 'Ce qui manque : l\u2019adresse du compte déployé (renseignée par ?contract= ou tidewater-chain-v1).';
+  const whatWillBeProven = 'Ce qui est prouvé dès qu\u2019un contrat répond : soldes mt_supply lus en direct, transfert de licence NEP-245, rachat de note de dette et dépouillement du conseil portuaire.';
+  const whatIsMissing = 'Ce qui manque ici : l\u2019adresse du compte déployé (?contract=, tidewater-chain-v1, ou docs/deployments.md).';
 
   return (
     <figure className="pf-harbor-figure" aria-labelledby="pf-harbor-caption">

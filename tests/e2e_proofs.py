@@ -1,9 +1,12 @@
 """Headless check of the public proofs page (`/proofs.html`).
 
-What it proves: with no contract configured the page loads from plain static
-files, says "pas encore déployé" instead of faking a live state, hands out a
-replay link that carries `seed=`, and talks to nobody (zero console errors,
-zero failed requests, zero `/api` calls).
+What it proves: the page reads the contract id from `docs/deployments.md` — the
+one place where it is written — and, when that contract answers, the page says
+"live" and shows the values the RPC really returned, one row per token. When
+no contract is configured (`?contract=` pointing nowhere useful), the page must
+say so instead of faking a live state, hand out a replay link that carries
+`seed=`, and talk to nobody (zero console errors, zero failed requests, zero
+`/api` calls).
 
 Run: python3 tests/e2e_proofs.py (after `cd web && npm run build:offline`).
 Exit 1 on any console error, failed request or blocked step.
@@ -24,6 +27,7 @@ from e2e_offline import api_traffic, serve_dist  # noqa: E402
 
 REPLAY = "[data-testid='replay-link']"
 STATUS = "[data-testid='contract-status']"
+SUPPLY_TABLE = "[data-testid='supply-table']"
 
 
 def text_of(driver, selector):
@@ -48,27 +52,66 @@ def open_page(driver, url, notes):
         return False
 
 
-def check_absent(driver, notes):
-    """No contract configured: the page must say so and show no live badge."""
+def wait_for_read(driver, notes, timeout=25):
+    """
+    Waits for the RPC read to settle: the page shows "live" once a token
+    answered, "aucune réponse" when none did. Returns "live", "unreachable",
+    or "timeout" — the table itself appears immediately, filled with dashes.
+    """
+    from selenium.webdriver.common.by import By
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if driver.find_elements(By.CSS_SELECTOR, ".pf-badge-live"):
+            return "live"
+        if "aucune réponse" in text_of(driver, STATUS).lower():
+            return "unreachable"
+        time.sleep(0.5)
+    notes.append("blocked: the RPC read never settled")
+    return "timeout"
+
+
+def check_deployed(driver, notes):
+    """A configured contract: the page names it and shows what the RPC said."""
+    from selenium.webdriver.common.by import By
+    status = text_of(driver, STATUS)
+    if "bankkeeper.testnet" in status:
+        notes.append("contract: names the deployed account")
+    else:
+        notes.append(f"blocked: contract status reads {status[:120]!r}")
+    live = driver.find_elements(By.CSS_SELECTOR, ".pf-badge-live")
+    notes.append("contract: live badge on" if live
+                 else "blocked: no live badge while the RPC answers")
+    rows = driver.find_elements(By.CSS_SELECTOR, SUPPLY_TABLE + " tbody tr")
+    notes.append(f"tokens: {len(rows)} rows read from the RPC"
+                 if rows else "blocked: no token row read")
+    licence = text_of(driver, "[data-testid='supply-3']")
+    notes.append(f"licences: supply {licence} (offre fixe 20)"
+                 if licence.replace(" ", "").replace(" ", "") == "20"
+                 else f"blocked: licence supply reads {licence!r}")
+    steps = driver.find_elements(By.CSS_SELECTOR, ".pf-tl-item")
+    confirmed = driver.find_elements(By.CSS_SELECTOR, ".pf-tl-tag-confirmed")
+    notes.append(f"timeline: {len(confirmed)}/{len(steps)} steps confirmed"
+                 if steps and len(confirmed) == len(steps)
+                 else f"blocked: {len(confirmed)}/{len(steps)} timeline steps confirmed")
+
+
+def check_unreachable(driver, notes):
+    """
+    A contract that does not answer must never look live: the page has to say
+    so, badge included, and leave the supplies empty rather than invent them.
+    """
     from selenium.webdriver.common.by import By
     status = text_of(driver, STATUS).lower()
-    if "pas encore déployé" in status:
-        notes.append("contract: says 'pas encore déployé'")
+    if "aucune réponse" in status or "pas encore déployé" in status:
+        notes.append("contract: says it cannot read the chain")
     else:
         notes.append(f"blocked: contract status reads {status[:120]!r}")
     live = driver.find_elements(By.CSS_SELECTOR, ".pf-badge-live")
     notes.append("contract: no fake live badge" if not live
-                 else f"blocked: {len(live)} live badge(s) with no contract")
-    table = driver.find_elements(By.CSS_SELECTOR, "[data-testid='supply-table']")
-    notes.append("contract: no supply table without a contract" if not table
-                 else "blocked: supply table shown with no contract")
-    rows = driver.find_elements(By.CSS_SELECTOR, ".pf-row")
-    notes.append(f"columns: {len(rows)} on-chain/off-chain rows listed"
-                 if rows else "blocked: on-chain vs off-chain columns missing")
-    body = driver.find_element(By.TAG_NAME, "body").text
-    invariant = "cargo test --workspace" in body and "history_hash" in body
-    notes.append("invariants: tests and hash named" if invariant
-                 else "blocked: invariants section incomplete")
+                 else f"blocked: {len(live)} live badge(s) with no answer")
+    licence = text_of(driver, "[data-testid='supply-3']")
+    notes.append("licences: no invented supply" if licence.strip() in ("—", "")
+                 else f"blocked: licence supply invented {licence!r}")
 
 
 def check_replay(driver, notes, seed):
@@ -103,15 +146,26 @@ def boot_game_from(driver, href, notes):
 
 
 def journey(driver, base, notes):
-    """Both loads: shared season, then bare URL (default seed)."""
-    if not open_page(driver, base + "/proofs.html?seed=4242&weeks=3", notes):
-        return
-    check_absent(driver, notes)
-    href = check_replay(driver, notes, "4242")
+    """
+    Three loads:
+      1. deployed mode: bare URL reads the contract from docs/deployments.md,
+         fetches live NEP-245 supplies, and shows the confirmed hashes;
+      2. a contract that does not answer must not look live;
+      3. shared season: ?seed=4242&weeks=3 carries the season to the replay link.
+    """
     if not open_page(driver, base + "/proofs.html", notes):
         return
-    check_absent(driver, notes)
-    if check_replay(driver, notes, "7") and href:
+    wait_for_read(driver, notes)
+    check_deployed(driver, notes)
+    href = check_replay(driver, notes, "7")
+    if not open_page(driver, base + "/proofs.html?contract=absent.testnet", notes):
+        return
+    wait_for_read(driver, notes)
+    check_unreachable(driver, notes)
+    if not open_page(driver, base + "/proofs.html?seed=4242&weeks=3", notes):
+        return
+    check_replay(driver, notes, "4242")
+    if href:
         boot_game_from(driver, href, notes)
 
 
@@ -160,7 +214,7 @@ def main():
     blocked = [n for n in notes if n.startswith("blocked:")]
     if errors or failed or blocked or api:
         return 1
-    print("OK: proofs page clean, says 'pas encore déployé', replay link seeded, "
+    print("OK: proofs page clean, reads the deployed contract, replay link seeded, "
           "zero console errors, zero failed requests.")
     return 0
 

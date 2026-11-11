@@ -3,6 +3,7 @@
 // build-time `VITE_TIDEWATER_CONTRACT`. Nothing is hard-coded: with no answer
 // the page says "pas encore déployé" instead of pretending.
 import { viewFunction } from '../near/rpc';
+import { DEPLOYMENT } from './deployment';
 import type { TokenIconKind } from './icons';
 
 export const RPC_URL = 'https://rpc.testnet.fastnear.com';
@@ -110,9 +111,14 @@ function fromEnv(): string | null {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : null;
 }
 
+/** The address `scripts/testnet/deploy.mjs` wrote in `docs/deployments.md`. */
+function fromDeployment(): string | null {
+  return DEPLOYMENT.contractId;
+}
+
 export interface ContractRef {
   id: string;
-  source: 'url' | 'localStorage' | 'env';
+  source: 'url' | 'localStorage' | 'env' | 'deployment';
 }
 
 /** The contract id to read, with where it came from (shown on the page). */
@@ -124,7 +130,9 @@ export function contractRef(search: string): ContractRef | null {
   const stored = remembered();
   if (stored !== null) return { id: stored, source: 'localStorage' };
   const env = fromEnv();
-  return env === null ? null : { id: env, source: 'env' };
+  if (env !== null) return { id: env, source: 'env' };
+  const deployed = fromDeployment();
+  return deployed === null ? null : { id: deployed, source: 'deployment' };
 }
 
 function toSupply(raw: unknown): { supply: number | null; note: string } {

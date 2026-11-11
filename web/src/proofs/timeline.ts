@@ -1,10 +1,14 @@
 // timeline.ts — transaction steps and hashes of the e2e scenario.
 //
-// Reads the scenario table from `docs/deployments.md` at build time. When
-// the contract has not been deployed yet, the timeline shows the nominal
-// steps of `scripts/testnet/e2e.mjs` marked as 'absent' or 'en attente',
-// with an honest explanation of what the replay will assert.
-import deploymentDoc from '../../../docs/deployments.md?raw';
+// The hashes come from `docs/deployments.md`, parsed once by `deployment.ts`
+// (the same document that gives `chain.ts` the contract id — one source, no
+// copy). Each recorded hash is matched to its step by the action name, never
+// by position: the replay writes 75 rows and a positional mapping would label
+// a `run_day` with the sentence of a `buy_licence`.
+//
+// When no replay is recorded yet, the timeline shows the nominal steps of
+// `scripts/testnet/e2e.mjs` marked as 'absent' or 'en attente'.
+import { DEPLOYMENT } from './deployment';
 
 export type TxStatus = 'confirmed' | 'pending' | 'absent';
 
@@ -21,112 +25,164 @@ export interface TimelineStep {
 
 export const EXPLORER_BASE = 'https://testnet.nearblocks.io/txns';
 
-/** Nominal steps executed by `scripts/testnet/e2e.mjs`. */
-export const NOMINAL_STEPS: Omit<TimelineStep, 'order' | 'hash' | 'status'>[] = [
+/** Who signs: a role, resolved against the deployed address (see `accountOf`). */
+type Role = 'player' | 'captain' | 'contract';
+
+interface NominalStep {
+  id: string;
+  /** The action prefix the replay writes, e.g. `land_lot(10)` → `land_lot`. */
+  key: string;
+  action: string;
+  summary: string;
+  caller: Role;
+  standard: string;
+}
+
+/** Nominal steps executed by `scripts/testnet/e2e.mjs`, in scenario order. */
+export const NOMINAL_STEPS: NominalStep[] = [
+  {
+    id: 'step-assign',
+    key: 'assign_boat',
+    action: 'assign_boat(deed, zone)',
+    summary: 'Affectation des deux navires du joueur à la zone de Greybank',
+    caller: 'player',
+    standard: 'Actes de bateau (10–19)',
+  },
   {
     id: 'step-land',
+    key: 'land_lot',
     action: 'land_lot(deed)',
     summary: 'Débarquement et criée aux étals (moteur wasm / contrat)',
-    caller: 'player.bankkeeper.testnet',
+    caller: 'player',
     standard: 'Économie portuaire',
   },
   {
     id: 'step-run-day',
+    key: 'run_day',
     action: 'run_day',
     summary: 'Avancement du calendrier, maintenance et repousse des stocks',
-    caller: 'bankkeeper.testnet',
+    caller: 'contract',
     standard: 'Horloge de saison',
   },
   {
     id: 'step-buy-licence',
+    key: 'buy_licence',
     action: 'buy_licence()',
     summary: 'Achat d\u2019une licence de pêche au prix calculé par la criée',
-    caller: 'player.bankkeeper.testnet',
+    caller: 'player',
     standard: 'NEP-245 (token 3)',
   },
   {
     id: 'step-transfer',
+    key: 'mt_transfer',
     action: 'mt_transfer(licence)',
     summary: 'Transfert d\u2019une licence au second capitaine avec memo d\u2019accord',
-    caller: 'player.bankkeeper.testnet',
+    caller: 'player',
     standard: 'NEP-245 core transfer',
   },
   {
     id: 'step-buy-loan',
+    key: 'buy_loan',
     action: 'buy_loan(100)',
     summary: 'Achat de la créance de Brandt (devient le prêteur du navire)',
-    caller: 'player.bankkeeper.testnet',
+    caller: 'player',
     standard: 'NEP-245 (token 100+)',
   },
   {
     id: 'step-forbear',
+    key: 'forbear_loan',
     action: 'forbear_loan(100)',
     summary: 'Moratoire sur les mensualités en retard (dénouement bienveillant)',
-    caller: 'player.bankkeeper.testnet',
+    caller: 'player',
     standard: 'Dette et clémence',
   },
   {
     id: 'step-propose',
+    key: 'propose_rule',
     action: 'propose_rule(quota)',
     summary: 'Dépôt d\u2019une motion au conseil portuaire (jours 21..27)',
-    caller: 'player.bankkeeper.testnet',
+    caller: 'player',
     standard: 'Gouvernance on-chain',
   },
   {
     id: 'step-vote-player',
+    key: 'vote',
     action: 'vote(proposal, yes)',
     summary: 'Scrutin pondéré : une licence = une voix',
-    caller: 'player.bankkeeper.testnet',
+    caller: 'player',
     standard: 'Démocratie maritime',
   },
   {
     id: 'step-vote-captain',
+    key: 'vote',
     action: 'vote(proposal, yes)',
     summary: 'Vote du second capitaine avec la licence reçue',
-    caller: 'captain.bankkeeper.testnet',
+    caller: 'captain',
     standard: 'Démocratie maritime',
   },
   {
     id: 'step-npc-votes',
+    key: 'cast_npc_votes',
     action: 'cast_npc_votes',
     summary: 'Scrutin des capitaines et marchands NPC selon leurs intérêts',
-    caller: 'bankkeeper.testnet',
+    caller: 'contract',
     standard: 'Acteurs autonomes',
   },
   {
     id: 'step-resolve',
+    key: 'resolve_council',
     action: 'resolve_council',
     summary: 'Dépouillement, issue et publication du CouncilOutcome',
-    caller: 'bankkeeper.testnet',
+    caller: 'contract',
     standard: 'Résolution de motion',
   },
 ];
 
-interface ParsedTx {
-  action: string;
-  hash: string;
+const ROLE_PREFIX: Record<Role, string> = {
+  player: 'player.',
+  captain: 'captain.',
+  contract: '',
+};
+
+/**
+ * Resolves a role against the one deployed address read from
+ * `docs/deployments.md`. Nothing here hard-codes an account id: while the
+ * document records no deployment, the role is named instead of invented.
+ */
+export function accountOf(role: Role): string {
+  const id = DEPLOYMENT.contractId;
+  if (id === null) return `${ROLE_PREFIX[role]}<contrat non déployé>`;
+  return `${ROLE_PREFIX[role]}${id}`;
 }
 
-function parseMarkdownTable(doc: string): ParsedTx[] {
-  const match = doc.match(/<!-- e2e:begin -->([\s\S]*?)<!-- e2e:end -->/);
-  if (match === null) return [];
-  const block = match[1];
-  if (block.includes('Aucun rejeu') || block.includes('No scenario')) return [];
-  const lines = block.split('\n');
-  const out: ParsedTx[] = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith('|') || trimmed.includes('|---') || trimmed.includes('| Transaction |')) {
-      continue;
-    }
-    const cols = trimmed.split('|').map((c) => c.trim()).filter((c) => c !== '');
-    if (cols.length >= 2) {
-      const action = cols[0];
-      const hash = cols[1].replace(/[`\s]/g, '');
-      if (hash !== '' && hash !== '—') out.push({ action, hash });
-    }
-  }
-  return out;
+/** The action prefix the replay writes: `land_lot(10)` → `land_lot`. */
+function actionKey(action: string): string {
+  return action.split('(')[0].trim();
+}
+
+function fallbackStep(action: string): Omit<NominalStep, 'caller'> & { caller: Role } {
+  return {
+    id: 'step-other',
+    key: actionKey(action),
+    action,
+    summary: 'Étape du rejeu enregistrée par `scripts/testnet/e2e.mjs`.',
+    caller: 'player',
+    standard: 'Appel de contrat',
+  };
+}
+
+/**
+ * Matches a recorded action to its nominal step. `vote` appears twice in the
+ * replay (the player, then the captain), so repeated keys are consumed in
+ * order and `seen` tracks how many times each key has already been used.
+ */
+function nominalFor(action: string, seen: Map<string, number>): NominalStep {
+  const key = actionKey(action);
+  const matches = NOMINAL_STEPS.filter((step) => step.key === key);
+  if (matches.length === 0) return fallbackStep(action);
+  const used = seen.get(key) ?? 0;
+  seen.set(key, used + 1);
+  return matches[Math.min(used, matches.length - 1)];
 }
 
 export function shortHash(hash: string): string {
@@ -138,27 +194,34 @@ export function explorerUrl(hash: string): string {
   return `${EXPLORER_BASE}/${encodeURIComponent(hash)}`;
 }
 
+/** Every hash the replay recorded, each labelled by its own action. */
+function confirmedSteps(): TimelineStep[] {
+  const seen = new Map<string, number>();
+  return DEPLOYMENT.txs.map((tx, idx) => {
+    const nominal = nominalFor(tx.action, seen);
+    return {
+      id: `tx-${idx}-${nominal.id}`,
+      order: idx + 1,
+      action: tx.action,
+      hash: tx.hash,
+      status: 'confirmed' as TxStatus,
+      summary: nominal.summary,
+      caller: accountOf(nominal.caller),
+      standard: nominal.standard,
+    };
+  });
+}
+
 /** Build the timeline steps from deployments.md and the contract presence. */
 export function loadTimeline(hasContract: boolean): TimelineStep[] {
-  const parsed = parseMarkdownTable(deploymentDoc);
-  if (parsed.length > 0) {
-    return parsed.map((item, idx) => {
-      const nominal = NOMINAL_STEPS[idx % NOMINAL_STEPS.length];
-      return {
-        id: `tx-${idx}-${nominal.id}`,
-        order: idx + 1,
-        action: item.action,
-        hash: item.hash,
-        status: 'confirmed',
-        summary: nominal.summary,
-        caller: nominal.caller,
-        standard: nominal.standard,
-      };
-    });
-  }
+  if (DEPLOYMENT.txs.length > 0) return confirmedSteps();
   const defaultStatus: TxStatus = hasContract ? 'pending' : 'absent';
   return NOMINAL_STEPS.map((item, idx) => ({
-    ...item,
+    id: item.id,
+    action: item.action,
+    summary: item.summary,
+    standard: item.standard,
+    caller: accountOf(item.caller),
     order: idx + 1,
     hash: null,
     status: defaultStatus,

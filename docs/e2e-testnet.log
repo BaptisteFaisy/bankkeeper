@@ -1,0 +1,92 @@
+# Tidewater — testnet scenario transcript
+# 2026-11-11T04:40:48.839Z
+# contract bankkeeper.testnet
+
+  get_day()                  view                               —                → day 0, week 0, season_day 0, council false
+  get_gold_totals()          view                               —                → 10650000000 milli in the harbour, outside in 0 / out 0
+  get_zone(1)                view                               —                → Greybank, stock 5000/5000, steady, 20 crates a trip
+  get_licence_price()        view                               —                → 280.0 gold
+  assign_boat(10, 1)         player.bankkeeper.testnet          CrvhNGot…QT3z    → zone 1, small mesh false
+  assign_boat(11, 1)         player.bankkeeper.testnet          7jeJucFP…9tut    → zone 1, small mesh false
+  day  0 land_lot(10)        player.bankkeeper.testnet          GvGhVFvz…BVmP    → 20 crates 1 at 4.0 gold = 80.0 gold
+  day  0 land_lot(11)        player.bankkeeper.testnet          4JMPfJjb…sgvL    → 19 crates 1 at 4.0 gold = 76.0 gold
+  day  0 run_day             bankkeeper.testnet                 4SjZ5wCC…Ak5Q    → day 1, regrowth [0, 1, 0], upkeep 60.0 gold, player 150000.0 gold → 150136.0 gold
+  day  1 land_lot(10)        player.bankkeeper.testnet          44BeJFUb…a9z8    → 19 crates 1 at 4.0 gold = 76.7 gold
+  day  1 land_lot(11)        player.bankkeeper.testnet          6W3wuuXq…GkwK    → 19 crates 1 at 3.8 gold = 72.2 gold
+  day  1 run_day             bankkeeper.testnet                 FYGZcggJ…dd2W    → day 2, regrowth [0, 3, 0], upkeep 60.0 gold, player 150136.0 gold → 150264.9 gold
+  day  2 land_lot(10)        player.bankkeeper.testnet          4NYq1nfp…nzgW    → 19 crates 1 at 4.0 gold = 77.5 gold
+  day  2 land_lot(11)        player.bankkeeper.testnet          HQeQrCAD…BZUT    → 19 crates 1 at 3.8 gold = 72.6 gold
+  day  2 run_day             bankkeeper.testnet                 GMbp1ktF…WPPf    → day 3, regrowth [0, 5, 0], upkeep 60.0 gold, player 150264.9 gold → 150395.1 gold
+  day  3 land_lot(10)        player.bankkeeper.testnet          63PfUcf6…wdUv    → 19 crates 1 at 3.9 gold = 74.5 gold
+  day  3 land_lot(11)        player.bankkeeper.testnet          33rufuic…iYMp    → 19 crates 1 at 3.8 gold = 73.4 gold
+  day  3 run_day             bankkeeper.testnet                 8U2KQ8Qa…JhYT    → day 4, regrowth [0, 6, 0], upkeep 60.0 gold, player 150395.1 gold → 150523.2 gold
+  day  4 land_lot(10)        player.bankkeeper.testnet          BiuEXYSu…yR1C    → 19 crates 1 at 3.9 gold = 74.2 gold
+  day  4 land_lot(11)        player.bankkeeper.testnet          4CjvYHyA…uh1o    → 19 crates 1 at 3.7 gold = 71.2 gold
+  day  4 run_day             bankkeeper.testnet                 8km2sEXV…wxPi    → day 5, regrowth [0, 8, 0], upkeep 60.0 gold, player 150523.2 gold → 150648.6 gold
+  day  5 land_lot(10)        player.bankkeeper.testnet          ABKYSyQ3…qbsi    → 19 crates 1 at 3.9 gold = 74.9 gold
+  day  5 land_lot(11)        player.bankkeeper.testnet          3et7CVq1…DSU3    → 19 crates 1 at 3.6 gold = 70.1 gold
+  day  5 run_day             bankkeeper.testnet                 5bSweKuz…cTrS    → day 6, regrowth [0, 9, 0], upkeep 60.0 gold, player 150648.6 gold → 150773.8 gold
+  day  6 land_lot(10)        player.bankkeeper.testnet          6GHMm7FP…Lg8d    → 19 crates 1 at 3.8 gold = 73.6 gold
+  day  6 land_lot(11)        player.bankkeeper.testnet          3GhdbekX…JXkM    → 19 crates 1 at 3.7 gold = 70.9 gold
+  day  6 run_day             bankkeeper.testnet                 2cx4WiSj…FNkz    → day 7, regrowth [0, 11, 0], upkeep 60.0 gold, player 150773.8 gold → 150898.3 gold
+  day  7 land_lot(10)        player.bankkeeper.testnet          HqN6MU1V…YyBX    → 19 crates 1 at 3.7 gold = 71.6 gold
+  day  7 land_lot(11)        player.bankkeeper.testnet          3hATARgw…FXLf    → 19 crates 1 at 3.7 gold = 70.3 gold
+  day  7 run_day             bankkeeper.testnet                 3RCEMeB2…j3nG    → day 8, regrowth [0, 12, 0], upkeep 60.0 gold, player 150898.3 gold → 151020.3 gold
+  day  8 land_lot(10)        player.bankkeeper.testnet          JAyxJkH9…7Baw    → 19 crates 1 at 3.8 gold = 72.4 gold
+  day  8 land_lot(11)        player.bankkeeper.testnet          CG9c1aZK…xVhn    → 18 crates 1 at 3.5 gold = 64.0 gold
+  day  8 run_day             bankkeeper.testnet                 85cDmB53…a9XG    → day 9, regrowth [0, 13, 0], upkeep 60.0 gold, player 151020.3 gold → 151136.8 gold
+  day  9 land_lot(10)        player.bankkeeper.testnet          4s4fNzdz…e3QF    → 18 crates 1 at 3.8 gold = 68.8 gold
+  day  9 land_lot(11)        player.bankkeeper.testnet          J8qvuixe…BHtt    → 18 crates 1 at 3.6 gold = 65.0 gold
+  day  9 run_day             bankkeeper.testnet                 4fQ1F3X9…RCv3    → day 10, regrowth [0, 14, 0], upkeep 60.0 gold, player 151136.8 gold → 151250.7 gold
+  day 10 land_lot(10)        player.bankkeeper.testnet          2As3Fb4r…G8An    → 18 crates 1 at 3.6 gold = 66.1 gold
+  day 10 land_lot(11)        player.bankkeeper.testnet          FuFsMNmT…KvwH    → 18 crates 1 at 3.6 gold = 65.9 gold
+  day 10 run_day             bankkeeper.testnet                 6eWzCdXS…wJiU    → day 11, regrowth [0, 15, 0], upkeep 60.0 gold, player 151250.7 gold → 151362.8 gold
+  day 11 land_lot(10)        player.bankkeeper.testnet          6Ln5xzx7…UkLZ    → 18 crates 1 at 3.7 gold = 66.9 gold
+  day 11 land_lot(11)        player.bankkeeper.testnet          7XVU9dRv…J6X3    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 11 run_day             bankkeeper.testnet                 CG77MCE9…Ntp1    → day 12, regrowth [0, 16, 0], upkeep 60.0 gold, player 151362.8 gold → 151473.3 gold
+  day 12 land_lot(10)        player.bankkeeper.testnet          vztPb9DZ…BtCR    → 18 crates 1 at 3.7 gold = 67.9 gold
+  day 12 land_lot(11)        player.bankkeeper.testnet          Fmwtnak7…Cppj    → 18 crates 1 at 3.5 gold = 63.5 gold
+  day 12 run_day             bankkeeper.testnet                 HAqNGZUP…rBFg    → day 13, regrowth [0, 17, 0], upkeep 60.0 gold, player 151473.3 gold → 151584.8 gold
+  day 13 land_lot(10)        player.bankkeeper.testnet          3ULBGiEZ…EVp6    → 18 crates 1 at 3.6 gold = 66.1 gold
+  day 13 land_lot(11)        player.bankkeeper.testnet          DozyUVA5…wXqE    → 18 crates 1 at 3.5 gold = 64.5 gold
+  day 13 run_day             bankkeeper.testnet                 97AmATbt…yNbL    → day 14, regrowth [0, 18, 0], upkeep 60.0 gold, player 151584.8 gold → 151695.5 gold
+  day 14 land_lot(10)        player.bankkeeper.testnet          87p4TCUb…q11i    → 18 crates 1 at 3.6 gold = 65.5 gold
+  day 14 land_lot(11)        player.bankkeeper.testnet          HMhoeUoR…jfXf    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 14 run_day             bankkeeper.testnet                 adSsymit…aSxy    → day 15, regrowth [0, 18, 0], upkeep 60.0 gold, player 151695.5 gold → 151804.4 gold
+  day 15 land_lot(10)        player.bankkeeper.testnet          HT4VQLDP…XpN1    → 18 crates 1 at 3.6 gold = 66.4 gold
+  day 15 land_lot(11)        player.bankkeeper.testnet          HqP3oHCW…dmLp    → 18 crates 1 at 3.4 gold = 62.1 gold
+  day 15 run_day             bankkeeper.testnet                 Appxmdfm…56D1    → day 16, regrowth [0, 19, 0], upkeep 60.0 gold, player 151804.4 gold → 151913.1 gold
+  day 16 land_lot(10)        player.bankkeeper.testnet          CmVJrnqh…eVbd    → 18 crates 1 at 3.6 gold = 66.1 gold
+  day 16 land_lot(11)        player.bankkeeper.testnet          AB9UpPMx…Fg6D    → 18 crates 1 at 3.5 gold = 63.1 gold
+  day 16 run_day             bankkeeper.testnet                 ARSC5iAP…V8aE    → day 17, regrowth [0, 20, 0], upkeep 60.0 gold, player 151913.1 gold → 152022.3 gold
+  day 17 land_lot(10)        player.bankkeeper.testnet          DutwXizi…pCsC    → 18 crates 1 at 3.5 gold = 64.0 gold
+  day 17 land_lot(11)        player.bankkeeper.testnet          6zLvi6pb…PECT    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 17 run_day             bankkeeper.testnet                 CHSoCTJ3…Xf8H    → day 18, regrowth [0, 20, 0], upkeep 60.0 gold, player 152022.3 gold → 152129.8 gold
+  day 18 land_lot(10)        player.bankkeeper.testnet          ApXTPqwQ…ykQN    → 18 crates 1 at 3.6 gold = 65.0 gold
+  day 18 land_lot(11)        player.bankkeeper.testnet          HriBYf3z…oybV    → 18 crates 1 at 3.3 gold = 60.7 gold
+  day 18 run_day             bankkeeper.testnet                 GXgxZBHj…5C7P    → day 19, regrowth [0, 21, 0], upkeep 60.0 gold, player 152129.8 gold → 152235.6 gold
+  day 19 land_lot(10)        player.bankkeeper.testnet          GCWNekt9…5Uv7    → 18 crates 1 at 3.6 gold = 65.9 gold
+  day 19 land_lot(11)        player.bankkeeper.testnet          7Cj64DjJ…eJBB    → 18 crates 1 at 3.4 gold = 61.6 gold
+  day 19 run_day             bankkeeper.testnet                 4x827ZhK…aBYU    → day 20, regrowth [0, 22, 0], upkeep 60.0 gold, player 152235.6 gold → 152343.3 gold
+  day 20 land_lot(10)        player.bankkeeper.testnet          95aWTw2R…M9ux    → 18 crates 1 at 3.5 gold = 63.4 gold
+  day 20 land_lot(11)        player.bankkeeper.testnet          5VNWm1gD…Thqg    → 18 crates 1 at 3.4 gold = 62.6 gold
+  day 20 run_day             bankkeeper.testnet                 G2U84U92…UkrP    → day 21, regrowth [0, 22, 0], upkeep 60.0 gold, player 152343.3 gold → 152449.4 gold
+  — reached day 21 (council week)
+  player gold after 21 days: 152449.4 gold
+  buy_licence()              player.bankkeeper.testnet          FexU3H6q…6RVT    → Licence bought for 232.8 gold.
+  mt_transfer(3, 1)          player.bankkeeper.testnet          A7C1TyrA…kR8F    → player.bankkeeper.testnet 4, captain.bankkeeper.testnet 1
+    event: EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"player.bankkeeper.testnet","new_owner_id":"captain.ba
+  buy_loan(100)              player.bankkeeper.testnet          Dqa31XXK…5cCc    → lender player.bankkeeper.testnet, owed 672.0 gold, boat deed 14
+  forbear_loan(100)          player.bankkeeper.testnet          84h4mFgT…WsJE    → missed 0, owed 672.0 gold
+  propose_rule(80)           player.bankkeeper.testnet          H5KhiZ54…dxC8    → proposal 1, author player.bankkeeper.testnet, escrow 0.0 gold
+  vote(1, yes) x2            player.bankkeeper.testnet + captain.bankkeeper.testnet 7u6hBTaS…QwPt    → yes 5, no 0, voters [player.bankkeeper.testnet, captain.bankkeeper.testnet]
+    player vote tx 2S13BsHd…DA4A · weighted by licences, one licence one vote
+  cast_npc_votes(1)          bankkeeper.testnet                 DMKnzcr6…4iyr    → yes 9, no 8, voters 5
+  resolve_council(1)         bankkeeper.testnet                 ETsUigsA…kEw2    → CouncilOutcome {"proposal_id":1,"passed":true,"yes_weight":9,"no_weight":8,"indemnities_milli":0}
+    quota_per_licence 70 → 80 (get_day), council still open true
+  run_day()                  bankkeeper.testnet                 CWGabu7j…t2Pc    → day 21 → 22, council true, quota 80
+  player gas balance: 0.488 NEAR · licences held by the player and the captain: 5
+
+all steps passed — 75 transactions, 75 distinct hashes
+
+all steps passed

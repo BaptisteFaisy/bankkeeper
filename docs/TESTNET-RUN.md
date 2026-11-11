@@ -6,27 +6,38 @@ conseil, 75 transactions, 75 hashs. Le tableau des hashs du sandbox est dans
 [`docs/deployments.md`](deployments.md) ; il sert de référence à ce qui doit
 sortir du run testnet.
 
-> **Rien de ce qui suit n'a été exécuté sur le testnet.** Le faucet public
-> était fermé (429, 10 comptes / 3 h / IP). La procédure est écrite, relue
-> dans le code, et prouvée sur une chaîne locale — pas simulée.
+> **Le run testnet a eu lieu le 11/11/2026** : contrat `bankkeeper.testnet`,
+> 75 transactions, 75 hashs, conseil résolu. Le résultat est dans
+> [`docs/deployments.md`](deployments.md). Cette fiche reste la **recette** :
+> ce qu'il faut faire, dans quel ordre, et les deux pièges que le testnet
+> public a montrés (le gas pré-chargé, et l'impossibilité de reprendre un
+> rejeu à mi-parcours).
 
 ## 0. Le décor, en une table
 
 | Élément | Valeur | Où |
 |---|---|---|
-| Wasm | `target/near/tidewater/tidewater.wasm` — 419 648 octets (410 Kio) | `Makefile:5-6` |
-| sha256 du wasm | `48ae95eed7b7e9afdae35c5af3628ae4b12d09a493fda199f8d90f106b19689b` | — |
-| ABI embarquée | `target/near/tidewater/tidewater_abi.json` — 41 837 octets | — |
+| Wasm | `target/near/tidewater/tidewater.wasm` — 433 552 octets (423 Kio) | `Makefile:5-6` |
+| sha256 du wasm | `08b8ab6a43433e527182521dee57b824d5ba9820522f264ebc3cd89222f344ca` | — |
+| ABI embarquée | `target/near/tidewater/tidewater_abi.json` | — |
 | RPC testnet | `https://rpc.testnet.fastnear.com` | `scripts/testnet/testnet-lib.mjs:14` |
 | Faucet | `https://helper.testnet.near.org/account` | `scripts/testnet/testnet-lib.mjs:15` |
 | Clés | `~/.near-credentials/testnet/<compte>.json`, mode 0600 | `scripts/testnet/testnet-lib.mjs:16`, `:76-91` |
-| Contrat (nominal) | `bankkeeper.testnet` | `scripts/testnet/testnet-lib.mjs:28-37` |
+| Contrat | `bankkeeper.testnet` | `scripts/testnet/testnet-lib.mjs:28-37` |
 | Joueur / capitaine / banque | `player.` / `captain.` / `bank.` + le nom du contrat | idem |
 | Gas d'un appel | 100 Tgas prépayés (`CALL_GAS`) | `scripts/testnet/testnet-lib.mjs:46` |
 
 Le wasm est **le même binaire** que sur le testnet : `deploy.mjs:58-61` lit
 `target/near/tidewater/tidewater.wasm` et `deploy.mjs:59` en calcule le
 sha256 — celui qu'il inscrit dans `docs/deployments.md`.
+
+L'empreinte a changé avec le contrat : celle-ci (11/11/2026) est celle de
+`main` au moment du run, `08b8ab6a…`. L'ancienne (`48ae95ee…`, 419 648
+octets) était celle de la répétition sur sandbox, faite sur un commit
+antérieur. **Le point de non-retour n'est pas une empreinte figée dans ce
+fichier : c'est le binaire qui a été répété.** La règle qui compte : rejouer
+le sandbox avec le binaire exact qu'on veut voir sur la chaîne, et n'utiliser
+que celui-là.
 
 ## 1. T-20 min — le build
 
@@ -39,18 +50,23 @@ ira sur la chaîne) :
 
 ```sh
 sha256sum target/near/tidewater/tidewater.wasm
-# 48ae95eed7b7e9afdae35c5af3628ae4b12d09a493fda199f8d90f106b19689b  target/near/tidewater/tidewater.wasm
+# 08b8ab6a43433e527182521dee57b824d5ba9820522f264ebc3cd89222f344ca  target/near/tidewater/tidewater.wasm
 ```
 
 L'empreinte est stable sur cette machine (toolchain `stable-x86_64-unknown-linux-gnu`
 1.98.1, `cargo-near` 0.23.0) : le build a été refait de zéro et a rendu les
-mêmes 419 648 octets et le même sha256. Si l'empreinte diffère, **on
-s'arrête** : le contrat qui part sur la chaîne ne serait pas celui qui a été
-répété sur le sandbox.
+mêmes 433 552 octets et le même sha256. Si l'empreinte diffère de celle du
+commit qu'on déploie, **on s'arrête** : le contrat qui part sur la chaîne ne
+serait pas celui qui a été répété. L'empreinte change quand le contrat change
+— ce n'est pas un défaut, c'est justement le contrôle : `main` a bougé entre la
+répétition sur sandbox (`48ae95ee…`, 419 648 octets) et le run testnet
+(`08b8ab6a…`, 433 552 octets), et le run a été répété sur le sandbox avec le
+nouveau binaire avant de partir.
 
-Le contrat occupe 423 485 octets de storage sur la chaîne (le wasm plus
-l'état) : à 10⁻⁵ NEAR l'octet, c'est **4,24 NEAR** de staking. Les 10 NEAR
-du faucet en laissent 5,76 avant les sous-comptes.
+Le contrat occupe 436 787 octets de storage sur la chaîne (le wasm plus
+l'état) : à 10⁻⁵ NEAR l'octet, c'est **4,37 NEAR** de staking. Les 10 NEAR
+du faucet en laissent ~5,6 avant les sous-comptes, qui coûtent maintenant
+1,5 NEAR à eux trois (0,5 NEAR chacun — voir §4a).
 
 ## 2. T-15 min — le compte racine
 
@@ -134,6 +150,16 @@ supprimer le compte, ou en prendre un neuf).
 make testnet-e2e             # ou : node scripts/testnet/e2e.mjs
 ```
 
+### 4a. La dotation des comptes du scène
+
+Les trois comptes du scénario reçoivent **0,5 NEAR chacun** (`deploy.mjs`,
+`SUBACCOUNTS`). Ce n'est pas de la poussière : le testnet public pré-charge
+100 Tgas contre le signataire de chaque appel, et un appel du conseil a coûté
+**0,1009 NEAR** (mesuré le 11/11/2026). Avec les 0,1 NEAR d'avant, le
+capitaine ne pouvait pas voter et le rejeu mourait à la 72ᵉ transaction, après
+21 journées déjà jouées — donc à un moment où rien n'est reprenable. Le
+garde-fou est dans `tests/testnet_scripts.py`.
+
 Le rejeu (documenté dans `docs/deployments.md`) fait, dans l'ordre :
 
 | Étape | Ce qui est vérifié |
@@ -152,19 +178,38 @@ Le script sort en 1 à la première assertion cassée, et **échoue aussi si une
 transaction n'a pas laissé de hash** (`e2e.mjs:232`) : un tableau de preuves
 vide est une erreur, jamais une ligne « 0 transactions ».
 
+### 4b. Le rejeu n'est pas reprenable
+
+`e2e.mjs` rejoue la journée 0. Sur un contrat déjà avancé, il échoue : la
+note de dette 100 a un autre prêteur, la motion 1 est déjà votée, les
+journées sont passées. Le contrat n'a **aucune** fonction de réinitialisation
+et `FORCE_REDEPLOY=1` n'aide pas (l'état survit au dépôt du code).
+
+La seule reprise propre est donc **supprimer le compte et le recréer** :
+
+```sh
+# 1. supprimer les sous-comptes, puis la racine (le storage est remboursé)
+# 2. relancer `make testnet-deploy` : le faucet recrée le compte avec la
+#    même clé publique, et le scénario repart de la journée 0
+```
+
+Un compte supprimé peut être recréé par le faucet sous le même nom (vérifié
+le 11/11/2026) — le nom redevient disponible immédiatement.
+
 ## 5. T-2 min — la documentation à remettre à jour
 
 | Fichier | Quoi | Qui l'écrit |
 |---|---|---|
-| `docs/deployments.md` | adresses, sha256, hash de déploiement, hash d'init, code hash, soldes | `deploy.mjs:142-210` — **le fichier entier est réécrit** |
-| `docs/deployments.md` | le tableau des transactions du scénario (entre `<!-- e2e:begin -->` et `<!-- e2e:end -->`) | `e2e.mjs:248-270` |
-| `docs/e2e-testnet.log` | le transcript complet, valeur lue après chaque étape | `e2e.mjs:272-286` |
+| `docs/deployments.md` | adresses, sha256, hash de déploiement, hash d'init, code hash, soldes | `deploy.mjs` — le fichier est réécrit |
+| `docs/deployments.md` | le tableau des transactions du scénario (entre `<!-- e2e:begin -->` et `<!-- e2e:end -->`) | `e2e.mjs` |
+| `docs/deployments.md` | les sections écrites à la main (entre `<!-- hand:begin -->` et `<!-- hand:end -->`) | à la main — **le script les conserve** |
+| `docs/e2e-testnet.log` | le transcript complet, valeur lue après chaque étape | `e2e.mjs` |
 
-Attention : `deploy.mjs` **réécrit `docs/deployments.md` d'un bloc**. Les
-sections écrites à la main (la démo Vercel, « ce que le scénario prouve »)
-disparaissent au passage. Il faut donc soit les réécrire après le run, soit
-les garder dans un autre fichier — c'est ce que fait
-[`docs/TESTNET-RUN.md`](TESTNET-RUN.md) pour la référence du sandbox.
+`deploy.mjs` réécrit le corps de `docs/deployments.md`, mais **les deux blocs
+marqués sont préservés** : celui du rejeu (`e2e`) et celui écrit à la main
+(`hand`, qui porte « ce que le scénario prouve » et la démo Vercel). Une
+section prose peut donc vivre dans le document sans être mangée par le
+prochain déploiement — c'est le but du bloc `hand`.
 
 Ordre obligatoire : **`make testnet-deploy` puis `make testnet-e2e`**. Dans
 l'autre sens, le rejeu remplit le bloc d'un fichier que le déploiement
@@ -191,15 +236,15 @@ Le jeton reste dans `~/.local/share/com.vercel.cli/auth.json`, jamais dans le
 dépôt ni dans un journal. L'empreinte du dernier déploiement se colle dans
 la section « Empreinte du dernier déploiement » de `docs/deployments.md`.
 
-## 7. La commande unique (03:30)
+## 7. La commande unique
 
-La fenêtre du faucet rouvre à 02:27:52 UTC. À 03:30, en une commande :
+Une fois la fenêtre du faucet ouverte, en une commande :
 
 ```sh
 cd ~/tmp/near-tidewater && \
   (cd contracts/tidewater && cargo near build non-reproducible-wasm) && \
   test "$(sha256sum target/near/tidewater/tidewater.wasm | cut -d' ' -f1)" = \
-    "48ae95eed7b7e9afdae35c5af3628ae4b12d09a493fda199f8d90f106b19689b" && \
+    "08b8ab6a43433e527182521dee57b824d5ba9820522f264ebc3cd89222f344ca" && \
   make testnet-deploy && make testnet-e2e
 ```
 
@@ -211,7 +256,9 @@ Si le faucet est encore fermé, la même commande avec le repli :
 ```
 
 Le `test` sur l'empreinte est le point de non-retour : sans lui, on pourrait
-déployer un wasm différent de celui qui a été répété.
+déployer un wasm différent de celui qui a été répété. L'empreinte à mettre
+en `test` est celle du commit qu'on déploie — elle change quand le contrat
+change (voir §1).
 
 ## 8. Les erreurs à ne pas commettre
 
@@ -238,12 +285,19 @@ déployer un wasm différent de celui qui a été répété.
 6. **Ne pas lancer `make testnet-e2e` avant `make testnet-deploy`** : le
    rejeu suppose le contrat déployé et l'état initialisé.
 7. **Ne pas écraser `docs/deployments.md` à la main entre les deux** : le
-   déploiement le réécrit entièrement.
+   déploiement le réécrit — sauf les blocs `e2e` et `hand`, qu'il conserve.
 8. **Ne pas déployer depuis une branche de travail.** Le run se fait sur
    `main` (ou sur le commit mergé), sinon le contrat ne correspond pas au
    code publié.
+9. **Ne pas sous-estimer le gas.** Le testnet public pré-charge 100 Tgas
+   contre le signataire : un compte qui doit signer doit tenir plus que
+   ~0,11 NEAR. C'est ce qui a fait échouer le premier run, à la 72ᵉ
+   transaction, sur un contrat déjà avancé.
+10. **Ne pas compter repris un rejeu à mi-parcours.** Si une étape échoue
+   *après* que le contrat a avancé, le rejeu doit repartir d'un compte neuf :
+   supprimer et recréer (voir §4b).
 
-## 9. Ce que la répétition a prouvé
+## 9. Ce que la répétition sur sandbox a prouvé
 
 Le 11/11/2026, sur une chaîne `near-sandbox` locale :
 
@@ -284,3 +338,18 @@ Elle monte une chaîne locale (`scripts/sandbox/start.mjs`), rejoue
 `deploy.mjs` et `e2e.mjs` **tels quels**, et refuse par construction toute
 sortie réseau hors `localhost` — le faucet public est inatteignable depuis
 la répétition.
+
+## 10. Ce que le run testnet a prouvé de plus
+
+Le run réel du 11/11/2026 (`bankkeeper.testnet`, 75 transactions, 75 hashs) a
+ajouté trois choses qu'aucune chaîne locale ne pouvait montrer :
+
+| Enseigne | Constat |
+|---|---|
+| le gas | 100 Tgas pré-chargés = **0,1009 NEAR** par appel signataire : la dotation de 0,1 NEAR était insuffisante, celle de 0,5 l'est |
+| la reprise | `e2e.mjs` ne se reprend pas à mi-parcours ; il faut un compte neuf (supprimer puis recréer — le faucet accepte le nom) |
+| la fenêtre | le faucet est à 10 comptes / 3 h / IP : la fenêtre du 11/11 rouvrait à 02:27:52 UTC, et le run a attendu cette ouverture |
+
+Le résultat du run est dans [`docs/deployments.md`](deployments.md) : adresse,
+sha256 du wasm, hash de déploiement, hash d'init, code hash on-chain, les 75
+hashs du scénario, les soldes restants et l'heure.

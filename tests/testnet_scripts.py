@@ -29,6 +29,11 @@ LIB = os.path.join(ROOT, "scripts", "testnet", "testnet-lib.mjs")
 DEPLOY = os.path.join(ROOT, "scripts", "testnet", "deploy.mjs")
 MODULES = os.path.join(ROOT, "scripts", "testnet", "node_modules")
 
+# What one call pre-charges on the public testnet: 100 Tgas (CALL_GAS) at the
+# testnet gas price (1e8 yoctoNEAR per gas unit) — 0.01 NEAR — plus the
+# storage the call stakes: measured 0.1009 NEAR on 2026-11-11.
+PREPAID_GAS_NEAR = 0.1009
+
 
 def read(path):
     with open(path, encoding="utf-8") as handle:
@@ -102,6 +107,28 @@ def check_amounts_are_funded():
     return breaches
 
 
+def check_amounts_cover_the_gas():
+    """
+    Every scenario account must hold more than the gas one call pre-charges.
+
+    Measured on the public testnet on 2026-11-11: 100 Tgas at the testnet gas
+    price costs 0.1009 NEAR, and the captain — funded with 0.1 NEAR — could
+    not cast its council ballot ("Not enough balance"). The scene accounts
+    that sign a call must therefore hold strictly more than that.
+    """
+    breaches = []
+    amounts = subaccount_amounts()
+    if not amounts:
+        return breaches
+    lowest = min(amounts)
+    if lowest <= PREPAID_GAS_NEAR:
+        breaches.append(
+            f"deploy.mjs: a scenario account is given {lowest} NEAR, "
+            f"below the {PREPAID_GAS_NEAR} NEAR one call pre-charges"
+        )
+    return breaches
+
+
 def near_to_yocto(amounts):
     """What near-api-js turns those amounts into, in yoctoNEAR."""
     entry = os.path.join(MODULES, "near-api-js", "lib", "index.js")
@@ -146,6 +173,7 @@ def main():
         return 2
     amounts = subaccount_amounts()
     breaches = check_hash_recording() + check_funding() + check_amounts_are_funded()
+    breaches += check_amounts_cover_the_gas()
     breaches += check_conversion(amounts)
     if breaches:
         print(f"{len(breaches)} breach(es):")

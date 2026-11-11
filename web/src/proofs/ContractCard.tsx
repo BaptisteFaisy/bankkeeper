@@ -8,9 +8,13 @@ import HarborFigure from './HarborFigure';
 
 export type Status = 'absent' | 'loading' | 'live' | 'unreachable';
 
-export function statusOf(contract: ContractRef | null, rows: SupplyRow[]): Status {
+/**
+ * The status of the contract card. While a read is in flight the page says
+ * it is reading — never "no answer": a pending request is not a failed one.
+ */
+export function statusOf(contract: ContractRef | null, rows: SupplyRow[], busy = false): Status {
   if (contract === null) return 'absent';
-  if (rows.length === 0) return 'loading';
+  if (busy) return 'loading';
   return answered(rows) ? 'live' : 'unreachable';
 }
 
@@ -29,33 +33,32 @@ function Absent() {
       <p className="pf-status" data-testid="contract-status">
         <Badge status="absent" />
         <span>
-          Aucun contrat n&rsquo;est configuré pour cette page : nous ne pouvons donc
-          <strong> rien </strong>lire on-chain, et nous ne l&rsquo;affichons pas.
+          Aucun contrat n&rsquo;est configuré pour <strong>cette page</strong> : nous ne
+          pouvons donc rien lire on-chain, et nous ne l&rsquo;affichons pas.
         </span>
       </p>
-      <HarborFigure title="En attente de déploiement" status="absent" />
+      <HarborFigure title="Aucun contrat configuré" status="absent" />
       <p>
-        Le contrat NEP-245 (<code>contracts/tidewater</code>, 412 Kio de wasm) est
-        écrit, compilé et testé. Il n&rsquo;est pas déployé sur le testnet, au
-        10 novembre 2026, pour deux raisons mesurées :
+        L&rsquo;identifiant du contrat se lit dans <code>docs/deployments.md</code>, le
+        fichier que <code>scripts/testnet/deploy.mjs</code> écrit au moment du
+        déploiement. S&rsquo;il n&rsquo;y figure aucun compte déployé, cette carte reste
+        muette plutôt que d&rsquo;inventer un état : c&rsquo;est le cas d&rsquo;un build
+        fait avant le run, ou d&rsquo;un run qui a échoué.
       </p>
       <ul className="pf-list">
         <li>
-          le faucet public NEAR (<code>helper.testnet.near.org</code>) répond
-          <code> 429</code> : dix créations de compte par trois heures et par IP, et
-          le seau était vide (fenêtre rouverte vers 02:27 GMT) ;
+          pour pointer cette page sur un contrat déjà déployé :{' '}
+          <code>?contract=&lt;compte.testnet&gt;</code> dans l&rsquo;URL, ou{' '}
+          <code>localStorage.tidewater-chain-v1</code> ;
         </li>
         <li>
-          les 412 Kio de code coûtent ~4,12 NEAR de storage, et aucun compte de la
-          machine de build n&rsquo;a les ~4,3 NEAR <em>libres</em> nécessaires pour le
-          créer en sous-compte : le déploiement est laissé non fait plutôt
-          qu&rsquo;à moitié fait.
+          pour qu&rsquo;elle le lise par défaut : relancer{' '}
+          <code>make testnet-deploy</code>, qui réécrit le document, puis rebuilder.
         </li>
       </ul>
       <p className="pf-muted">
-        Le détail daté, les adresses visées et les scripts prêts sont dans
-        <code> docs/deployments.md</code>. Dès qu&rsquo;un identifiant est fourni
-        (<code>?contract=</code> ou <code>localStorage.tidewater-chain-v1</code>),
+        Le détail daté, les adresses et les hashs de transaction sont dans
+        <code> docs/deployments.md</code>. Dès qu&rsquo;un identifiant est fourni,
         cette carte bascule d&rsquo;elle-même en lecture live.
       </p>
     </div>
@@ -96,7 +99,8 @@ function SupplyTable({ rows }: { rows: SupplyRow[] }) {
 function sourceLabel(source: ContractRef['source']): string {
   if (source === 'url') return 'l\u2019URL';
   if (source === 'localStorage') return 'localStorage';
-  return 'la variable de build';
+  if (source === 'env') return 'la variable de build';
+  return 'docs/deployments.md';
 }
 
 function Live(props: {
@@ -145,7 +149,7 @@ export default function ContractCard(props: {
   onRefresh: () => void;
 }) {
   const { contract, rows, busy, onRefresh } = props;
-  const status = statusOf(contract, rows);
+  const status = statusOf(contract, rows, busy);
   return (
     <section className="pf-card" aria-label="1 Le contrat" data-testid="contract-card">
       <div className="pf-card-head">

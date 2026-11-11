@@ -111,7 +111,7 @@ interface Proof {
 const PROOFS: Proof[] = [
   {
     title: 'La suite de tests',
-    claim: '137 tests, zéro échec : règles économiques, contrat, simulation, moteur wasm.',
+    claim: '268 tests, zéro échec : règles économiques, contrat, simulation, moteur wasm.',
     command: 'cargo test --workspace',
   },
   {

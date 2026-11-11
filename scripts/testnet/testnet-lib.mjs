@@ -55,6 +55,30 @@ export function credPath(accountId) {
   return path.join(CREDS, `${accountId}.json`);
 }
 
+/**
+ * Where the deployment record lives: next to the credentials, outside the
+ * repository. It holds the hashes of the transactions that put the contract
+ * and its state on chain, so a later run that finds the code already
+ * deployed can still write the real hashes in `docs/deployments.md` instead
+ * of a vague "reused". It contains no secret — only public transaction ids.
+ */
+export function recordPath(accountId) {
+  return path.join(CREDS, `${accountId}.deployment.json`);
+}
+
+export function readRecord(accountId) {
+  try {
+    return JSON.parse(fs.readFileSync(recordPath(accountId), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+export function saveRecord(accountId, record) {
+  fs.mkdirSync(CREDS, { recursive: true });
+  fs.writeFileSync(recordPath(accountId), `${JSON.stringify(record, null, 2)}\n`, { mode: 0o600 });
+}
+
 export function hasKey(accountId) {
   return fs.existsSync(credPath(accountId));
 }
