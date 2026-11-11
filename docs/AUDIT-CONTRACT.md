@@ -7,47 +7,60 @@
 
 **15 défauts prouvés** par un test qui échoue (3 bloquants, 8 majeurs,
 4 mineurs/remarque) et **7 défauts latents** documentés avec leur commande
-de reproduction (hors périmètre des tests unitaires). Rien n'a été corrigé.
+de reproduction (hors périmètre des tests unitaires).
+
+**État au 10/11/2026** — les trois bloquants (D01, D02, D03) et six des huit
+majeurs (**D04, D05, D06, D07, D08, D09, D10, D13**) sont corrigés : leur test
+d'audit n'est plus `#[ignore]` et passe dans la CI. Restent ouverts, prouvés et
+`#[ignore]` : **D11, D12, D14, D15** (mineurs). Voir « Correctifs livrés ».
 
 ## Lancer les preuves
 
 ```bash
-# CI reste verte : les preuves sont #[ignore]
+# CI verte : les preuves des défauts encore ouverts sont #[ignore]
 cargo test -p tidewater
 
-# les 15 échecs, avec leur message
+# les défauts encore ouverts, avec leur message
 cargo test -p tidewater --test audit -- --ignored --test-threads=1
 
-# les 3 gardes qui passent (invariants vérifiés)
+# les preuves des défauts fermés + les gardes d'invariant
 cargo test -p tidewater --test audit
 ```
 
-Chaque test `dNN_*` de `contracts/tidewater/tests/audit.rs` **échoue tant que
+Chaque test `dNN_*` de `contracts/tidewater/tests/audit/` **échoue tant que
 le défaut existe** et passe sans retouche après le correctif proposé : c'est
-le critère de sortie de l'audit.
+le critère de sortie de l'audit. Un test d'audit ne se retouche jamais pour
+accommoder un correctif ; si un correctif casse une preuve verte, le correctif
+attend.
 
 ## Tableau des défauts
 
-| id | sévérité | fichier:ligne | défaut | test |
-|----|----------|---------------|--------|------|
-| D01 | **bloquant** | `nep245.rs:34,43` et `nep245.rs:65,77` | `mt_transfer`/`mt_batch_transfer` exigent 1 yocto (`assert_yocto()`) mais ne sont pas `#[payable]` : **aucun or ni aucune licence ne peut circuler** | `d01` |
-| D02 | **bloquant** | `lib.rs:303-315`, `actions.rs:99-102` | `new()` sème les 20 licences aux quatre capitaines, **0 à `npc:bank`** : `buy_licence` renvoie `E_NO_LICENCE` pour toujours | `d02` |
-| D03 | **bloquant** | `nep245.rs:81-90` | `mt_batch_transfer` valide chaque jambe contre le **même solde de départ** : `["3","3"] × [4,4]` frappe 4 licences ex nihilo | `d03` |
-| D04 | majeur | `nep245.rs:91-101` | l'événement `mt_batch_transfer` publie `token_ids` **sans `amounts`** : un indexeur ne sait pas ce qui a bougé | `d04` |
-| D05 | majeur | `nep245.rs:158-160` (utilisé `:59`, `:99`) | le `memo` est interpolé **sans échappement** dans `EVENT_JSON` : JSON cassé, et un `memo` contenant un retour ligne forge un faux événement NEP-297 | `d05` |
-| D06 | majeur | `actions.rs:148-156`, `loans.rs:42-47` | les droits de jeu suivent `boats.captain`, **pas le solde du deed** : vendre un acte de bateau ne transfère rien, l'ancien propriétaire continue de pêcher et d'encaisser | `d06` |
-| D07 | majeur | `council.rs:104-107`, `council.rs:182-193` | `pay_indemnities` paie **tous les votants, y compris ceux qui ont voté non** ; sur une motion rejetée, l'escrow part quand même à l'opposition | `d07` |
-| D08 | majeur | `loans.rs:19-21` vs `:27,:36` | le token de note (100) est transférable mais `loans.lender` ne suit pas : l'acheteur de la note n'a **aucun droit** (forbear/seize refusés), le vendeur garde tout | `d08` |
-| D09 | majeur | `lib.rs:57` (jamais lu) | `LICENCE_CAP_PER_CAPTAIN = 8` n'est appliqué nulle part : un compte peut acheter tout le conseil | `d09` |
-| D10 | majeur | `council.rs:29-52`, tout le contrat | **aucun dépôt de storage** (pas de NEP-145, pas de `assert_one_yocto`) : 50 motions ont été écrites pour 0 yocto ; l'état grossit gratuitement (idem pour chaque `(owner, token)` créé par `mt_transfer`) | `d10` |
-| D11 | mineur | `nep245.rs:47-49` | `mt_transfer` de 0 accepté : crée un slot de ledger et émet un événement pour 1 yocto, sans limite de comptes | `d11` |
-| D12 | mineur | `council.rs:94-98` | `resolve_council` n'appelle pas `assert_council_open` (contrairement à `propose_rule:30` et `vote:56`) : une motion de la session close est résolue et appliquée au jour 29 | `d12` |
-| D13 | majeur | `council.rs:55-65`, `:132-140` | le poids de vote est lu **au moment du vote** : voter puis transférer ses licences permet de voter à nouveau depuis un autre compte — 4 licences = 6 votes, 24 voix pour 20 licences | `d13` |
-| D14 | mineur | `lib.rs:445`, `actions.rs:154` | deux refus sortent en `"owner only"` au lieu d'un code `E_*` : indistinguables côté client | `d14` |
-| D15 | mineur | `actions.rs:47-60` | `assign_boat` change le filet **en mer** : le bonus de prise de 40 % (petit filet) s'obtient sans rentrer au quai, TW-C2-02 contournée | `d15` |
+| id | sévérité | état | fichier:ligne | défaut | test |
+|----|----------|------|---------------|--------|------|
+| D01 | **bloquant** | fermé | `nep245.rs:34,43` et `nep245.rs:65,77` | `mt_transfer`/`mt_batch_transfer` exigent 1 yocto (`assert_yocto()`) mais ne sont pas `#[payable]` : **aucun or ni aucune licence ne peut circuler** | `d01` |
+| D02 | **bloquant** | fermé | `lib.rs:303-315`, `actions.rs:99-102` | `new()` sème les 20 licences aux quatre capitaines, **0 à `npc:bank`** : `buy_licence` renvoie `E_NO_LICENCE` pour toujours | `d02` |
+| D03 | **bloquant** | fermé | `nep245.rs:81-90` | `mt_batch_transfer` valide chaque jambe contre le **même solde de départ** : `["3","3"] × [4,4]` frappe 4 licences ex nihilo | `d03` |
+| D04 | majeur | fermé | `nep245.rs:91-101` | l'événement `mt_batch_transfer` publie `token_ids` **sans `amounts`** : un indexeur ne sait pas ce qui a bougé | `d04` |
+| D05 | majeur | fermé | `nep245.rs:158-160` (utilisé `:59`, `:99`) | le `memo` est interpolé **sans échappement** dans `EVENT_JSON` : JSON cassé, et un `memo` contenant un retour ligne forge un faux événement NEP-297 | `d05` |
+| D06 | majeur | fermé | `actions.rs:148-156`, `loans.rs:42-47` | les droits de jeu suivent `boats.captain`, **pas le solde du deed** : vendre un acte de bateau ne transfère rien, l'ancien propriétaire continue de pêcher et d'encaisser | `d06` |
+| D07 | majeur | fermé | `council.rs:104-107`, `council.rs:182-193` | `pay_indemnities` paie **tous les votants, y compris ceux qui ont voté non** ; sur une motion rejetée, l'escrow part quand même à l'opposition | `d07` |
+| D08 | majeur | fermé | `loans.rs:19-21` vs `:27,:36` | le token de note (100) est transférable mais `loans.lender` ne suit pas : l'acheteur de la note n'a **aucun droit** (forbear/seize refusés), le vendeur garde tout | `d08` |
+| D09 | majeur | fermé | `lib.rs:57` (jamais lu) | `LICENCE_CAP_PER_CAPTAIN = 8` n'est appliqué nulle part : un compte peut acheter tout le conseil | `d09` |
+| D10 | majeur | fermé | `council.rs:29-52`, tout le contrat | **aucun dépôt de storage** (pas de NEP-145, pas de `assert_one_yocto`) : 50 motions ont été écrites pour 0 yocto ; l'état grossit gratuitement (idem pour chaque `(owner, token)` créé par `mt_transfer`) | `d10` |
+| D11 | mineur | **ouvert** | `nep245.rs:47-49` | `mt_transfer` de 0 accepté : crée un slot de ledger et émet un événement pour 1 yocto, sans limite de comptes | `d11` |
+| D12 | mineur | **ouvert** | `council.rs:94-98` | `resolve_council` n'appelle pas `assert_council_open` (contrairement à `propose_rule:30` et `vote:56`) : une motion de la session close est résolue et appliquée au jour 29 | `d12` |
+| D13 | majeur | fermé | `council.rs:55-65`, `:132-140` | le poids de vote est lu **au moment du vote** : voter puis transférer ses licences permet de voter à nouveau depuis un autre compte — 4 licences = 6 votes, 24 voix pour 20 licences | `d13` |
+| D14 | mineur | **ouvert** (voir note) | `lib.rs:445`, `actions.rs:154` | deux refus sortent en `"owner only"` au lieu d'un code `E_*` : indistinguables côté client | `d14` |
+| D15 | mineur | **ouvert** | `actions.rs:47-60` | `assign_boat` change le filet **en mer** : le bonus de prise de 40 % (petit filet) s'obtient sans rentrer au quai, TW-C2-02 contournée | `d15` |
 
 Détail ci-dessous : sévérité, localisation, reproduction, effet joueur,
-correctif (non codé).
+correctif (codé pour les lignes « fermé », proposé pour les lignes « ouvert »).
+
+**Note D14** : le correctif proposé (`E_OWNER_ONLY` à la place de
+`"owner only"`) casse la garde verte `sane_refusals_carry_their_e_code`, qui
+assert littéralement la chaîne `owner only` sur le refus de `run_day`. Une
+preuve d'audit ne se retouche pas pour accommoder un correctif : D14 reste
+ouvert jusqu'à ce que la garde et le code soient revus ensemble.
 
 ---
 
@@ -332,6 +345,32 @@ permet aussi de changer de zone n'importe quand, y compris après 3 sorties.
 **Correctif** : n'autoriser un changement de filet que si `boat.zone.is_none()`
 (`assert!(boat.zone.is_none() || boat.small_mesh == small_mesh,
 "E_MESH_AT_QUAY_ONLY")`).
+
+---
+
+## Correctifs livrés (10/11/2026)
+
+Chaque correctif ferme le défaut nommé, et son test d'audit n'est plus
+`#[ignore]` : il tourne dans la CI. Aucune preuve verte n'a été retouchée.
+
+| id | correctif | fichiers |
+|----|-----------|----------|
+| D01 | `#[payable]` sur `mt_transfer` / `mt_batch_transfer`, `assert_yocto()` conserve le trop-perçu et le rend | `nep245.rs` |
+| D02 | `new()` crédite `npc:bank` de `BANK_LICENCE_POOL` (4) sur les 20 licences, les capitaines en gardent 16 | `lib.rs` |
+| D03 | les jambes d'un batch sont **sommées par token** avant tout mouvement | `nep245.rs` (`move_batch`) |
+| D04 | l'événement batch publie `token_ids` **et** `amounts`, indexés en parallèle | `nep245.rs` |
+| D05 | le `memo` passe par `serde_json::to_string` : un guillemet, un antislash ou un retour ligne reste dans une seule valeur JSON | `nep245.rs` (`memo_json`) |
+| D06 | le droit de jeu se dérive du **porteur du deed** (`token_holder`) : `assert_deed_caller` remplace `assert_boat_caller`, `land_lot` paie le porteur, `seize_boat` déplace le deed depuis son détenteur réel. `boats.captain` ne sert plus qu'à l'affichage | `rights.rs` (nouveau), `actions.rs`, `loans.rs` |
+| D07 | `Proposal.yes_voters: Vec<(String, u64)>` : seuls les votants **oui** sont payés, au poids de leur bulletin, et seulement si la motion passe ; le reliquat retourne à l'auteur (`escrow.saturating_sub(paid)`) | `council.rs`, `lib.rs` |
+| D08 | `loan_holder` dérive le prêteur du **porteur de la note** ; `forbear_loan`, `seize_boat` et `settle_loans` lisent ce porteur, et tout transfert resynchronise `loans.lender` (`sync_note_holder`) | `rights.rs`, `loans.rs`, `nep245.rs` |
+| D09 | `assert_licence_cap` : plafond de `LICENCE_CAP_PER_CAPTAIN` (8) appliqué à l'achat bancaire **et** à toute jambe entrante (`mt_transfer`, batch) ; exposé en vue `get_licence_cap` | `rights.rs`, `actions.rs`, `nep245.rs`, `views.rs` |
+| D10 | `propose_rule` est `#[payable]` et refuse une motion **sans indemnité et sans yocto** (`E_STORAGE_DEPOSIT_REQUIRED`) : une motion gratuite ne peut plus grossir l'état | `council.rs` |
+| D13 | le poids effectif d'un bulletin est borné par les voix encore libres (`LICENCE_SUPPLY - tally`) : faire tourner 4 licences entre six comptes ne fabrique plus de voix | `council.rs` |
+
+Découpage : `src/rights.rs` porte **toutes** les résolutions de droit (deed,
+note, plafond) — une seule implémentation, appelée par `actions`, `loans` et
+`nep245` ; les preuves vivent dans `tests/audit/` (harness, défauts, gardes)
+pour rester sous 500 lignes par fichier.
 
 ---
 
