@@ -6,6 +6,7 @@ import { bootHarbour } from './boot';
 import type { BootResult } from './boot';
 import { initEngine } from './engine';
 import './styles.css';
+import './chain.css';
 import './tutorial.css';
 
 const rootElement = document.getElementById('root');

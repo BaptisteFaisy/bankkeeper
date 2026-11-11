@@ -1,20 +1,20 @@
 // App: session gate plus the single 1280x800 game screen.
 // Top bar, sea chart, auction, boats, ledger and the judges drawer.
 import { useEffect, useRef, useState } from 'react';
-import type { FormEvent, RefObject } from 'react';
+import type { RefObject } from 'react';
 import type { BoatView, CouncilOutcome, DayNote, GraphLive, JudgesLive, Mesh, PortState, SeasonBilan, ZoneId } from './types';
 import { parseBilan, parseCouncilOutcome } from './types';
 import { useGame, useJudges } from './hooks';
 import type { GameState } from './hooks';
 import { doAssign, doClaim, doCouncil, doDebt, doEndDay, doFallow, doLicenceTrade, doNewCampaign, doNextSeason, doReset, doReseed, doSurvey } from './actions';
 import type { GameActions } from './actions';
-import { postLogin } from './api';
 import type { BootResult } from './boot';
 import type { Session } from './session';
 import type { Charter } from './charter';
 import Stage from './components/Stage';
 import LedgerPanel from './components/LedgerPanel';
 import HarbourPanel from './components/HarbourPanel';
+import Auth from './components/Auth';
 import ChainBar from './components/ChainBar';
 import ChroniclePanel from './components/ChroniclePanel';
 import CharterScreen from './components/CharterScreen';
@@ -24,36 +24,7 @@ import JudgeBench from './components/JudgeBench';
 import SeedOffer from './components/SeedOffer';
 import ToastStack from './components/Toasts';
 import { fmtCrates, fmtGold } from './format';
-import { CHAIN_ENABLED } from './near/chain';
-
-function AuthGate({ onLogin }: { onLogin: (email: string, name: string) => void }) {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  function submit(e: FormEvent): void {
-    e.preventDefault();
-    if (email.trim() === '') return;
-    const captain = name.trim() === '' ? 'Skipper' : name.trim();
-    // Best effort: the relay records the captain, but the local
-    // session is enough to play if the relay is still starting.
-    postLogin(email.trim(), captain).catch(() => undefined);
-    onLogin(email.trim(), captain);
-  }
-  return (
-    <form className="auth-card" onSubmit={submit}>
-      <h2>Take command</h2>
-      <p className="muted">Sign in with your email. No wallet, no seed phrase, no gas.</p>
-      <label>
-        Email
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </label>
-      <label>
-        Captain name
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Skipper" />
-      </label>
-      <button type="submit">Set sail</button>
-    </form>
-  );
-}
+import { ChainProvider, useChain } from './near/chainProvider';
 
 function findBoat(port: PortState | null, id: string | null): BoatView | null {
   if (port === null || id === null) return null;
@@ -354,6 +325,7 @@ function GameScreen({ game, session, judgesRef, onHowToPlay }: {
   judgesRef: RefObject<HTMLButtonElement>;
   onHowToPlay: () => void;
 }) {
+  const chain = useChain();
   const port = game.port;
   const selected = findBoat(port, game.selectedBoat);
   const dayKey = `${port?.week ?? 0}-${port?.day ?? ''}`;
@@ -373,7 +345,7 @@ function GameScreen({ game, session, judgesRef, onHowToPlay }: {
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
       )}
-      {CHAIN_ENABLED && <ChainBar email={session.email} />}
+      {chain.enabled && <ChainBar />}
       <PlayPanels game={game} port={port} selected={selected} judges={judges} youLicences={you?.licences ?? 0} council={end.council} over={end.over} />
       {game.judgesOpen && <JudgeBench game={game} port={port} judges={judges} graph={graph} />}
       {campaignDone && port !== null && (
@@ -420,17 +392,14 @@ export default function App({ boot }: { boot: BootResult }) {
   useBootNotice(game, boot);
   const toasts = <ToastStack toasts={game.toasts} onDismiss={game.dismissToast} />;
   const offer = boot.seedOffer === null ? null : <SeedOffer offer={boot.seedOffer} game={game} />;
-  if (game.session === null) {
-    return (
-      <div className="app">
-        <header className="topbar"><h1>Tidewater</h1></header>
-        {offer}
-        <AuthGate onLogin={game.login} />
-        {toasts}
-      </div>
-    );
-  }
-  return (
+  const screen = game.session === null ? (
+    <div className="app">
+      <header className="topbar"><h1>Tidewater</h1></header>
+      {offer}
+      <Auth onLogin={game.login} />
+      {toasts}
+    </div>
+  ) : (
     <div className="app">
       {offer}
       <GameScreen game={game} session={game.session} judgesRef={judgesRef} onHowToPlay={tutorial.show} />
@@ -438,4 +407,7 @@ export default function App({ boot }: { boot: BootResult }) {
       {toasts}
     </div>
   );
+  // One chain session wraps both screens: the login card opens the NEAR
+  // account, the strip above the harbour shows it. Offline it never fetches.
+  return <ChainProvider email={game.session?.email ?? ''}>{screen}</ChainProvider>;
 }
