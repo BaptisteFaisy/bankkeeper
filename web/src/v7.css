@@ -1,0 +1,147 @@
+/* Tidewater V7 — the harbour at night. Two colours: the night blue of the
+   matter and the cyan of the light. One hero (your books), the scene full
+   bleed, the instruments in one deck on the right, read one at a time.
+   The tokens of styles.css are re-pointed here; no gradient, no glass. */
+:root {
+  --bg: #050c16;
+  --panel: #0a1626;
+  --panel-2: #0f1f33;
+  --sea: #163a55;
+  --line: #172a3d;
+  --ink: #e6f6fb;
+  --muted: #7d98aa;
+  --buoy: #19e3ff;
+  --buoy-bright: #19e3ff;
+  --gold: #19e3ff;
+  --kelp: #19e3ff;
+  --sand: #7d98aa;
+  --red: #e6f6fb;
+  --red-line: #19e3ff;
+  --cy: #19e3ff;
+  --card: rgba(8, 18, 31, 0.94);
+  --hair: rgba(214, 240, 250, 0.08);
+  --display: Bahnschrift, 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Mono', 'SF Mono', Consolas, ui-monospace, monospace;
+}
+
+body { font-family: var(--display); font-size: 14px; }
+.app { max-width: none; padding: 0; }
+
+/* The scene: full bleed, behind everything. */
+.board { display: contents; }
+.chart-panel {
+  position: fixed; inset: 0; z-index: -1; padding: 0; margin: 0;
+  border: 0; border-radius: 0; background: var(--bg);
+}
+.chart-panel > h2, .chart-panel > .zone-readings { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.sea-stage { position: absolute; inset: 0; }
+.sea-stage .sea-canvas { width: 100%; height: 100%; max-width: none; border: 0; border-radius: 0; cursor: crosshair; }
+.sea-stage.flat .sea-canvas { width: auto; height: 100%; max-width: 100%; margin: 0 auto; object-fit: contain; }
+.sea-canvas:focus-visible { outline: 2px solid var(--cy); outline-offset: -4px; }
+.sea-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+/* World labels. */
+.lb3 { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
+.lb3.place { margin-left: -50px; width: 100px; text-align: center; color: rgba(230, 246, 251, 0.0); text-transform: uppercase; transition: color 300ms ease; }
+.lb3.place.on { color: var(--bg); }
+.lb3.place.on::before { content: ''; position: absolute; inset: -3px 10px; z-index: -1; border-radius: 99px; background: var(--cy); }
+.lb3.ground { margin-left: -60px; width: 120px; text-align: center; color: var(--ink); }
+.lb3.ground .name { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+.lb3.ground .fish { font-size: 9px; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em; }
+.lb3.ground .bar { width: 64px; height: 3px; margin: 5px auto 4px; border-radius: 3px; background: rgba(25, 227, 255, 0.18); overflow: hidden; }
+.lb3.ground .fill { height: 100%; background: var(--cy); border-radius: 3px; }
+.lb3.ground .note { font-family: var(--mono); font-size: 10px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.lb3.ground.crowded .note { color: var(--cy); }
+.lb3.hull { margin: -10px 0 0 -10px; }
+.lb3.hull svg { display: block; width: 20px; height: 20px; padding: 4px; border-radius: 50%; background: var(--card); fill: var(--cy); stroke: var(--cy); box-shadow: 0 0 0 1px var(--hair); }
+.lb3.hull.agent svg { width: 16px; height: 16px; padding: 3px; margin: 2px; opacity: 0.75; }
+.lb3.hull.you svg { background: var(--cy); fill: var(--bg); stroke: var(--bg); }
+.lb3.hull .who { position: absolute; left: 24px; top: 3px; padding: 1px 7px; border-radius: 99px; background: var(--cy); color: var(--bg); font-size: 10px; letter-spacing: 0.04em; }
+.lb3.hull.picked svg { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--cy); }
+.lb3.hull.idle { opacity: 0.35; }
+
+/* The header: floating, quiet, one line. */
+header.topbar {
+  position: fixed; top: 14px; left: 20px; right: 20px; z-index: 5;
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 6px;
+  margin: 0; padding: 6px 6px 6px 16px; border: 1px solid var(--hair); border-radius: 99px;
+  background: var(--card); box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+}
+.topbar h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; text-transform: none; margin-right: 10px; }
+.topbar .tide-stat { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.topbar .tide-stat.gold { color: var(--cy); font-size: 12px; }
+.topbar .muted { font-size: 12px; margin-left: 4px; }
+.topbar .ghost:first-of-type { margin-left: auto; }
+.topbar button { padding: 7px 13px; font-size: 12px; border-radius: 99px; }
+
+/* Buttons: one filled cyan, the rest hairline. */
+button { background: var(--cy); color: var(--bg); font-weight: 600; border-radius: 99px; }
+button:hover:not(:disabled) { background: #7ff0ff; }
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--hair); }
+button.ghost:hover:not(:disabled) { background: rgba(25, 227, 255, 0.08); color: var(--ink); border-color: rgba(25, 227, 255, 0.35); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--cy); }
+input, select { background: var(--bg); border: 1px solid var(--hair); border-radius: 10px; color: var(--ink); }
+
+/* The hero: your books, over the sky. */
+.books { position: fixed; left: 28px; top: 82px; z-index: 3; pointer-events: none; }
+.books-when { margin: 0 0 14px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.books-k { display: block; font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.18em; text-transform: uppercase; }
+.books-v { display: block; font-weight: 700; font-stretch: condensed; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 0.95; }
+.books-v small { font-size: 12px; font-weight: 400; letter-spacing: 0.04em; color: var(--muted); margin-left: 8px; }
+.books-worth .books-v { font-size: 76px; color: var(--cy); }
+.books-debt { margin-top: 14px; }
+.books-debt .books-v { font-size: 34px; color: var(--ink); }
+
+/* The deck: every instrument, one column, read one at a time. */
+.deck {
+  position: fixed; top: 74px; right: 20px; bottom: 20px; width: 384px; z-index: 2;
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--sea) transparent;
+  display: flex; flex-direction: column; gap: 10px; padding-bottom: 40vh;
+}
+.deck-nav {
+  position: sticky; top: 0; z-index: 4; display: flex; gap: 2px; padding: 4px;
+  border: 1px solid var(--hair); border-radius: 99px; background: var(--card);
+}
+.deck-nav button { flex: 1; padding: 7px 0; font-size: 11px; font-weight: 600; background: transparent; color: var(--muted); }
+.deck-nav button.on { background: var(--cy); color: var(--bg); }
+.side, .panels { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.deck .panel { background: var(--card); border: 1px solid var(--hair); border-radius: 20px; padding: 16px 18px; scroll-margin-top: 52px; }
+.deck .panel h2 { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; color: var(--muted); margin-bottom: 12px; }
+.deck .panel h3 { font-size: 12px; color: var(--ink); }
+.deck .muted, .deck .hint { font-size: 12px; }
+.deck .num { font-family: var(--mono); font-size: 13px; }
+.ledger-cols { grid-template-columns: minmax(0, 1fr); }
+
+/* The criée: the one big number of the deck. */
+.clock-price { font-family: var(--display); font-weight: 700; font-size: 44px; letter-spacing: -0.03em; color: var(--cy); }
+.clock-bar { height: 4px; border: 0; background: rgba(25, 227, 255, 0.14); }
+.clock-fill { background: var(--cy); }
+.buyer-limits li, .landing-list li, .reason-list li, .harbour-list li, .event-list li, .chronicle-table td { border-top: 1px solid var(--hair); }
+.sale-line { color: var(--cy); font-size: 13px; }
+
+/* Your boats: two cards. */
+.boat-card { background: transparent; border: 1px solid var(--hair); border-radius: 14px; padding: 10px 12px; }
+.boat-card.selected { border-color: var(--cy); box-shadow: inset 0 0 0 1px var(--cy); }
+.boat-head { font-weight: 700; font-size: 14px; }
+.zone-buttons button, .mesh-row button { padding: 5px 11px; font-size: 12px; }
+
+/* Toasts and overlays in the same voice. */
+.toast-stack { left: 28px; right: auto; bottom: 24px; }
+.toast { background: var(--card); border: 1px solid var(--hair); border-left: 3px solid var(--cy); border-radius: 14px; }
+.end-screen { background: rgba(5, 12, 22, 0.86); }
+.end-card, .auth-card { border-radius: 22px; border: 1px solid var(--hair); background: var(--card); }
+.trend-falling { color: var(--cy); }
+section.judges { border-radius: 22px; background: var(--card); z-index: 30; }
+.offline-banner, .chain-bar { position: fixed; left: 28px; bottom: 24px; z-index: 6; background: var(--card); }
+
+@media (max-width: 1100px) {
+  .deck { position: static; width: auto; margin: 0 12px; padding: 380px 0 24px; overflow: visible; }
+  .chart-panel { position: fixed; height: 360px; bottom: auto; }
+  .books { top: 70px; }
+  .books-worth .books-v { font-size: 48px; }
+  header.topbar { flex-wrap: wrap; border-radius: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb3.place { transition: none; }
+}

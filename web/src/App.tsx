@@ -23,6 +23,8 @@ import TopBar from './components/TopBar';
 import JudgeBench from './components/JudgeBench';
 import SeedOffer from './components/SeedOffer';
 import ToastStack from './components/Toasts';
+import Books from './components/Books';
+import DeckNav from './components/DeckNav';
 import { fmtCrates, fmtGold } from './format';
 import { ChainProvider, useChain } from './near/chainProvider';
 
@@ -259,8 +261,10 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
   council: CouncilOutcome | null;
   over: boolean;
 }) {
+  const deckRef = useRef<HTMLDivElement>(null);
   return (
-    <>
+    <div className="deck" ref={deckRef}>
+      <DeckNav deck={deckRef} />
       <PlayStage game={game} port={port} selected={selected} over={over} />
       <div className="panels">
         <LedgerPanel
@@ -276,7 +280,7 @@ function PlayPanels({ game, port, selected, judges, youLicences, council, over }
         <HarbourOffice game={game} port={port} judges={judges} youLicences={youLicences} council={council} over={over} />
         <ChroniclePanel entries={port?.chronicle ?? []} charter={port?.charter ?? null} />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -342,6 +346,7 @@ function GameScreen({ game, session, judgesRef, onHowToPlay }: {
         <EndScreen port={port} you={you} bilan={end.bilan} stocks={end.stocks} council={end.council} seasonOver onReset={() => { void doReset(noted); }} onNextSeason={() => { void doNextSeason(noted); }} />
       )}
       <HarbourTopBar game={game} session={session} judgesRef={judgesRef} end={end} noted={noted} onHowToPlay={onHowToPlay} />
+      <Books port={port} />
       {game.offline && (
         <p className="offline-banner">Relay unreachable — showing last known harbour. Start the relay to play live.</p>
       )}

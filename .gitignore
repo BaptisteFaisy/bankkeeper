@@ -12,3 +12,9 @@ server/*.state.json
 .DS_Store
 # Built by `npm run build:wasm` (crates/wasm); never versioned.
 web/public/engine.wasm
+
+# Local agent config (never versioned)
+.claude/
+# Design-board copy of the built engine (web/public/engine.wasm is the source)
+G-DESIGN/v5/engine.wasm
+
