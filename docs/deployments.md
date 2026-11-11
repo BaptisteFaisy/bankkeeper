@@ -219,4 +219,18 @@ La page de preuves `/proofs.html` lit l'adresse du contrat dans **ce document**
 (`web/src/proofs/deployment.ts` est le seul lecteur) : il n'y a donc qu'un seul
 endroit où l'adresse est écrite, et le build du site la reprend telle quelle.
 
+### Empreinte du dernier déploiement
+
+| Élément | Valeur |
+|---|---|
+| Déployé le | 2026-11-11 06:24 UTC (07:24 Europe/Paris) |
+| Commit `main` déployé | `a4ab04a` (PR #82 : le contrat est déployé sur testnet, 75 transactions prouvées) |
+| URL de production | <https://tidewater-play.vercel.app> |
+| Déploiement | `tidewater-play-fiyq3a717-bg-1fa3.vercel.app` |
+| `engine.wasm` servi | 917 429 octets (896 Kio), `application/wasm`, sha256 `b68bb258982cd0e7033a770c395115f333e009d9f4bd025827218005b599df32` |
+| Bundle de la page de preuves | `assets/proofs-L8Jecw1D.js` |
+| Vérifications HTTP | 200 sur `/`, `/proofs.html`, `/engine.wasm`, `/sw.js`, `/manifest.webmanifest`, `/offline.html` |
+| Vérifications headless (URL publique) | badge « live · lu sur la chaîne », contrat `bankkeeper.testnet` annoncé comme lu dans `docs/deployments.md`, `mt_supply(3)` = 20 (offre fixe), **75/75 transactions confirmées** dans la frise, pied de page « Rejeu on-chain du 11/11/2026 », **0 erreur console, 0 requête en échec** ; capture `/tmp/prod-proofs.png` |
+| Vérifications locales sur le même `dist` | `tests/e2e_proofs.py` vert, `tests/e2e_offline.py` vert, `tests/ci_structural.py` vert (178 fichiers), `tests/testnet_scripts.py` vert, `cargo test --workspace` 268 passés / 0 échec |
+
 <!-- hand:end -->
