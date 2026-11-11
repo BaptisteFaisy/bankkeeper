@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -180,7 +181,9 @@ def debt_of(driver):
 
 
 def api_traffic(driver):
-    """Any HTTP call to /api/ means the offline build still wants a server."""
+    """Any HTTP call to /api/ or to the sponsored relayer means the offline
+    build still wants a server. The default mode must stay 100 % in the
+    browser: chain mode is opt-in (`?chain`), never a background call."""
     hits = set()
     for entry in driver.get_log("performance"):
         try:
@@ -190,7 +193,8 @@ def api_traffic(driver):
         if msg.get("method") != "Network.requestWillBeSent":
             continue
         url = msg.get("params", {}).get("request", {}).get("url", "")
-        if "/api/" in url:
+        path = urllib.parse.urlparse(url).path
+        if "/api/" in url or path.startswith("/chain") or "relayer" in url:
             hits.add(url.split("?")[0])
     return sorted(hits)
 
@@ -232,13 +236,13 @@ def main():
     print("--- failed requests: %d ---" % len(failed))
     for status, url in failed[:10]:
         print(f"  {status} {url}")
-    print("--- api calls: %d ---" % len(api))
+    print("--- api / relayer calls: %d ---" % len(api))
     for url in api[:10]:
         print(f"  {url}")
     blocked = [n for n in notes if n.startswith("blocked:")]
     if errors or failed or blocked or api:
         return 1
-    print("OK: offline journey clean, zero console errors, zero /api calls.")
+    print("OK: offline journey clean, zero console errors, zero /api or relayer calls.")
     return 0
 
 

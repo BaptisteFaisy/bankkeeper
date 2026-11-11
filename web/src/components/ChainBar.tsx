@@ -1,82 +1,102 @@
-// The on-chain strip: one status line and the three sponsored actions.
-// Only mounted when VITE_CHAIN=1; the wasm demo never renders it.
-import { useCallback, useEffect, useState } from 'react';
-import { chainBuyLicence, chainBuyLoan, chainLogin, chainVote } from '../near/chain';
-import type { ChainPosition, ChainReceipt } from '../near/chain';
+// The on-chain strip: the NEAR account, the last transaction and the three
+// sponsored actions. Mounted only in chain mode — the offline demo never
+// renders it and never calls the relayer.
+//
+// Every call goes through the shared chain session (near/chainProvider), which
+// holds the double-click guard, so the buttons here only show the state.
+import { chainUrl, explorerUrl, shortHash } from '../near/chain';
+import { useChain } from '../near/chainProvider';
+import type { ChainValue } from '../near/chainProvider';
 import { fmtGold } from '../format';
 
-type Busy = 'login' | 'licence' | 'loan' | 'vote' | null;
-
-function shortHash(hash: string | null): string {
-  if (hash === null) return '—';
-  return hash.length > 12 ? `${hash.slice(0, 8)}…${hash.slice(-4)}` : hash;
+function statusLine(chain: ChainValue): string {
+  const position = chain.position;
+  if (position === null) {
+    return chain.busy === 'login' ? 'opening your NEAR account…' : 'no NEAR account yet';
+  }
+  const gold = `${fmtGold(Number(position.goldMilli) / 1000)}g`;
+  return `${position.contractId} · ${position.accountId} · ${position.licences} licences · ${gold}`;
 }
 
-export default function ChainBar({ email }: { email: string }) {
-  const [position, setPosition] = useState<ChainPosition | null>(null);
-  const [busy, setBusy] = useState<Busy>('login');
-  const [tx, setTx] = useState<string | null>(null);
-  const [note, setNote] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+/** The last result said in full, then the hash the explorer link carries. */
+function ChainTx({ chain }: { chain: ChainValue }) {
+  const hash = chain.txHash;
+  return (
+    <>
+      <span className="chain-note" data-testid="chain-note" role="status" aria-live="polite">
+        {chain.note}
+      </span>
+      <span className="chain-tx" data-testid="chain-tx">
+        {hash === null ? 'no transaction yet' : (
+          <>
+            {`tx ${shortHash(hash)} `}
+            <a className="chain-link" data-testid="chain-explorer" href={explorerUrl(hash)}
+              target="_blank" rel="noreferrer">explorer</a>
+          </>
+        )}
+      </span>
+    </>
+  );
+}
 
-  const run = useCallback(async (kind: Exclude<Busy, null>, work: () => Promise<ChainReceipt>, done: (receipt: ChainReceipt) => string) => {
-    setBusy(kind);
-    setError(null);
-    try {
-      const receipt = await work();
-      setPosition(receipt);
-      setTx(receipt.txHash ?? null);
-      setNote(done(receipt));
-    } catch (problem) {
-      setError(problem instanceof Error ? problem.message : String(problem));
-    } finally {
-      setBusy(null);
-    }
-  }, []);
+/** The three sponsored actions: one in flight at a time, the rest disabled —
+ *  and none of them before the relayer has opened the account. */
+function ChainActions({ chain }: { chain: ChainValue }) {
+  const ready = chain.busy === null && chain.position !== null;
+  const label = (kind: string, rest: string, running: string): string => (chain.busy === kind ? running : rest);
+  return (
+    <>
+      <button type="button" data-testid="chain-licence" disabled={!ready}
+        onClick={() => { void chain.buyLicence(); }}>
+        {label('licence', 'Buy a licence', 'Buying…')}
+      </button>
+      <button type="button" data-testid="chain-loan" disabled={!ready}
+        onClick={() => { void chain.buyLoan(); }}>
+        {label('loan', 'Buy a debt note', 'Buying…')}
+      </button>
+      <button type="button" data-testid="chain-vote" disabled={!ready}
+        onClick={() => { void chain.vote(); }}>
+        {label('vote', 'Vote yes', 'Voting…')}
+      </button>
+    </>
+  );
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    setBusy('login');
-    chainLogin(email)
-      .then((receipt) => {
-        if (cancelled) return;
-        setPosition(receipt);
-        setNote(`relayer signs for ${receipt.accountId}`);
-      })
-      .catch((problem: unknown) => {
-        if (!cancelled) setError(problem instanceof Error ? problem.message : String(problem));
-      })
-      .finally(() => {
-        if (!cancelled) setBusy(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [email]);
+/** The way back to the offline harbour — always — and, on a refusal, what
+ *  happened plus one retry. Never a dead end. */
+function ChainSide({ chain }: { chain: ChainValue }) {
+  return (
+    <>
+      {chain.error === null ? null : (
+        <>
+          <span className="chain-error" role="alert" data-testid="chain-error">{chain.error}</span>
+          <button type="button" className="ghost" data-testid="chain-retry"
+            disabled={chain.busy !== null} onClick={() => { void chain.retry(); }}>
+            Try again
+          </button>
+        </>
+      )}
+      {chain.buildOnly ? null : (
+        <button type="button" className="ghost" data-testid="chain-exit"
+          onClick={() => { window.location.assign(chainUrl(false)); }}>
+          Play offline instead
+        </button>
+      )}
+    </>
+  );
+}
 
-  const gold = position === null ? '—' : `${fmtGold(Number(position.goldMilli) / 1000)}g`;
-  const status = position === null
-    ? (busy === 'login' ? 'signing in with the relayer…' : 'no chain account yet')
-    : `${position.contractId} · ${position.accountId} · ${position.licences} licences · ${gold}`;
-
+export default function ChainBar() {
+  const chain = useChain();
   return (
     <div className="chain-bar" aria-label="On-chain">
       <span className="chain-dot" aria-hidden="true" />
-      <span className="muted" data-testid="chain-status">NEAR · <span data-testid="chain-account">{status}</span></span>
-      <span className="chain-tx" data-testid="chain-tx">{tx === null ? (note || 'no transaction yet') : `tx ${shortHash(tx)}`}</span>
-      <button type="button" data-testid="chain-licence" disabled={busy !== null}
-        onClick={() => { void run('licence', () => chainBuyLicence(email), (r) => `licence bought (${r.licences} held)`); }}>
-        {busy === 'licence' ? 'Buying…' : 'Buy a licence'}
-      </button>
-      <button type="button" data-testid="chain-loan" disabled={busy !== null}
-        onClick={() => { void run('loan', () => chainBuyLoan(email), (r) => `debt note ${r.tokenId} bought`); }}>
-        {busy === 'loan' ? 'Buying…' : 'Buy a debt note'}
-      </button>
-      <button type="button" data-testid="chain-vote" disabled={busy !== null}
-        onClick={() => { void run('vote', () => chainVote(email, true), (r) => `vote ${r.proposalId} yes (${r.yesWeight} against ${r.noWeight})`); }}>
-        {busy === 'vote' ? 'Voting…' : 'Vote yes'}
-      </button>
-      {error === null ? null : <span className="chain-error" data-testid="chain-error">{error}</span>}
+      <span className="muted" data-testid="chain-status">
+        NEAR testnet · <span data-testid="chain-account">{statusLine(chain)}</span>
+      </span>
+      <ChainTx chain={chain} />
+      <ChainActions chain={chain} />
+      <ChainSide chain={chain} />
     </div>
   );
 }

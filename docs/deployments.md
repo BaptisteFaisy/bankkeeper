@@ -215,6 +215,21 @@ npx --yes vercel deploy --prod --yes \
 Le jeton reste dans `~/.local/share/com.vercel.cli/auth.json`, jamais dans le
 dépôt ni dans un journal.
 
+**Le mode chaîne ne demande pas un second site.** L'activation est décidée à
+l'exécution (`web/src/near/chain.ts`) : le même `dist` sert le jeu hors-ligne
+par défaut et le jeu sur chaîne quand l'URL porte `?chain`. Deux façons de
+nommer le relais, au choix :
+
+```sh
+# a) l'URL cuite au build — le joueur n'a plus qu'à ajouter ?chain=1
+cd web && npm ci && VITE_CHAIN_URL=https://<relais-public> npm run build:offline
+# b) rien à cuire : le joueur (ou le juge) nomme le relais dans le lien
+#    https://tidewater-play.vercel.app/?chain=https://<relais-public>
+```
+
+Le hors-ligne reste le défaut dans les deux cas : sans `?chain`, la page ne
+fait aucun appel au relais (`tests/e2e_offline.py` les compte).
+
 La page de preuves `/proofs.html` lit l'adresse du contrat dans **ce document**
 (`web/src/proofs/deployment.ts` est le seul lecteur) : il n'y a donc qu'un seul
 endroit où l'adresse est écrite, et le build du site la reprend telle quelle.

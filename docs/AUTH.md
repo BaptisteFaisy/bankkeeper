@@ -16,10 +16,10 @@ Le dépôt aujourd'hui :
 
 | Attendu | État | Preuve |
 |---|---|---|
-| un email, sans wallet | 🟡 **l'email est une étiquette** | `server/relay.py` `_handle_auth` : `secrets.token_urlsafe(16)`, le token part dans `sessions.state.json`, personne ne vérifie que l'adresse existe |
+| un email, sans wallet | ✅ **l'email ouvre un compte NEAR** | le client appelle `POST /login` du relais (`web/src/near/chainSession.ts`) ; le relais dérive `p-<sha256(email)[:20]>.<suffix>` et rend le compte (`tests/e2e_chain_public.py`, `tests/relay_sponsor.py`) |
 | pas de phrase de récupération | ✅ | aucune clé ne quitte le navigateur (`web/src/near/chain.ts`) |
-| pas de popup de wallet | ✅ | pas de wallet dans `web/` ; la chaîne n'est jointe que par `ChainBar` (`VITE_CHAIN=1`) |
-| pas de demande de gas | ✅ | le joueur ne signe rien lui-même |
+| pas de popup de wallet | ✅ | pas de wallet dans `web/` ; la chaîne n'est jointe que sur demande (`?chain`, `web/src/near/chain.ts:chainRequested`) |
+| pas de demande de gas | ✅ | le joueur ne signe rien lui-même ; la bande dit que la maison paie |
 
 La boucle de jeu, elle, ne demande **rien** à la chaîne : le moteur wasm tourne
 dans le navigateur (`web/src/engine.ts`), le relais `server/relay.py` ne parle
@@ -192,33 +192,61 @@ tutoriel couvrait l'écran et interceptait le clic sur la bande « On-chain »
 `tests/e2e_offline.py`). Dernière exécution : la page affiche
 `tx 7Re4xMC7…hkn5`, et le solde de licences passe de 4 à 5.
 
-## 7. Branchement côté client (diff à appliquer plus tard)
+## 7. Branchement côté client — livré
 
-> `web/src/App.tsx` est en train d'être corrigé par un autre agent ; ce
-> diff n'est **pas** appliqué dans ce lot. Il est écrit ici pour être
-> appliqué sans réflexion une fois ce travail-là mergé.
+Le diff annoncé ici est **appliqué**, et il a changé de forme en route : il ne
+s'agit plus d'un appel « best effort » oublié dans un coin, mais d'un mode que
+le joueur choisit et qu'il peut quitter.
 
-`web/src/App.tsx` — ouvrir la session chaîne **au moment du login** (le
-`ChainBar` s'occupe du reste) :
+**Un seul build public, deux modes.** L'activation était une constante de
+compilation (`VITE_CHAIN=1`), donc il aurait fallu deux sites. Elle est
+maintenant décidée à l'exécution (`web/src/near/chain.ts`) :
 
-```diff
-@@ function AuthGate({ onLogin })
-     // Best effort: the relay records the captain, but the local
-     // session is enough to play if the relay is still starting.
-     postLogin(email.trim(), captain).catch(() => undefined);
-+    // The chain identity: this email maps to the NEAR account the relayer
-+    // signs for. Best effort — the harbour starts either way.
-+    if (CHAIN_ENABLED) chainLogin(email.trim()).catch(() => undefined);
-     onLogin(email.trim(), captain);
+```ts
+export function chainRequested(): boolean {
+  if (chainBuildOnly()) return true;                    // VITE_CHAIN === '1'
+  return new URLSearchParams(window.location.search).has('chain');
+}
 ```
 
-et, dans les imports du même fichier (l'import existe déjà, il manque le
-nom) :
+`?chain` (avec ou sans valeur) allume le mode ; `?chain=<url>` dit en plus
+quel relais joindre, ce qui passe devant `VITE_CHAIN_URL` (valeur cuite au
+build) et devant le proxy `/chain` du dev. Le mode hors-ligne reste le défaut
+bit pour bit : sans `?chain`, la page ne fait **aucun** appel au relais
+(`tests/e2e_offline.py` compte maintenant les requêtes vers `/api/` *et* vers
+le relais, et il en trouve zéro).
 
-```diff
--import { CHAIN_ENABLED } from './near/chain';
-+import { CHAIN_ENABLED, chainLogin } from './near/chain';
-```
+**La porte, et ce qu'elle dit.** La carte de connexion
+(`web/src/components/Auth.tsx`, désormais la seule — l'`AuthGate` dupliqué
+d'`App.tsx` a disparu) porte un bouton « Play on chain (testnet) » qui recharge
+en `?chain=1`, et la phrase honnête qui va avec : l'email devient un vrai
+compte NEAR testnet, la maison paie le gaz, il n'y a **pas** de phrase de
+récupération. En mode chaîne, la même carte et la bande `ChainBar` proposent
+« Play offline instead », qui retire `?chain` et recharge : la partie
+sauvegardée n'est pas touchée, le joueur repart en hors-ligne.
+
+**Le login est réel.** `Auth.tsx` appelle `chain.login(email)` ; la session
+chaîne vit dans `web/src/near/chainProvider.tsx` + `chainSession.ts`, un seul
+état partagé par la carte et la bande (jamais deux logins). Le joueur ne voit
+ni wallet, ni phrase, ni gaz : la bande affiche le compte NEAR obtenu, le hash
+raccourci de la dernière transaction et un lien `explorer` qui, lui, porte le
+hash entier. Un capitaine qui revient (session en `localStorage`, pas encore de
+compte NEAR) voit son compte s'ouvrir au chargement — une seule fois par email,
+pour qu'un refus ne devienne jamais une boucle.
+
+**Le repli.** Un relais absent, un 429, un 504 : la carte affiche la raison
+dans une phrase lisible (`chainErrorMessage`, `E_RATE_LIMIT` → « The relayer is
+rate-limiting right now… ») **et** le bouton « Continue offline instead ». La
+bande ajoute « Try again ». Aucun écran mort : c'est le défaut bloquant qui
+venait d'être corrigé, il ne revient pas.
+
+**La garde anti double-clic est celle du jeu.** Les trois actions sponsorisées
+passent par `mutate()` (`web/src/actions.ts`), donc par le verrou `inFlight` et
+le debounce de 500 ms déjà éprouvés par `tests/audit_web.py` — pas une deuxième
+garde inventée à côté.
+
+**Ce qui reste à faire côté serveur** (hors de ce lot, `server/` est interdit
+ici) : lier le jeton de `POST /api/auth` au compte NEAR, comme décrit plus bas.
 
 `server/relay.py` — lier le jeton de session au compte NEAR (route
 `POST /api/auth`) :
@@ -242,17 +270,21 @@ où `chain_account(email)` interroge le relais de chaîne
 `None` si la chaîne est absente — **le jeu hors-ligne continue de marcher
 exactement comme avant**, avec ou sans chaîne.
 
-`web/src/components/Auth.tsx` : **fichier mort** — rien ne l'importe
-(`web/src/App.tsx` porte son propre `AuthGate`). Il n'a donc pas été
-touché ; il faudra le supprimer ou le brancher, mais pas dans ce lot.
+**La preuve publique** est `tests/e2e_chain_public.py` : elle lit l'URL du
+relais dans `TW_CHAIN_URL` (ou dans le `?chain=<url>` de `TW_SITE`), **se
+désactive proprement** (`SKIP`, pas un échec trompeur) tant que le relais n'est
+pas joignable, et sinon ouvre la démo en `?chain=1`, se connecte avec un email
+unique, attend le compte NEAR affiché, clique « Buy a licence », exige un hash
+base58 de longueur plausible, puis relit `tx` **et** `mt_balance_of` sur
+`https://rpc.testnet.near.org`. Elle n'écrit aucun secret.
 
 ## 8. Ce que ce lot ne fait pas
 
 - Il ne déploie rien, n'héberge aucune clé, ne touche pas au testnet et ne
   demande rien au faucet.
 - Il ne change **rien** à la boucle de jeu : le moteur wasm reste le
-  défaut, la build hors-ligne ne fait toujours **zéro appel** à `/api/`
-  (`tests/e2e_offline.py`), et la chaîne ne s'allume qu'avec
-  `VITE_CHAIN=1`.
+  défaut, la build hors-ligne ne fait toujours **zéro appel** à `/api/` ni au
+  relais (`tests/e2e_offline.py` les compte tous les deux), et la chaîne ne
+  s'allume qu'à la demande (`?chain`, ou un build `VITE_CHAIN=1`).
 - Il n'implémente pas FastAuth : la voie est étudiée, pas codée.
 - La rotation des clés et le journal d'audit restent à faire (§5).
