@@ -123,8 +123,7 @@ Tous les chiffres ci-dessous ont été relevés sur ce lien le 11/11/2026.
 
 ### Étape 1 (45 s) — fast-forward 7 jours puis 28 jours
 
-- **Cliquer** : après le login et **Skip**, cliquer **Judges** dans la
-  barre du haut.
+- **Cliquer** : après le login, cliquer **Judges** dans la barre du haut.
 - **Cliquer** : **Fast-forward 7 days**, puis **Fast-forward 28 days**.
 - **À l'écran** :
   - à 7 j : `Seed 839689206 · 7 days · 0 event(s)` ·

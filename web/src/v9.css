@@ -114,6 +114,8 @@ input, select { background: var(--bg); border: 1px solid var(--hair); border-rad
 }
 .deck-nav button { flex: 1; padding: 7px 0; font-size: 11px; font-weight: 600; background: transparent; color: var(--muted); }
 .deck-nav button.on { background: var(--cy); color: var(--on); }
+/* A tab under the pointer stays light: the dark hover of buttons made it unreadable (V10.3). */
+.deck-nav button:hover:not(:disabled):not(.on) { background: rgba(21, 101, 200, 0.08); color: var(--ink); }
 .side, .panels { display: flex; flex-direction: column; gap: 10px; margin: 0; }
 .deck .panel { background: var(--card); border: 1px solid var(--hair); box-shadow: var(--lift); border-radius: 20px; padding: 16px 18px; scroll-margin-top: 52px; }
 .deck .panel h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; color: var(--ink); margin-bottom: 4px; }
@@ -146,12 +148,24 @@ input, select { background: var(--bg); border: 1px solid var(--hair); border-rad
 section.judges { border-radius: 22px; background: var(--card); z-index: 30; }
 .offline-banner, .chain-bar { position: fixed; left: 28px; bottom: 24px; z-index: 6; background: var(--card); }
 
+/* Narrow (V10.3): a taller stage, a smaller hero, the ground cards cut to
+   name and boats so they no longer stack on each other. */
 @media (max-width: 1100px) {
-  .deck { position: static; width: auto; margin: 0 12px; padding: 380px 0 24px; overflow: visible; }
-  .chart-panel { position: fixed; height: 360px; bottom: auto; }
-  .books { top: 70px; }
-  .books-worth .books-v { font-size: 48px; }
-  header.topbar { flex-wrap: wrap; border-radius: 22px; }
+  :root { --stage-h: clamp(380px, 58vh, 540px); }
+  .deck { position: static; width: auto; margin: 0 12px; padding: calc(var(--stage-h) + 16px) 0 24px; overflow: visible; }
+  .chart-panel { position: fixed; height: var(--stage-h); bottom: auto; }
+  .books { top: 70px; left: 12px; padding: 10px 14px 12px; border-radius: 16px; }
+  .books-when { margin-bottom: 6px; font-size: 10px; }
+  .books-worth .books-v { font-size: 36px; }
+  .books-debt { margin-top: 6px; }
+  .books-debt .books-v { font-size: 20px; }
+  .lb3.ground { margin-left: -60px; width: 120px; padding: 5px 6px 4px; border-radius: 12px; }
+  .lb3.ground .fish, .lb3.ground .bar { display: none; }
+  header.topbar { flex-wrap: wrap; left: 12px; right: 12px; border-radius: 22px; }
+}
+/* Under ~900 px the header takes two lines: the hero steps down below it. */
+@media (max-width: 900px) {
+  .books { top: 106px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

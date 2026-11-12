@@ -10,8 +10,11 @@
   `e2e_tutorial.py` + 2 docs à aligner par opencode (voir HANDOFF).
 - V10.2 : barre du haut en trois cadrans (choix Gaia : B), codée et
   vérifiée en capture ; `audit_web.py` à relancer sous Linux.
-- Repéré : sous ~1100 px, étiquettes de bancs qui se chevauchent.
-- Non commité.
+- V10.3 : écran étroit corrigé (scène plus haute, cartes de bancs
+  compactes, plaque réduite) + survol illisible des onglets du deck.
+  `v9.css` seul ; vérifié en capture 1280 / 1024 / 820.
+- Commité : branche `feat/cover-page` (PR → `main`) — V10.3 + renommage
+  `timeline.ts` → `timeline-data.ts` (casse Windows).
 
 ## Claude — V9 / V9.1 (2026-11-12, réalisme — **direction validée par Gaia**)
 

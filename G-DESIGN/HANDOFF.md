@@ -270,3 +270,17 @@ purse\n150 gold", "Quota left\n280 crates"]`.
 toute doc/vidéo qui cite « Quota left: 280 » ou « 150.0g » est à revoir.
 **Repéré, non traité** : sous ~1100 px le deck passe sous la scène 3D et
 les étiquettes de bancs se chevauchent (capture 1024×768).
+
+## [Claude] 2026-11-12 (V10.3) — écran étroit et onglets du deck
+
+**Fait** (commité sur `feat/cover-page`) : `web/src/v9.css` seul.
+Survol des onglets du deck lisible ; sous 1100 px, scène plus haute
+(`--stage-h`), cartes de bancs réduites au nom + bateaux, plaque Net
+worth compacte ; sous 900 px, plaque décalée sous la barre sur deux lignes.
+Aucun sélecteur, texte ni composant touché.
+
+**Vérifié sous Linux (r630)** : captures 1280×800 (inchangé), 1024×768,
+820×700 ; `ci_structural.py` OK ; `tsc --noEmit` OK ; `npm run build` OK
+(bundle principal ≈ 725 kB, 193 kB gzip) — le doublon `proofs/Timeline.ts` /
+`timeline.ts` est réglé (`timeline.ts` → `timeline-data.ts`). **Pas relancé** :
+e2e Selenium.
