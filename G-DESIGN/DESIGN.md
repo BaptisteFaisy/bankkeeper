@@ -481,3 +481,22 @@ Capture livrée : `G-DESIGN/v10/topbar-B-livre.png`.
 Note technique : libellés en `font-variant-caps: all-small-caps` et non
 `text-transform: uppercase` — Selenium lit le texte transformé, et
 `audit_web.py` attend un `.tide-stat` qui commence par « Quota ».
+
+## V10.3 — 2026-11-12 · Claude · écran étroit (< 1100 px) et onglets du deck
+
+Constat (captures 1024×768 et 820×700) : la scène tenait dans 360 px de
+haut, les cartes de bancs (Greybank / The Deeps) se chevauchaient, la
+plaque Net worth mangeait un tiers de la vue ; sous ~900 px la barre du
+haut, passée sur deux lignes, recouvrait la plaque. À toutes les largeurs,
+un onglet du deck survolé devenait un bloc bleu foncé au texte illisible.
+
+Changelog (`web/src/v9.css` uniquement, aucun sélecteur ni texte changé) :
+1. Onglets du deck : survol en bleu très clair, texte encre (plus de bloc
+   bleu foncé).
+2. < 1100 px : scène à `clamp(380px, 58vh, 540px)` (variable `--stage-h`),
+   le deck commence juste en dessous.
+3. < 1100 px : plaque Net worth compacte (36 px au lieu de 48, dette 20 px).
+4. < 1100 px : cartes de bancs réduites au nom + nombre de bateaux
+   (poisson et jauge masqués) — plus de chevauchement à 1024 et 820.
+5. < 900 px : la plaque descend sous la barre du haut passée sur deux lignes.
+Vue large (1280×800) inchangée.

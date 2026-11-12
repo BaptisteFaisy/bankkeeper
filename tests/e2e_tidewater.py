@@ -170,6 +170,10 @@ def start_chrome(profile):
     options.add_argument("--window-size=1280,800")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-first-run")
+    # The browser's own background pings (search-engine startup, safe
+    # browsing) are not app traffic: without this, a CI network that blocks
+    # them counts as a failed request.
+    options.add_argument("--disable-background-networking")
     options.set_capability("goog:loggingPrefs",
                            {"browser": "ALL", "performance": "ALL"})
     binary = os.environ.get("CHROME_BIN")
@@ -285,7 +289,13 @@ def dismiss_tutorial(driver):
 
 
 def failed_requests(driver):
-    """Deduped (status, url) for HTTP 4xx/5xx and failed loads."""
+    """Deduped (status, url) for HTTP 4xx/5xx and failed loads.
+
+    Only the requests the page made are judged: Chromium opens a background
+    new-tab page (DuckDuckGo on Debian) whose own calls reach this log as
+    responses without ever being sent by the page, and they are not app
+    traffic.
+    """
     bad = set()
     urls = {}
     for entry in driver.get_log("performance"):
@@ -299,7 +309,8 @@ def failed_requests(driver):
         elif msg.get("method") == "Network.responseReceived":
             resp = params.get("response", {})
             url, status = resp.get("url", ""), resp.get("status", 0)
-            if status >= 400 and url.startswith("http"):
+            sent = params.get("requestId") in urls
+            if status >= 400 and url.startswith("http") and sent:
                 bad.add((status, url.split("?")[0]))
         elif msg.get("method") == "Network.loadingFailed":
             url = urls.get(params.get("requestId"), "")
