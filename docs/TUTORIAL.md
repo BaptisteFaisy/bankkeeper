@@ -6,9 +6,10 @@
 ## Le contrat
 
 - **Trois cartes**, jamais plus. Une minute de lecture, pas une leçon.
-- **Il s'ouvre seul une fois** : au tout premier chargement du jeu, quand
-  `localStorage['tidewater-tutorial-v1']` est absent. Il écrit la clé dès
-  qu'on appuie sur `Done`, `Skip` ou `Échap` — donc **jamais** ensuite.
+- **Il ne s'ouvre jamais tout seul** : la page de garde explique déjà le jeu
+  à chaque chargement (Gaia, 2026-11-12). `How to play` dans la barre du haut
+  ouvre les cartes, et la clé `localStorage['tidewater-tutorial-v1']` est
+  écrite dès qu'on appuie sur `Done`, `Skip` ou `Échap`.
 - **Il ne bloque personne** : `How to play` dans la barre du haut le rouvre à
   tout moment (le joueur qui sait déjà jouer appuie sur `Skip` et n'en entend
   plus parler), et l'écran de jeu reste rendu derrière la carte
@@ -19,13 +20,16 @@
 - **Mouvement** : une seule animation d'entrée (140 ms), neutralisée par le
   bloc global `prefers-reduced-motion` de `styles.css`.
 
-## Écran 1 — The stock is shared
+## Écran 1 — One sea, shared by all
 
-> Every boat fishes the same three banks. A crate landed today is a crate the
-> bank cannot lend tomorrow.
+> Three fishing grounds, ten boats: every captain in the port fishes the same
+> banks, and nobody owns the fish.
 >
-> Watch the catch per trip: it slips well before the bank gives way. That early
-> fall is cheap to answer and dear to ignore.
+> The catch per trip is your warning light — it falls long before a bank runs
+> empty.
+>
+> Take more than a bank can regrow and the shortfall is written down as a debt
+> to the sea, in crates. It survives the season.
 
 Schéma : six jours d'un même banc, barres qui rétrécissent, ligne orange
 « catch per trip » qui décroche au-dessus.
@@ -34,14 +38,15 @@ Schéma : six jours d'un même banc, barres qui rétrécissent, ligne orange
 on la découvre trop tard — la prise baisse avant que le banc ne s'effondre, donc
 le signal est lisible et le joueur peut encore réagir.
 
-## Écran 2 — The auction pays what the merchant can afford
+## Écran 2 — The auction sells your catch
 
-> No merchant bids past its own limit, set by its stock against its target. Fill
-> one today and the lot it bids on tomorrow goes cheaper, for you and for every
-> other captain.
+> Close the day and your catch goes to the auction lot by lot: the price falls
+> until a merchant buys. That price is your money.
 >
-> Each merchant carries a why tag: hover it, or focus it with the keyboard, to
-> read the reason behind the limit.
+> Every merchant stops bidding once it has bought its fill — fill one up today
+> and it bids less tomorrow, for you and for every other captain.
+>
+> Hover the why tag on a merchant to read its own reason for the limit it holds.
 
 Schéma : trois marchands, trois jauges de limite (la plus pleine en orange),
 et une flèche « next price » qui descend.
@@ -51,13 +56,16 @@ le joueur voit que le prix qu'on lui paie n'est pas une constante mais la
 conséquence de ce qu'il vient de débarquer, et il découvre l'infobulle « why »
 qui lui donne le raisonnement du marchand.
 
-## Écran 3 — The council, and the campaign
+## Écran 3 — The vote closes each season
 
-> Quotas are voted at the close of a season, and an indemnity can swing a vote
-> your way. A campaign runs three seasons.
+> Each licence carries a weekly quota; spend it and your boats stay at the
+> quay until Monday.
 >
-> The sea keeps what the season left it: the next season opens on the banks you
-> handed over, not on a fresh sea.
+> At the season close the fleet votes the next quota — one licence, one vote,
+> and an indemnity can buy a reluctant yes.
+>
+> The sea you leave is the sea you inherit: the next season opens on the banks
+> you handed over, not on a fresh one.
 
 Schéma : trois saisons côte à côte, une barre orange au clos de chacune (le
 vote), et la légende « the sea keeps what the season left it ».
@@ -74,8 +82,8 @@ prix se décident maintenant, donc il ferme la boucle sans noyer l'ouverture.
 | `web/src/components/HeaderControls.tsx` | `HowToPlay` : le bouton discret qui rouvre le tutoriel |
 | `web/src/App.tsx` | `useTutorial()`, le rendu conditionnel, le bouton dans `TopBar` |
 | `web/src/styles.css` | `.tutorial-*`, `.how-to-play` (palette du brief, aucun dégradé) |
-| `tests/e2e_tutorial.py` | premier chargement, `Next` ×2 + `Done`, rechargement, `How to play`, `Échap`, `Entrée`, piège à focus |
+| `tests/e2e_tutorial.py` | aucun tutoriel au premier chargement, `How to play` ouvre, `Next` ×2 + `Done` ferme, rechargement, `Échap`, `Entrée`, piège à focus |
 
-`tests/e2e_offline.py` saute la carte au premier lancement (`Skip`), comme le
-ferait un joueur qui connaît déjà la boucle : le parcours de référence ne
-dépend pas du tutoriel.
+`tests/e2e_offline.py` vérifie qu'aucune carte ne s'ouvre au premier
+lancement (`dismiss_tutorial` n'a plus rien à fermer) : le parcours de
+référence ne dépend pas du tutoriel.

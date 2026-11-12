@@ -9,6 +9,7 @@ import type { AuctionView, BuyerView, LandingView } from '../types';
 import { MESH_LABEL, parseMesh } from '../types';
 import { fmtGold } from '../format';
 import type { Replay } from '../replay';
+import PanelHead from './PanelHead';
 
 interface Props {
   auction: AuctionView;
@@ -96,7 +97,7 @@ export default function AuctionPanel({ auction, buyers, replay, price }: Props) 
   const hammer = live !== null && live.buyer !== null ? { name: live.buyer, price: live.price } : null;
   return (
     <section className="panel auction" aria-label="Fish auction">
-      <h2>Fish auction</h2>
+      <PanelHead title="Fish auction" note="Your catch is sold lot by lot: the price falls until a merchant buys." />
       {total === 0 && (
         <p className="muted">No lot on the clock. The next landing starts the bidding.</p>
       )}

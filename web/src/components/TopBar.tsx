@@ -1,5 +1,6 @@
 // TopBar: the harbour's header strip — the clock, the day's readings, and the
-// three doors (how to play, new harbour, judges).
+// two doors (how to play, judges). Restarting lives on the season-end card,
+// and there is no sign-out: the harbour belongs to this browser.
 //
 // Split out of App.tsx so the screen keeps one subject per file (and stays
 // inside the structural line budget). Pure presentation: every value and every
@@ -13,45 +14,46 @@ import { fmtGold } from '../format';
 export interface TopBarProps {
   port: PortState | null;
   session: Session;
-  onLogout: () => void;
   judgesOpen: boolean;
   onJudges: (open: boolean) => void;
   judgesRef: RefObject<HTMLButtonElement>;
   onEndDay: () => void;
   dayBusy: boolean;
   over: boolean;
-  onReset: () => void;
   live: boolean;
   setLive: (on: boolean) => void;
   secondsLeft: number;
-  nextLot: () => void;
   onHowToPlay: () => void;
 }
 
-export default function TopBar({ port, session, onLogout, judgesOpen, onJudges, judgesRef, onEndDay, dayBusy, over, onReset, live, setLive, secondsLeft, nextLot, onHowToPlay }: TopBarProps) {
+/** One dial of the header: a small label over its value (G-DESIGN V10.2 B).
+ *  The whole dial is the `.tide-stat` the audits read, label first. */
+function Dial({ label, value, unit, gold = false }: { label: string; value: string; unit: string; gold?: boolean }) {
+  return (
+    <span className={gold ? 'tide-stat dial gold' : 'tide-stat dial'}>
+      <span className="dial-k">{label}</span>
+      <span className="dial-v">{value}{unit === '' ? null : <> <small>{unit}</small></>}</span>
+    </span>
+  );
+}
+
+export default function TopBar({ port, session, judgesOpen, onJudges, judgesRef, onEndDay, dayBusy, over, live, setLive, secondsLeft, onHowToPlay }: TopBarProps) {
   return (
     <header className="topbar">
       <h1>Tidewater</h1>
-      <span className="tide-stat">Week {port?.week ?? '—'} · {port?.day ?? '—'} · {port?.tide ?? '—'}</span>
-      <span className="tide-stat gold">{port === null ? '—' : `${fmtGold(port.playerGold)}g`}</span>
-      <span className="tide-stat">Quota left: {port?.quotaLeft ?? '—'}</span>
-      {port !== null && (port.campaignSeasons ?? 1) > 1 ? (
-        <span className="tide-stat">Season {port.season ?? 1} of {port.campaignSeasons}</span>
-      ) : null}
-      <span className="muted">{session.name}</span>
+      <span className="muted captain">· Captain {session.name}</span>
+      <Dial label="Today" value={port === null ? '—' : `${port.day}, week ${port.week}`} unit={port === null ? '' : `${port.tide.toLowerCase()} tide`} />
+      <Dial label="Your purse" value={port === null ? '—' : fmtGold(port.playerGold).replace(/\.0$/, '')} unit="gold" gold />
+      <Dial label="Quota left" value={port === null ? '—' : String(port.quotaLeft)} unit="crates" />
       <ClockControls
         live={live}
         setLive={setLive}
         secondsLeft={secondsLeft}
-        nextLot={nextLot}
         onEndDay={onEndDay}
         busy={dayBusy}
         over={over}
       />
       <HowToPlay onOpen={onHowToPlay} />
-      <button type="button" className="ghost" disabled={dayBusy} onClick={onReset}>
-        New harbour
-      </button>
       <button
         type="button"
         className="ghost"
@@ -62,7 +64,6 @@ export default function TopBar({ port, session, onLogout, judgesOpen, onJudges, 
       >
         Judges
       </button>
-      <button type="button" className="ghost" onClick={onLogout}>Log out</button>
     </header>
   );
 }

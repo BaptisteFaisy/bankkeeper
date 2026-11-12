@@ -6,6 +6,7 @@ import { useState } from 'react';
 import type { CaptainView, CouncilOutcome, CouncilProposal, LoanView, ZoneId } from '../types';
 import { SEASON_WEEKS, ZONE_LABEL, indemnityBill } from '../types';
 import { fmtGold } from '../format';
+import PanelHead from './PanelHead';
 
 // One lease in force: a licence lent for a term, the quota going with it.
 interface LeaseRow {
@@ -294,7 +295,7 @@ function CouncilBlock({ proposal, lastCouncil, captains, busy, onPropose, onVote
 export default function HarbourPanel(props: Props) {
   return (
     <section className="panel harbour" aria-label="Harbour office">
-      <h2>Harbour office</h2>
+      <PanelHead title="Harbour office" note="Your levers between days: look inside a bank, buy or rent a licence, pay the sea back, and vote the next rule." />
       <SurveyRow busy={props.busy} playerGold={props.playerGold} onSurvey={props.onSurvey} />
       <LicenceRow captains={props.captains} licencePool={props.licencePool} youLicences={props.youLicences} busy={props.busy} playerGold={props.playerGold} licencePrice={props.licencePrice} leases={props.leases} onLicence={props.onLicence} onLease={props.onLease} />
       <DebtRow loans={props.loans} busy={props.busy} playerGold={props.playerGold} onDebt={props.onDebt} />

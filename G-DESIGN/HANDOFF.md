@@ -174,3 +174,99 @@ la V7 est 3D et repointe la palette (nuit + cyan) dans `v7.css`. Avenant à
    ma note du 11/11) ; `sw.js` précache désormais un bundle plus lourd.
 5. **`docs/ART.md`** dit « 2D, plat, palette styles.css » : avenant à écrire
    (3D réaliste, thème jour dans `v9.css`, jetons de `styles.css` intacts).
+
+## [opencode] 2026-11-12 — page de garde + deck lisible (branche `feat/cover-page`)
+
+**Fait** : `web/src/components/Cover.tsx` + `web/src/cover.css` (voile
+semi-transparent à **chaque chargement**, titre, slogan, « How to play »
+en 4 lignes, **Play** lève le voile, **Scenario** ouvre la démo guidée
+existante `scene-preview.html`) ; `web/src/components/PanelHead.tsx`
+(une phrase d'intro en clair sous chaque panneau du deck) ; onglets du
+deck renommés (Auction / Boats / Today / Manage / History, les
+`aria-label` des sections ne changent pas) ; tests e2e patchés avec
+`dismiss_cover()` (offline, tutorial, chain_public, onchain, audit_web).
+
+**Pour Baptiste / Claude** :
+1. **e2e à relancer sous Linux** : `dismiss_cover()` attend `.cover` et
+   `[data-testid='cover-play']` ; sur un build sans page de garde, le
+   helper rend False sans faire échouer le test.
+2. **Le build reste bloqué sous Windows** par le couple
+   `proofs/Timeline.tsx` / `timeline.ts` (ma note du 11/11, point 2) :
+   la vérification ici a utilisé un renommage temporaire non commité.
+3. **La page de garde revient à chaque chargement** (choix Gaia) : si
+   elle devient répétitive pour les juges, passer à « première visite
+   seulement » = un localStorage sur le modèle de `tutorialSeen()`.
+4. **« Scenario » ouvre la page 2D `scene-preview.html`** : si Gaia
+   veut la démo sur la même scène 3D que le jeu, c'est un avenant
+   (three.js dans scene-preview, ou un mode démo qui pilote le vrai
+   moteur via les policies de `crates/sim`).
+5. **Les boutons du topbar n'ont pas bougé** (Gaia : « on décidera
+   après ») ; le détail de leur rôle est consigné dans `STATUS.md`.
+
+## [opencode] 2026-11-12 (round 2) — barre du haut réduite, règles limpides
+
+**Fait** : champ « Captain name » (Skipper) supprimé — le capitaine prend
+le préfixe de l'email ; boutons `Log out`, `Next lot`, `New harbour`
+retirés de la barre du haut (le recommencement reste sur l'écran de
+bilan) ; page de garde réécrite en quatre verbes (Send / Sell / Watch /
+Vote) plus une ligne « Goal » ; tutoriel réécrit en phrases courtes
+(nouveaux titres) ; docs + e2e alignés (e2e_tutorial attend les
+nouveaux titres et le formulaire à un seul champ ; audit_web : A5
+remplacé, clics « Next lot » remplacés).
+
+**Pour Baptiste / Claude** :
+1. `hooks.ts` garde `nextLot` et `logout` (non exposés) : à retirer si
+   le mode lot-par-lot est officiellement abandonné.
+2. Les titres du tutoriel ont changé (« One sea, shared by all », « The
+   auction sells your catch », « The vote closes each season ») : tout
+   texte qui les citait (dossier juges, vidéo, planches) est à revérifier.
+3. e2e Selenium à relancer sous Linux : les scripts ont été patchés
+   pour la page de garde et le formulaire à un seul champ.
+
+## [Claude] 2026-11-12 (V10) — le port derrière la page de garde
+
+**Fait** (non commité, branche `feat/cover-page`) : `web/src/App.tsx`
+(classe `app-gate` / `veiled` sur l'écran avant connexion),
+`web/src/cover.css` (fond photo, voile 0.42, cartes opaques, carte de
+connexion centrée), nouvel asset `web/public/harbour-still.jpg`.
+Aucun sélecteur e2e changé : `form.auth-card` reste présent, il est juste
+`visibility: hidden` tant que `.cover` est affiché (dismiss_cover clique
+Play d'abord, comme avant).
+
+**Vérifié** : `ci_structural.py` OK ; `tsc --noEmit` n'échoue que sur le
+doublon connu `proofs/Timeline.ts` / `timeline.ts` (Windows) ; captures
+1280×800 et 820×700 de la page de garde et de la connexion.
+**Pas vérifié** : e2e Selenium (Linux) ; build de production.
+
+## [Claude] 2026-11-12 (V10.1) — tutoriel plus ouvert automatiquement
+
+**Décision Gaia** : supprimer l'ouverture automatique du tutoriel (la page
+de garde fait déjà ce travail). Fait dans `web/src/components/Tutorial.tsx`
+(`useState(false)`), non commité. Vérifié en headless : premier lancement
+sans tutoriel, `How to play` l'ouvre. `ci_structural.py` OK.
+
+**Pour opencode (tests et docs, hors périmètre Claude)** :
+1. `tests/e2e_tutorial.py` échouera sur « first launch: the tutorial opens
+   by itself » (l.119) et sur « no tutorial after a reload » qui n'a plus
+   d'objet : réécrire en « aucun tutoriel au premier lancement, How to play
+   l'ouvre, Done le ferme ».
+2. Commentaires `dismiss_tutorial` (`e2e_tidewater.py`, `audit_web.py`) :
+   l'appel reste inoffensif (retourne False), juste le texte à corriger.
+3. Docs : `docs/DEMO-JUGES.md` l.49 et `docs/TUTORIAL.md` l.86 décrivent
+   encore l'ouverture au premier lancement.
+
+## [Claude] 2026-11-12 (V10.2) — barre du haut en trois cadrans (choix Gaia : B)
+
+**Fait** (non commité) : `web/src/components/TopBar.tsx` (composant
+`Dial`, capitaine à côté du titre, Season retiré) et `web/src/v9.css`
+(styles `.dial`). Chaque cadran **est** le `.tide-stat` : 1er = Today
+(ligne d'horloge), 2e = `gold` (« Your purse\n150 gold », la regex de
+`audit_web.gold_value` extrait 150), 3e commence par « Quota left ».
+Texte vérifié en headless : `["Today\nMon, week 1 high tide", "Your
+purse\n150 gold", "Quota left\n280 crates"]`.
+`ci_structural.py` OK ; `tsc` OK hors doublon Timeline (Windows).
+
+**Pour opencode** : relancer `audit_web.py` sous Linux pour confirmer ;
+toute doc/vidéo qui cite « Quota left: 280 » ou « 150.0g » est à revoir.
+**Repéré, non traité** : sous ~1100 px le deck passe sous la scène 3D et
+les étiquettes de bancs se chevauchent (capture 1024×768).

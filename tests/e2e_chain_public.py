@@ -33,7 +33,7 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from e2e_offline import dismiss_tutorial  # noqa: E402  (path set above)
-from e2e_tidewater import SCRATCH, guard, start_chrome  # noqa: E402
+from e2e_tidewater import SCRATCH, dismiss_cover, guard, start_chrome  # noqa: E402
 
 SITE = os.environ.get("TW_SITE", "https://tidewater-play.vercel.app")
 RPC_FALLBACK = "https://rpc.testnet.near.org"
@@ -136,6 +136,7 @@ def open_site(driver, url, timeout=40):
         WebDriverWait(driver, timeout).until(ec.any_of(
             ec.presence_of_element_located((By.CSS_SELECTOR, "form.auth-card")),
             ec.presence_of_element_located((By.CSS_SELECTOR, STATUS))))
+        dismiss_cover(driver)
         return True
     except Exception as exc:  # noqa: BLE001  (an unreachable demo is reported, not guessed)
         log("  the demo never answered at %s (%s)" % (url, type(exc).__name__))

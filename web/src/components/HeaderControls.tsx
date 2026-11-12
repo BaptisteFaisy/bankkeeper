@@ -5,12 +5,11 @@ import type { GameState } from '../hooks';
 import type { PortState } from '../types';
 import { shareUrl } from '../persistence';
 
-/** Live clock, one lot, or the whole day: three ways into the same engine. */
-export function ClockControls({ live, setLive, secondsLeft, nextLot, onEndDay, busy, over }: {
+/** The live clock and the day's close: two ways into the same engine. */
+export function ClockControls({ live, setLive, secondsLeft, onEndDay, busy, over }: {
   live: boolean;
   setLive: (on: boolean) => void;
   secondsLeft: number;
-  nextLot: () => void;
   onEndDay: () => void;
   busy: boolean;
   over: boolean;
@@ -26,9 +25,6 @@ export function ClockControls({ live, setLive, secondsLeft, nextLot, onEndDay, b
         onClick={() => setLive(!live)}
       >
         {live ? `Live · next lot ${secondsLeft}s` : 'Go live'}
-      </button>
-      <button type="button" className="ghost" disabled={busy || over || live} onClick={nextLot} title="Land one lot">
-        Next lot
       </button>
       <button type="button" disabled={busy || over} onClick={onEndDay} title="Land the rest of the day and close it">
         End the day

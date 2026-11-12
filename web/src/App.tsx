@@ -18,6 +18,7 @@ import Auth from './components/Auth';
 import ChainBar from './components/ChainBar';
 import ChroniclePanel from './components/ChroniclePanel';
 import CharterScreen from './components/CharterScreen';
+import Cover from './components/Cover';
 import { Tutorial, useTutorial } from './components/Tutorial';
 import TopBar from './components/TopBar';
 import JudgeBench from './components/JudgeBench';
@@ -292,7 +293,7 @@ function sailUnder(actions: GameActions, port: PortState, charter: Charter): voi
   void doNewCampaign(actions, next);
 }
 
-// The header strip: the clock, the readings and the three doors. Split out
+// The header strip: the clock, the readings and the two doors. Split out
 // of GameScreen so that function stays about the game, not about props.
 function HarbourTopBar({ game, session, judgesRef, end, noted, onHowToPlay }: {
   game: GameState;
@@ -306,18 +307,15 @@ function HarbourTopBar({ game, session, judgesRef, end, noted, onHowToPlay }: {
     <TopBar
       port={game.port}
       session={session}
-      onLogout={game.logout}
       judgesOpen={game.judgesOpen}
       onJudges={game.setJudgesOpen}
       judgesRef={judgesRef}
       onEndDay={() => { void doEndDay(noted); }}
       dayBusy={game.busy !== null}
       over={end.over}
-      onReset={() => { void doReset(noted); }}
       live={game.live}
       setLive={game.setLive}
       secondsLeft={game.secondsLeft}
-      nextLot={game.nextLot}
       onHowToPlay={onHowToPlay}
     />
   );
@@ -392,13 +390,18 @@ function useBootNotice(game: GameState, boot: BootResult): void {
 export default function App({ boot }: { boot: BootResult }) {
   const game = useGame();
   const tutorial = useTutorial();
+  // The front page is on every load: it says what this is before the harbour
+  // asks anything of the player. Play lifts the veil; Scenario opens the demo.
+  const [cover, setCover] = useState(true);
   const judgesRef = useRef<HTMLButtonElement>(null);
   useEscape(game, judgesRef);
   useBootNotice(game, boot);
   const toasts = <ToastStack toasts={game.toasts} onDismiss={game.dismissToast} />;
   const offer = boot.seedOffer === null ? null : <SeedOffer offer={boot.seedOffer} game={game} />;
+  // Before the harbour opens, a still of it stands behind the front page and
+  // the login card; the card waits hidden until the veil is lifted.
   const screen = game.session === null ? (
-    <div className="app">
+    <div className={cover ? 'app app-gate veiled' : 'app app-gate'}>
       <header className="topbar"><h1>Tidewater</h1></header>
       {offer}
       <Auth onLogin={game.login} />
@@ -414,5 +417,10 @@ export default function App({ boot }: { boot: BootResult }) {
   );
   // One chain session wraps both screens: the login card opens the NEAR
   // account, the strip above the harbour shows it. Offline it never fetches.
-  return <ChainProvider email={game.session?.email ?? ''}>{screen}</ChainProvider>;
+  return (
+    <ChainProvider email={game.session?.email ?? ''}>
+      {screen}
+      {cover && <Cover onPlay={() => setCover(false)} />}
+    </ChainProvider>
+  );
 }

@@ -29,7 +29,10 @@ Trois échelles de temps (`docs/GAME-LOOP.md`) :
 | session | une semaine remet les quotas à zéro, une saison se clôt par un vote | licences, dettes, motions, puis la saison suivante |
 
 Deux façons de jouer, même moteur : **live** (un lot toutes les 30 s, une
-journée en 5 min) ou **au tour par tour** (`Next lot`, `End the day`).
+journée en 5 min) ou **par journée** (`End the day` ferme le jour d'un coup).
+Le bouton `Next lot` a été retiré de la barre du haut, comme `Log out` et
+`New harbour` : le recommencement vit sur l'écran de bilan, et il n'y a plus
+de déconnexion (le port appartient au navigateur).
 
 ---
 
@@ -41,9 +44,8 @@ journée en 5 min) ou **au tour par tour** (`Next lot`, `End the day`).
 - Or du joueur (en `g`), **quota restant de la semaine**, `Season X of N`.
 - Nom du capitaine connecté.
 - **Contrôles d'horloge** (`HeaderControls.tsx`) : `Go live` / `Live · next lot
-  Ns`, `Next lot`, `End the day`.
-- `How to play` (rouvre le tutoriel), `New harbour` (recommencer),
-  `Judges` (ouvre le tiroir juges), `Log out`.
+  Ns`, `End the day`.
+- `How to play` (rouvre le tutoriel), `Judges` (ouvre le tiroir juges).
 - Bandeau `Relay unreachable` si le relais ne répond pas (mode hors-ligne).
 
 ### 2.2 Carte marine / scène (`components/SeaMap.tsx`, `scene/*`)
@@ -178,12 +180,12 @@ Cinq blocs :
 
 Trois cartes, une fois, puis `How to play` pour le rouvrir.
 
-1. `The stock is shared` — six jours d'un banc, la prise par sortie décroche
-   avant l'effondrement.
-2. `The auction pays what the merchant can afford` — trois jauges de limite,
-   `next price` qui descend, l'infobulle `why`.
-3. `The council, and the campaign` — trois saisons, un vote à chaque clôture,
-   la mer garde ce que la saison lui a laissé.
+1. `One sea, shared by all` — six jours d'un banc, la prise par sortie décroche
+   avant l'effondrement ; la dette envers la mer survit à la saison.
+2. `The auction sells your catch` — trois jauges de limite, `next price` qui
+   descend, l'infobulle `why`.
+3. `The vote closes each season` — quota hebdomadaire par licence, un vote à
+   chaque clôture, la mer garde ce que la saison lui a laissé.
 
 Clavier : Entrée/Espace avancent, Échap ferme, Tab piégé, focus rendu.
 

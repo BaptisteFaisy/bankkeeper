@@ -22,7 +22,8 @@ Projet pour le hackathon NEAR — track **Games With Real Economies**.
 ### Voir le jeu en 3 minutes
 
 1. **Ouvrir le lien public** : **<https://tidewater-play.vercel.app/?seed=7&weeks=1>**
-   — saisir un email et un nom de capitaine, cliquer **Set sail**, puis **Skip**
+   — cliquer **Play** sur la page de garde (ou **Scenario** pour la démo guidée
+   d'une journée), saisir un email, cliquer **Set sail**, puis **Skip**
    sur le tutoriel.
 2. **Parcours 90 s** : cliquer **Go live** (1 lot / 30 s) ou **End the day**,
    survoler **why** à côté d'un acheteur pour lire sa règle de prix, puis lire
@@ -160,7 +161,8 @@ est dans [`docs/AUDIT-CONTRACT.md`](docs/AUDIT-CONTRACT.md).
 1. **Aube (Dawn)** : le Conseil du port applique les quotas votés la veille ; la banque
    prélève les intérêts des dettes ; les marchands calculent leurs prix selon leurs
    stocks restants. Le plan du jour est figé.
-2. **Journée (Day)** : un lot arrive toutes les 30 secondes (ou au clic sur *Next lot*).
+2. **Journée (Day)** : un lot arrive toutes les 30 secondes (ou la journée se
+   ferme d'un coup avec *End the day*).
    Les bateaux rentrent un par un. À chaque débarquement, la criée s'ouvre : le prix
    descend jusqu'à ce qu'un marchand achète ou que le lot soit invendu. La redevance
    du port est prélevée à la source et créditée au fonds.

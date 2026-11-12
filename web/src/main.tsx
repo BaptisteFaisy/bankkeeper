@@ -9,6 +9,7 @@ import './styles.css';
 import './chain.css';
 import './tutorial.css';
 import './v9.css';
+import './cover.css';
 
 const rootElement = document.getElementById('root');
 if (rootElement === null) throw new Error('Missing #root element');

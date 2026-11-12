@@ -1,0 +1,145 @@
+/* Cover: the front page veil and its card.
+   Semi-transparent over the harbour (no blur, no wash — one flat tint),
+   the card itself stays opaque so the text reads in one glance.
+   Split out of styles.css so one file keeps one subject. */
+.cover {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 39, 66, 0.42);
+}
+
+/* Before sign-in: the harbour itself, as a still, behind the veil and the
+   login card — so the first screen already shows the place you will play. */
+.app-gate {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 16px 20px;
+  background: var(--bg) url('/harbour-still.jpg') center / cover no-repeat;
+}
+.app-gate .auth-card {
+  width: min(420px, 92vw);
+  margin: auto;
+  padding: 26px 28px;
+  background: var(--panel);
+  box-shadow: var(--lift);
+}
+.app-gate.veiled .auth-card { visibility: hidden; }
+
+.cover-card {
+  width: min(600px, 94vw);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 34px 36px 26px;
+  border: 1px solid var(--hair);
+  border-radius: 26px;
+  background: var(--panel);
+  box-shadow: var(--lift);
+  text-align: center;
+}
+
+.cover-card:focus { outline: none; }
+.cover-card:focus-visible { outline: 2px solid var(--cy); outline-offset: 3px; }
+
+.cover-card h1 {
+  margin: 0;
+  font-size: 46px;
+  font-weight: 700;
+  font-stretch: condensed;
+  letter-spacing: -0.02em;
+  color: var(--cy);
+}
+
+.cover-slogan {
+  max-width: 46ch;
+  margin: 12px auto 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.cover-goal {
+  max-width: 46ch;
+  margin: 10px auto 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cover-card h2 {
+  margin: 24px 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cover-how {
+  max-width: 52ch;
+  margin: 0 auto;
+  padding: 0;
+  text-align: left;
+}
+
+/* One verb, one sentence: read the verb and you already know the move. */
+.cover-step {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--hair);
+}
+.cover-step:first-child { border-top: 0; }
+.cover-step dt {
+  padding-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cy);
+}
+.cover-step dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.cover-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+.cover-actions button { padding: 12px 36px; font-size: 15px; }
+
+.cover-foot {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The Scenario door is a link: it opens the guided demo in a new tab. */
+a.ghost {
+  display: inline-block;
+  padding: 12px 26px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--hair);
+  border-radius: 99px;
+  background: transparent;
+}
+a.ghost:hover { color: var(--ink); border-color: rgba(21, 101, 200, 0.35); background: rgba(21, 101, 200, 0.08); }
+a.ghost:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cover-card { transition: none; }
+}
