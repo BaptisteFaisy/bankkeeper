@@ -28,7 +28,7 @@ L'adresse n'est écrite qu'une fois dans le dépôt : `docs/deployments.md`, que
 `scripts/testnet/deploy.mjs` écrit au moment du déploiement. Le module
 `web/src/proofs/deployment.ts` est le **seul** lecteur de ce document ; il en
 tire l'identifiant du contrat et le tableau des transactions, et les deux
-consommateurs (`chain.ts` pour l'adresse, `timeline.ts` pour les hashs) le
+consommateurs (`chain.ts` pour l'adresse, `timeline-data.ts` pour les hashs) le
 prennent de là. Aucune adresse n'est recopiée dans le code.
 
 Ordre de résolution, du plus explicite au plus implicite :

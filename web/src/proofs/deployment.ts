@@ -4,7 +4,7 @@
 // the repository where the deployed contract id lives. The proofs page reads
 // the id and the scenario hashes from here, at build time, so the address is
 // never duplicated: one document, one parser, two consumers (`chain.ts` for
-// the id, `timeline.ts` for the transaction table).
+// the id, `timeline-data.ts` for the transaction table).
 //
 // When the document still says "not deployed", `contractId` is null and the
 // page says so instead of inventing an address.

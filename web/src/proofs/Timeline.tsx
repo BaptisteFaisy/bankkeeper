@@ -3,8 +3,8 @@
 // Shows each step of the contract scenario (fishing, licences, transfer,
 // debt note, council proposal, voting, resolution), its testnet hash when
 // recorded, and an honest status badge (confirmé / en attente / absent).
-import { explorerUrl, shortHash } from './timeline';
-import type { TimelineStep, TxStatus } from './timeline';
+import { explorerUrl, shortHash } from './timeline-data';
+import type { TimelineStep, TxStatus } from './timeline-data';
 
 function statusBadge(status: TxStatus) {
   if (status === 'confirmed') {

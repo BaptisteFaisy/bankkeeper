@@ -1,4 +1,4 @@
-// timeline.ts — transaction steps and hashes of the e2e scenario.
+// timeline-data.ts — transaction steps and hashes of the e2e scenario.
 //
 // The hashes come from `docs/deployments.md`, parsed once by `deployment.ts`
 // (the same document that gives `chain.ts` the contract id — one source, no
