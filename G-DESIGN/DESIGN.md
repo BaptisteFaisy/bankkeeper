@@ -342,3 +342,68 @@ Géométrie toujours procédurale (port.js, boat.js). HUD clair repris de V8.
 vue maquette → plan cinéma ; anneaux dessinés → bouées réelles.
 **Pas encore** : campagne animée, branchement au moteur de jeu, poissons,
 écume/sillages, détail des façades.
+
+## V9.1 — 2026-11-12 · Claude · « plus réaliste » (V9 validée par Gaia)
+
+**Retour Gaia** : « let's go sur celui-ci, peux-tu faire encore plus réaliste ? »
+
+1. **Occlusion ambiante** (GTAO) : les bâtiments, quais et bateaux se posent
+   enfin au sol, les creux s'assombrissent.
+2. **Matières** générées (aucune image) : crépi patiné, **tuiles** bleues en
+   relief, pavés, blocs de quai avec ligne de marée ; **vitres** sombres qui
+   reflètent le ciel ; coques laquées (carène sombre, pont bois).
+3. **Montagnes** : relief à arêtes, roche bleu-gris sur les pentes, neige sur
+   les hauteurs ; **520 conifères** sur les bas versants ; nuages.
+4. **Bateaux** : mâts, tangons et potences en volume (tubes), gréement fin.
+5. Soleil un peu plus bas (26°), ombres plus longues, lumière plus chaude.
+6. Le bilan (valeur nette / dette) reçoit un fond blanc pour rester lisible.
+
+Vues : `?view=wide` (défaut, celle validée), `?view=hero`, `?view=town`.
+`?noao` coupe l'occlusion. Fichiers : `v9/main.js`, `v9/env.js`.
+**Pas encore** : façades détaillées (balcons, portes, volets), écume et
+sillages, poissons, campagne animée, branchement au moteur du jeu.
+
+---
+
+## V9.2 — 2026-11-12 — le décor réaliste branché au vrai jeu
+
+**Demande de Gaia** : « Branche-la au jeu ».
+
+**Ce qui est livré (dans `web/`, rien de commité)** : la scène three.js de la
+V9.1 remplace le rendu WebGL écrit à la main. Le jeu est le même (moteur
+wasm, panneaux, criée, tutoriel) ; seul le décor et la palette changent.
+
+- Décor : ciel physique, mer réfléchissante, soleil bas et ombres, ombres de
+  contact, crépi / tuiles bleues / pavés / blocs de quai, vitres, montagnes
+  enneigées, conifères, nuages. Grue, lampadaires et échelles en volume.
+- Jeu : clic sur un bateau puis sur un banc ou le quai (inchangé). Dans un
+  groupe serré, ce sont tes bateaux qui gagnent le clic. Bateau choisi =
+  anneau blanc sur l'eau. Banc survolé = ses bouées passent au bleu.
+  Débarquement = caisses qui volent vers la criée. Sillage derrière un
+  bateau en route.
+- Caméra : basse sur l'eau, ciel visible, les trois bancs dégagés du pont
+  d'instruments. Glisser = tourner, molette = approcher.
+- Interface : thème jour (`v9.css`, remplace `v7.css`) — cartes blanches,
+  un seul bleu d'action, bilan (valeur nette + dette à la mer) sur plaque
+  blanche.
+- Garde-fou : si la machine ne suit pas (images trop lentes), les ombres de
+  contact se coupent seules ; le jeu reste jouable.
+
+**Vérifié à l'écran** (aperçu local, moteur wasm) : connexion hors ligne,
+tutoriel, envoi de Skua puis Tern vers un banc par clic dans la scène,
+« End the day » (10 débarquements, criée rejouée, valeur nette 1 350 → 2 204),
+zoom. Console sans erreur. `tests/ci_structural.py` OK.
+
+**Non vérifié / non fait** : tests e2e Selenium non relancés ; build de
+production non obtenu sur ce poste (échec déjà connu de `proofs/`, casse
+`Timeline.ts` / `timeline.ts` sous Windows) donc poids du bundle non
+mesuré ; fluidité non mesurée proprement ; repli 2D et mouvement réduit non
+re-testés ; écran étroit non re-testé.
+
+### Changelog V9.1 → V9.2
+1. Le rendu réaliste passe de la planche (`G-DESIGN/v9/`) au jeu (`web/src/scene3d/`).
+2. `three` devient une dépendance de `web/` (entorse à « zéro dépendance », validée par Gaia).
+3. Palette nuit + cyan abandonnée dans le jeu : thème jour blanc / bleu clair.
+4. Caméra basse avec ciel, à la place de la vue plongeante sur diorama.
+5. Sélection, survol, caisses et sillages refaits pour le nouveau rendu.
+6. Poissons, faisceau du phare et socle du diorama retirés.

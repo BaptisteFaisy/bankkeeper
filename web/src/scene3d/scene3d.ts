@@ -60,7 +60,7 @@ function frameOf(core: Core): Frame {
   const cam = core.cam;
   return {
     t: core.t, vp: cam.vp, eye: cam.eye,
-    cam: { F: cam.F, R: cam.R, U: cam.U, tanX: cam.tanY * cam.aspect, tanY: cam.tanY },
+    cam: { F: cam.F, R: cam.R, U: cam.U, tanX: cam.tanY * cam.aspect, tanY: cam.tanY, shift: cam.shift },
     hulls: core.fleet.hulls, crates: core.crates, stock, rest: [0, 0, 0], focus: [0, 0, 0, 0], hover: core.hover,
   };
 }
@@ -117,14 +117,24 @@ function ndc(core: Core, clientX: number, clientY: number): [number, number] {
   return [((clientX - r.left) / r.width) * 2 - 1, 1 - ((clientY - r.top) / r.height) * 2];
 }
 
+/** Pixels from the pointer to a hull: to its deck or to its badge, whichever is nearer. */
+function hullDistance(core: Core, r: DOMRect, h: Hull, clientX: number, clientY: number): number {
+  let best = Infinity;
+  for (const y of [2, 8.5]) {
+    const p = project(core.cam.vp, [h.x, y, h.z] as Vec3);
+    if (p[2] <= 0) continue;
+    const sx = r.left + (p[0] * 0.5 + 0.5) * r.width, sy = r.top + (0.5 - p[1] * 0.5) * r.height;
+    best = Math.min(best, Math.hypot(sx - clientX, sy - clientY));
+  }
+  return best;
+}
+
+/** The hull under the pointer. In a crowd, your own boats win: they are the ones you can command. */
 function pickHull(core: Core, clientX: number, clientY: number): Hull | null {
   const r = core.canvas.getBoundingClientRect();
   let best: Hull | null = null, bestD = HULL_PICK_PX;
   for (const h of core.fleet.hulls) {
-    const p = project(core.cam.vp, [h.x, 2, h.z] as Vec3);
-    if (p[2] <= 0) continue;
-    const sx = r.left + (p[0] * 0.5 + 0.5) * r.width, sy = r.top + (0.5 - p[1] * 0.5) * r.height;
-    const d = Math.hypot(sx - clientX, sy - clientY);
+    const d = hullDistance(core, r, h, clientX, clientY) * (h.mine ? 0.5 : 1);
     if (d < bestD) { best = h; bestD = d; }
   }
   return best;
@@ -144,9 +154,7 @@ function onQuay(core: Core, clientX: number, clientY: number): boolean {
 }
 
 function makeCore(canvas: HTMLCanvasElement, overlay: HTMLElement): Core {
-  const gl = canvas.getContext('webgl', { antialias: true, alpha: false });
-  if (gl === null) throw new Error('scene3d: no WebGL');
-  const view = createView(gl);
+  const view = createView(canvas);
   return {
     canvas, view, cam: new Camera(), fleet: new Fleet(), labels: new Labels(overlay, view.harbour.places),
     state: null, crates: [], t: 0, last: 0, raf: 0, hover: -1,
