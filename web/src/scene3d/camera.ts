@@ -1,12 +1,16 @@
-// camera.ts — an orbit around the diorama. Move the mouse to lean, drag to
+// camera.ts — an orbit around the harbour, low over the water. Move the mouse to lean, drag to
 // turn, wheel to come closer. Everything eases; nothing snaps.
 
 import { cross, lookAt, mul, norm, persp, sub, type Mat4, type Vec3 } from './math';
 
 export interface Orbit { yaw: number; pitch: number; dist: number; tx: number; tz: number }
 
-export const HOME: Orbit = { yaw: 0.34, pitch: 0.64, dist: 470, tx: -4, tz: -30 };
-const FOV = 0.42;
+export const HOME: Orbit = { yaw: -0.42, pitch: 0.27, dist: 235, tx: 4, tz: -22 };
+/** The eye orbits a point of the sea but looks a little above it, to keep the sky in the picture. */
+const LOOK_Y = 15;
+export const FOV = 0.6;
+export const NEAR = 2;
+export const FAR = 9000;
 
 export class Camera {
   now: Orbit = { ...HOME };
@@ -24,25 +28,26 @@ export class Camera {
 
   turn(dyaw: number, dpitch: number): void {
     this.goal.yaw = Math.max(-1.2, Math.min(1.4, this.goal.yaw + dyaw));
-    this.goal.pitch = Math.max(0.2, Math.min(1.15, this.goal.pitch + dpitch));
+    this.goal.pitch = Math.max(0.12, Math.min(1.15, this.goal.pitch + dpitch));
   }
 
-  zoom(d: number): void { this.goal.dist = Math.max(150, Math.min(560, this.goal.dist + d)); }
+  zoom(d: number): void { this.goal.dist = Math.max(90, Math.min(420, this.goal.dist + d)); }
 
   update(dt: number, instant: boolean): void {
     const k = instant ? 1 : Math.min(1, dt * 2.2);
     const keys: Array<keyof Orbit> = ['yaw', 'pitch', 'dist', 'tx', 'tz'];
     for (const key of keys) this.now[key] += (this.goal[key] - this.now[key]) * k;
     const yaw = this.now.yaw + this.lean[0] * 0.05;
-    const pitch = Math.max(0.12, this.now.pitch - this.lean[1] * 0.03);
+    const pitch = Math.max(0.08, this.now.pitch - this.lean[1] * 0.03);
     const t: Vec3 = [this.now.tx, 0, this.now.tz], cp = Math.cos(pitch);
     this.eye = [t[0] + Math.sin(yaw) * cp * this.now.dist, Math.sin(pitch) * this.now.dist, t[2] + Math.cos(yaw) * cp * this.now.dist];
-    this.F = norm(sub(t, this.eye));
+    const look: Vec3 = [t[0], LOOK_Y, t[2]];
+    this.F = norm(sub(look, this.eye));
     this.R = norm(cross(this.F, [0, 1, 0]));
     this.U = cross(this.R, this.F);
-    const p = persp(FOV, this.aspect, 4, 2000);
+    const p = persp(FOV, this.aspect, NEAR, FAR);
     p[8] = this.shift;
-    this.vp = mul(p, lookAt(this.eye, t, [0, 1, 0]));
+    this.vp = mul(p, lookAt(this.eye, look, [0, 1, 0]));
   }
 
   /** Lens shift in NDC: the picture slides left to leave room for the deck. */

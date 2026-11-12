@@ -155,3 +155,22 @@ les jetons de `styles.css` ne sont pas modifiés). `ci_structural.py` OK.
 **À décider avec Gaia** : `docs/ART.md` dit « 2D, plat, palette styles.css » ;
 la V7 est 3D et repointe la palette (nuit + cyan) dans `v7.css`. Avenant à
 écrire si Gaia verrouille.
+
+## [Claude] 2026-11-12 — V9.2 : rendu réaliste three.js dans `web/` (non commité, branche `main`)
+
+**Pour Baptiste — à lire avant tout commit dans `web/`** :
+1. **Nouvelle dépendance** : `three@0.187.0` (+ `@types/three` en dev) dans
+   `web/package.json` et `package-lock.json`. Entorse à « zéro dépendance »,
+   acceptée par Gaia pour le réalisme. Le poids du bundle n'a pas été mesuré.
+2. **Fichiers** : `web/src/scene3d/view.ts` réécrit (three.js) ; nouveaux
+   `world.ts`, `matter.ts`, `land.ts`, `mesh.ts`, `actors.ts` ; supprimés
+   `glx.ts`, `shaders.ts` ; `camera.ts` (cadrage bas, FOV, plans) et
+   `scene3d.ts` (le rendu reçoit le canvas, choix du bateau au clic) ajustés ;
+   `v7.css` renommé `v9.css` (thème jour) et import mis à jour dans `main.tsx`.
+3. **Contrat conservé** : `createScene3d(canvas, overlay)`, repli 2D si pas de
+   WebGL, sélecteurs e2e, `SeaMap.tsx` inchangé. `ci_structural.py` passe.
+4. **À faire côté code** : relancer les e2e ; `npm run build` échoue toujours
+   sous Windows à cause de `proofs/Timeline.ts` vs `timeline.ts` (point 2 de
+   ma note du 11/11) ; `sw.js` précache désormais un bundle plus lourd.
+5. **`docs/ART.md`** dit « 2D, plat, palette styles.css » : avenant à écrire
+   (3D réaliste, thème jour dans `v9.css`, jetons de `styles.css` intacts).

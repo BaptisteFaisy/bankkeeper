@@ -8,7 +8,7 @@ import { initEngine } from './engine';
 import './styles.css';
 import './chain.css';
 import './tutorial.css';
-import './v7.css';
+import './v9.css';
 
 const rootElement = document.getElementById('root');
 if (rootElement === null) throw new Error('Missing #root element');

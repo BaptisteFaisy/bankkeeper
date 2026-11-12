@@ -1,6 +1,11 @@
 # STATUS — bankkeeper · G-DESIGN
 
-## Claude — V9 (2026-11-11, changement de direction : réalisme)
+## Claude — V9 / V9.1 (2026-11-12, réalisme — **direction validée par Gaia**)
+
+- **V9.1** : occlusion ambiante, matières (crépi, tuiles, pierre, vitres),
+  montagnes rocheuses enneigées, conifères, mâts en volume. Voir `DESIGN.md`.
+- **Aperçu** : entrée `tidewater-design` de `HACKATONS/.claude/launch.json`
+  (port 47310) → `http://localhost:47310/v9/`.
 
 - **Retour Gaia** : les 10 planches V8 (bleu clair / blanc, moteur maison)
   « pas assez modernes, pas assez 3D ». Choix de Gaia : **réalisme (vraie eau,
@@ -146,3 +151,10 @@ signal (53,65,29) · diorama (22,51,66). Tous les identifiants du HUD présents.
   scène WebGL de `G-DESIGN/v5/`, en gardant le contrat DOM/a11y/e2e de
   `SeaMap.tsx`, et en dégradant proprement si WebGL est indisponible.
 - **Prompt à coller** : `G-DESIGN/PROMPT-CLAUDE-V7.md` (mise à jour).
+## Claude — V9.2 (2026-11-12, soir)
+
+- **Phase** : décor réaliste three.js branché au vrai jeu dans `web/` — jouable, non commité.
+- **Round** : V9.2 (direction V9 validée par Gaia, puis « Branche-la au jeu »).
+- **Aperçu** : entrée `tidewater-game` de `HACKATONS/.claude/launch.json` → `http://localhost:47311/` (moteur wasm).
+- **Vérifié** : clic bateau → banc, fin de journée, criée, zoom ; `ci_structural.py` OK.
+- **Reste** : e2e Selenium, build de production (bloqué sous Windows par `proofs/Timeline.ts`), avenant `docs/ART.md`, prévenir Baptiste (dépendance `three`), README juges, script vidéo, payload.
