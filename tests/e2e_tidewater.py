@@ -6,6 +6,7 @@ Chrome profile under /tmp and asserts ZERO console errors and ZERO failed
 requests over the whole journey.
 
 Run: python3 tests/e2e_tidewater.py (from the repo root, after npm run build).
+Set CHROME_BIN to the browser binary when it is not installed as google-chrome.
 Exit 1 with evidence on any console error, failed request, or blocked step.
 """
 
@@ -171,6 +172,9 @@ def start_chrome(profile):
     options.add_argument("--no-first-run")
     options.set_capability("goog:loggingPrefs",
                            {"browser": "ALL", "performance": "ALL"})
+    binary = os.environ.get("CHROME_BIN")
+    if binary:
+        options.binary_location = binary
     return webdriver.Chrome(options=options)
 
 
@@ -181,9 +185,12 @@ def journey(driver, base, notes):
     from selenium.webdriver.support.ui import WebDriverWait
     wait = WebDriverWait(driver, 15)
     driver.get(base + "/")
+    if dismiss_cover(driver):
+        notes.append("cover: front page lifted with Play")
     wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, "form.auth-card")))
+    # La carte de connexion ne demande plus que l'email : le nom du capitaine
+    # vient du préfixe de l'adresse (« skip » -> « Skip »).
     driver.find_element(By.CSS_SELECTOR, "input[type=email]").send_keys("skip@tide.water")
-    driver.find_element(By.XPATH, "//form//label[2]/input").send_keys("Skipper")
     driver.find_element(By.XPATH, "//form//button[@type='submit']").click()
     try:
         wait.until(ec.presence_of_element_located(
@@ -239,11 +246,33 @@ def console_errors(driver):
             if e.get("level") == "SEVERE"]
 
 
-def dismiss_tutorial(driver):
-    """A first launch opens the tutorial; a player presses `Skip`. Do the same.
+def dismiss_cover(driver, timeout=8):
+    """The front page covers every load; a player presses `Play`. Do the same.
 
-    The backdrop covers the whole screen, so every click under it is
-    intercepted — the on-chain strip included.
+    The veil is a real overlay: clicks that land under it are swallowed, so it
+    goes first, before the auth card or any instrument. A build with no front
+    page returns False and changes nothing.
+    """
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as ec
+    from selenium.webdriver.support.ui import WebDriverWait
+    veil = (By.CSS_SELECTOR, ".cover")
+    try:
+        WebDriverWait(driver, timeout).until(ec.presence_of_element_located(veil))
+    except Exception:  # noqa: BLE001  (no front page on this build)
+        return False
+    driver.find_element(By.CSS_SELECTOR, "[data-testid='cover-play']").click()
+    WebDriverWait(driver, timeout).until(ec.invisibility_of_element_located(veil))
+    return True
+
+
+def dismiss_tutorial(driver):
+    """The tutorial never opens on its own any more; keep the helper as a
+    safety net.
+
+    The backdrop would cover the whole screen, so every click under it would
+    be intercepted — the on-chain strip included. A build that opens nothing
+    returns False and changes nothing.
     """
     from selenium.webdriver.common.by import By
     for dialog in driver.find_elements(By.CSS_SELECTOR, "[role='dialog']"):

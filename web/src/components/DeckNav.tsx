@@ -8,9 +8,9 @@ import { reducedMotion } from '../motion';
 const TABS: Array<[string, string]> = [
   ['Fish auction', 'Auction'],
   ['Your boats', 'Boats'],
-  ['Harbour ledger', 'Ledger'],
-  ['Harbour office', 'Office'],
-  ['Chronicle', 'Chronicle'],
+  ['Harbour ledger', 'Today'],
+  ['Harbour office', 'Manage'],
+  ['Chronicle', 'History'],
 ];
 
 function sectionOf(deck: HTMLElement | null, label: string): HTMLElement | null {

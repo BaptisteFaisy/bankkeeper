@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from e2e_offline import dismiss_tutorial, serve_dist  # noqa: E402  (path set above)
 from e2e_tidewater import (  # noqa: E402
-    ROOT, SCRATCH, console_errors, guard, start_chrome,
+    ROOT, SCRATCH, console_errors, dismiss_cover, guard, start_chrome,
 )
 
 from selenium.webdriver.common.action_chains import ActionChains  # noqa: E402
@@ -60,6 +60,7 @@ def wait_ready(driver, timeout=20):
     WebDriverWait(driver, timeout).until(ec.any_of(
         ec.presence_of_element_located((By.CSS_SELECTOR, "form.auth-card")),
         ec.presence_of_element_located((By.CSS_SELECTOR, GAME))))
+    dismiss_cover(driver)  # the front page covers every load, Play lifts it
 
 
 def sign_in(driver):
@@ -68,7 +69,7 @@ def sign_in(driver):
         driver.find_element(By.CSS_SELECTOR, "input[type=email]").send_keys("audit@tide.water")
         driver.find_element(By.XPATH, "//form//button[@type='submit']").click()
         WebDriverWait(driver, 20).until(ec.presence_of_element_located((By.CSS_SELECTOR, GAME)))
-    dismiss_tutorial(driver)  # a first launch opens the tutorial; a player skips it
+    dismiss_tutorial(driver)  # no tutorial opens by itself; safety net only
     time.sleep(0.4)
 
 
@@ -252,21 +253,10 @@ def scenario_live_clock(a, driver, base):
     else:
         a.fine("End the day pendant Go live : l'horloge ne relance pas la journée suivante")
 
-    before_gold = gold(driver)
-    click(driver, "Log out", pause=0.8)
-    gate = bool(driver.find_elements(By.CSS_SELECTOR, "form.auth-card"))
-    time.sleep(32)
-    sign_in(driver)
-    after_gold = gold(driver)
-    if gate and after_gold != before_gold:
-        a.add(MAJEUR, "l'horloge live continue de jouer pendant que le joueur est déconnecté",
-              "web/src/hooks.ts:212 + web/src/App.tsx:447 (logout ne coupe pas live)",
-              "Go live, puis « Log out », attendre 32 s, se reconnecter",
-              "la sortie de partie arrête l'horloge ; le port ne bouge pas sans joueur",
-              "bourse %s -> %s pendant l'écran de connexion (des lots ont été landés hors jeu)"
-              % (before_gold, after_gold))
-    else:
-        a.fine("Log out pendant Go live : le port ne bouge pas hors jeu")
+    # Log out n'existe plus : le port appartient au navigateur, sans
+    # déconnexion. La garantie du dessous (l'horloge s'arrête quand
+    # `signedIn` passe à faux) reste dans useLiveClock/useStandDown.
+    a.fine("Log out retiré de la barre du haut : plus de déconnexion à tester")
 
 
 def scenario_two_tabs(a, driver, base):
@@ -283,8 +273,7 @@ def scenario_two_tabs(a, driver, base):
     time.sleep(1.5)
     ahead = clock_line(driver)
     driver.switch_to.window(driver.window_handles[1])
-    click(driver, "Next lot", pause=0.7)
-    click(driver, "Next lot", pause=1.2)
+    end_day(driver)  # « Next lot » n'existe plus : l'onglet en retard ferme son jour
     driver.switch_to.window(driver.window_handles[0])
     driver.refresh()
     time.sleep(2.5)

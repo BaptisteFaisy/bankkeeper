@@ -407,3 +407,77 @@ re-testés ; écran étroit non re-testé.
 4. Caméra basse avec ciel, à la place de la vue plongeante sur diorama.
 5. Sélection, survol, caisses et sillages refaits pour le nouveau rendu.
 6. Poissons, faisceau du phare et socle du diorama retirés.
+
+## V10 — 2026-11-12 · Claude · l'entrée au port (relecture de la page de garde)
+
+Relecture visuelle en 1280×800 de la page de garde et du deck livrés par
+opencode (`feat/cover-page`). Le jeu en cours est propre ; le défaut était
+l'entrée : page de garde sur un fond gris uni, carte de connexion qui
+transparaissait derrière, puis une page de connexion vide.
+
+### Changelog V9.2 → V10
+1. **Le port derrière la page de garde** : avant connexion, une photo fixe
+   du vrai décor three.js (`web/public/harbour-still.jpg`, 1600×1000,
+   225 Ko, prise sans interface) remplit l'écran. Le voile passe de 0.62
+   à 0.42 d'opacité : on voit le port, le texte reste lisible.
+2. **Plus de formulaire fantôme** : la carte « Take command » reste dans
+   le DOM mais est invisible tant que la page de garde est là
+   (`.app-gate.veiled`) — sélecteurs e2e intacts.
+3. **Connexion centrée sur le port** après Play, carte blanche opaque
+   avec la même ombre que la page de garde.
+4. Cartes de la page de garde et de connexion opaques (`--panel`) : le
+   décor ne transparaît plus sous le texte.
+
+### Non touché (à trancher avec Gaia)
+- Le tutoriel 3 cartes s'ouvre encore au premier lancement, après la page
+  de garde qui explique déjà le jeu (doublon). `e2e_tutorial.py` exige
+  cette ouverture automatique.
+- Barre du haut : « Week 1 · Mon · High » puis « 150.0g » sans libellé et
+  « Season 1 of 3 » en double avec la plaque Net worth. Les tests
+  `audit_web.py` lisent ces `.tide-stat` (ordre, classe `gold`, préfixe
+  `Quota`) : à reprendre avec les tests.
+
+## V10.1 — 2026-11-12 · Claude · plus de tutoriel automatique (décision Gaia)
+
+Gaia : « Oui, supprime-le » — la page de garde explique déjà le jeu à
+chaque chargement, le tutoriel 3 cartes faisait doublon.
+
+### Changelog V10 → V10.1
+1. Le tutoriel ne s'ouvre plus tout seul au premier lancement
+   (`useTutorial` démarre fermé, `web/src/components/Tutorial.tsx`).
+2. `How to play` (barre du haut) l'ouvre toujours ; Skip / Done / Échap
+   inchangés, la marque `tidewater-tutorial-v1` est toujours écrite à la
+   fermeture (sans effet désormais).
+3. Parcours d'un nouveau joueur : page de garde → Play → connexion → port.
+
+## V10.2 — 2026-11-12 · Claude · barre du haut (proposition, rien codé)
+
+Planche : `G-DESIGN/v10/topbar.html` (+ `topbar-planche.png`). Constat :
+police machine à écrire sans libellés, « High » (marée) et « 150.0g »
+(bourse) illisibles, « Season 1 of 3 » en double avec la plaque.
+
+- **A · Une phrase lisible** — même ligne, chaque chiffre nommé avec son
+  unité, Season retiré. Plus petit changement.
+- **B · Trois cadrans** (recommandé) — Today / Your purse / Quota left,
+  libellé en petit au-dessus de la valeur ; « Captain Skip » à côté du nom.
+- **C · Barre vide** — bourse et quota dans la plaque Net worth ; casse
+  `audit_web.py`, réécriture des tests par opencode.
+
+Compatibilité tests (A et B) : `audit_web.py` lit `.tide-stat` — 1re =
+ligne d'horloge (comparée avant/après), classe `gold` (chiffres extraits
+par regex), texte qui commence par « Quota ». B garde ces trois spans ;
+le libellé « Quota left » reste en tête du span quota.
+
+### V10.2 — choix de Gaia : B, trois cadrans (codé le 2026-11-12)
+
+Changelog :
+1. Barre du haut : « Tidewater · Captain Skip », puis trois cadrans
+   Today (« Mon, week 1 » + marée) / Your purse (« 150 gold », bleu) /
+   Quota left (« 280 crates »). Libellé en petites capitales au-dessus.
+2. « Season x of y » retiré de la barre (déjà dans la plaque Net worth).
+3. Police machine à écrire retirée de la barre ; « 150.0g » → « 150 gold ».
+Capture livrée : `G-DESIGN/v10/topbar-B-livre.png`.
+
+Note technique : libellés en `font-variant-caps: all-small-caps` et non
+`text-transform: uppercase` — Selenium lit le texte transformé, et
+`audit_web.py` attend un `.tide-stat` qui commence par « Quota ».

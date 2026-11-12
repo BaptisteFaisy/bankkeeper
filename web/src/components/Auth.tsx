@@ -20,6 +20,13 @@ function validEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+/** The captain's name: the mailbox's own word, capitalised. Nothing to fill in. */
+function captainName(email: string): string {
+  const local = email.trim().split('@')[0] ?? '';
+  const word = (local.replace(/[._-]+/g, ' ').trim().split(' ')[0] ?? '').slice(0, 24);
+  return word === '' ? 'Captain' : word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 const ENTER_TEXT = 'On chain your email becomes a real NEAR testnet account and the house pays '
   + 'the gas. There is no recovery phrase: nothing to write down, and nothing to carry away. '
   + 'The offline harbour stays the default and needs no server.';
@@ -68,7 +75,6 @@ function ChainDoor({ chain, status }: { chain: ChainValue; status: string }) {
 export default function Auth({ onLogin }: Props) {
   const chain = useChain();
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [localError, setLocalError] = useState('');
 
   async function submit(event: FormEvent): Promise<void> {
@@ -78,7 +84,7 @@ export default function Auth({ onLogin }: Props) {
       return;
     }
     setLocalError('');
-    const captain = name.trim() === '' ? 'Skipper' : name.trim();
+    const captain = captainName(email);
     // Best effort: the harbour records the captain, but the local session is
     // enough to play if that relay is still starting.
     postLogin(email.trim(), captain).catch(() => undefined);
@@ -109,16 +115,6 @@ export default function Auth({ onLogin }: Props) {
           onChange={(event) => setEmail(event.target.value)}
           required
           data-testid="auth-email"
-        />
-      </label>
-      <label>
-        Captain name
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Skipper"
-          maxLength={24}
-          data-testid="auth-name"
         />
       </label>
       {problem === null || problem === '' ? null : (

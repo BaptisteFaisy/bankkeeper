@@ -32,7 +32,7 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from e2e_tidewater import dismiss_tutorial  # noqa: E402  (path set above)
+from e2e_tidewater import dismiss_cover, dismiss_tutorial  # noqa: E402  (path set above)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRATCH = "/tmp/tidewater-onchain"
@@ -159,6 +159,7 @@ def ui_steps(driver, base, relayer_base, account, rpc_url, contract):
 
     wait = WebDriverWait(driver, 45)
     driver.get(base + "/?chain=" + relayer_base)
+    dismiss_cover(driver)
     email = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, "input[type=email]"))
     email.clear()
     email.send_keys(EMAIL)

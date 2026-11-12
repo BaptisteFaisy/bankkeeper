@@ -34,8 +34,9 @@ la règle), ce qui donne exactement 10 lots × 30 s = 5 minutes.
 Deux façons de jouer, même moteur :
 
 - **live** : le temps passe tout seul, le joueur qui réfléchit trop perd des lots ;
-- **au tour par tour** : `Next lot` pour avancer d'un lot, `End the day` pour
-  finir la journée. Utile pour lire, filmer, ou expliquer.
+- **par journée** : `End the day` lande d'un coup ce qui reste du jour et le
+  ferme. Utile pour lire, filmer, ou expliquer. (`Next lot`, l'avance lot par
+  lot, a été retiré de la barre du haut : deux contrôles d'horloge suffisent.)
 
 Le fast-forward des juges reste hors de cette horloge : sept jours d'un coup,
 en une seconde, sans joueur.

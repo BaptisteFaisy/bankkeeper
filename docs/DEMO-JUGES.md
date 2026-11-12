@@ -39,13 +39,15 @@ et *le registre qui dit qui a pris quoi*.
 ### Étape 1 (20 s) — ouvrir et prendre le commandement
 
 - **Cliquer** : ouvrir <https://tidewater-play.vercel.app/?seed=7&weeks=1>.
-  Dans l'écran **Take command**, saisir un email (`juge@example.com`) et un
-  nom dans **Captain name** (`Juge`), puis cliquer **Set sail**.
+  La **page de garde** (un voile semi-transparent sur le port) présente le
+  jeu : cliquer **Play** (ou **Scenario** pour la démo guidée d'une journée).
+  Dans l'écran **Take command**, saisir un email (`juge@example.com`) — le
+  capitaine prend le préfixe de l'adresse — puis cliquer **Set sail**.
 - **À l'écran** : la carte marine 2D s'ouvre (`Sea chart`), avec les
   bateaux à la voile sur fond sarcelle, la bande du haut
   `TIDEWATER · Week 1 · Mon · High · 150.0g · Quota left: 280 · Season 1 of 3`.
-  Le tutoriel en trois cartes s'ouvre au premier lancement : cliquer
-  **Skip** (ou le parcourir avec **Next**).
+  Le tutoriel ne s'ouvre plus tout seul : **How to play** dans la barre du
+  haut ouvre les trois cartes si besoin (les fermer avec **Done**).
 - **La phrase que le jeu doit pouvoir dire** : aucune encore — la scène
   pose le port, dix bateaux et un stock partagé.
 
@@ -53,8 +55,7 @@ et *le registre qui dit qui a pris quoi*.
 
 - **Cliquer** : dans la barre du haut, **Go live** (pour lancer un lot
   toutes les 30 s ; il affiche le compte à rebours `Live · next lot 28s`).
-  Pour ne pas attendre 30 s devant un jury pressé, cliquer ensuite
-  **Next lot** ou **End the day**.
+  Pour ne pas attendre 30 s devant un jury pressé, cliquer **End the day**.
 - **À l'écran** : dans le panneau **Fish auction**, la jauge de prix
   descend, une caisse décrit un arc sur le canvas 2D vers le quai et
   l'étal qui achète s'allume ; la vente s'inscrit au format

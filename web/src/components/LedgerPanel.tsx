@@ -14,6 +14,7 @@ import { fmtCrates, fmtGold } from '../format';
 import { getState } from '../api';
 import SeaPayBlock from './SeaPayBlock';
 import DisputeBlock from './DisputeBlock';
+import PanelHead from './PanelHead';
 import type { DisputeView } from '../types';
 
 /** One captain's line in a zone: crates landed and share in bps. */
@@ -112,7 +113,7 @@ function SeaRow({ row }: { row: SeaView['zones'][number] }) {
 function LandingsBlock({ landings }: { landings: LandingView[] }) {
   return (
     <div>
-      <h3>Today landings</h3>
+      <h3>Today's landings</h3>
       {landings.length === 0 ? (
         <p className="muted">No landings yet today.</p>
       ) : (
@@ -135,7 +136,7 @@ function LandingsBlock({ landings }: { landings: LandingView[] }) {
 function ReasoningBlock({ reasoning }: { reasoning: string[] }) {
   return (
     <div>
-      <h3>Reasoning</h3>
+      <h3>Notes from the harbour</h3>
       {reasoning.length === 0 ? (
         <p className="muted">Captains keep their counsel for now.</p>
       ) : (
@@ -196,7 +197,7 @@ export default function LedgerPanel({ landings, reasoning, attribution, sea, dis
 
   return (
     <section className="panel ledger" aria-label="Harbour ledger">
-      <h2>Harbour ledger</h2>
+      <PanelHead title="Harbour ledger" note="What the day did: the landings, who took what from each bank, and the bill the sea carries — with the ways to pay it back." />
       <div className="ledger-cols">
         <LandingsBlock landings={landings} />
         <ReasoningBlock reasoning={reasoning} />

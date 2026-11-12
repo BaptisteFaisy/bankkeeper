@@ -24,8 +24,8 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from e2e_tidewater import (  # noqa: E402  (path set above)
-    ROOT, SCRATCH, console_errors, dismiss_tutorial, failed_requests,
-    free_port, guard, start_chrome,
+    ROOT, SCRATCH, console_errors, dismiss_cover, dismiss_tutorial,
+    failed_requests, free_port, guard, start_chrome,
 )
 
 
@@ -48,11 +48,12 @@ def serve_dist():
 
 
 def dismiss_tutorial(driver, timeout=6):
-    """A first launch opens the tutorial; a player presses `Skip`. Do the same.
+    """The tutorial never opens on its own any more; keep the helper as a
+    safety net.
 
-    The card mounts with the game screen, so wait for it instead of guessing:
-    a click that lands too early is swallowed and a backdrop left up intercepts
-    every later click. A returning player has the mark set and sees no card.
+    The backdrop would cover the whole screen, so a card left up intercepts
+    every later click. A build that opens nothing returns False and changes
+    nothing.
     """
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support import expected_conditions as ec
@@ -79,10 +80,12 @@ def journey(driver, base, notes):
     from selenium.webdriver.support.ui import WebDriverWait
     wait = WebDriverWait(driver, 20)
     driver.get(base + "/")
+    if dismiss_cover(driver):
+        notes.append("cover: front page lifted with Play")
     wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, "form.auth-card")))
     notes.append("engine: page booted with no relay behind it")
+    # Plus de champ « Captain name » : le capitaine prend le préfixe de l'email.
     driver.find_element(By.CSS_SELECTOR, "input[type=email]").send_keys("skip@tide.water")
-    driver.find_element(By.XPATH, "//form//label[2]/input").send_keys("Skipper")
     driver.find_element(By.XPATH, "//form//button[@type='submit']").click()
     try:
         wait.until(ec.presence_of_element_located(

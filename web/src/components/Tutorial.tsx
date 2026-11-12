@@ -1,6 +1,6 @@
 // Tutorial: three cards that teach the loop once, then get out of the way.
-// Opens on the very first launch (no `localStorage` mark), never on its own
-// after that; `How to play` in the top bar brings it back at any time.
+// Never opens on its own: the front page explains the game on every load,
+// and `How to play` in the top bar opens these cards at any time.
 import { useEffect, useRef, useState } from 'react';
 import type { MutableRefObject, ReactElement, RefObject } from 'react';
 
@@ -24,9 +24,10 @@ function markSeen(): void {
   }
 }
 
-/** First-launch gate for App: `open` starts true only on a fresh browser. */
+/** Opens only from `How to play`: the front page already teaches the loop
+ *  on every load, so the cards never open on their own (Gaia, 2026-11-12). */
 export function useTutorial(): { open: boolean; show: () => void; close: () => void } {
-  const [open, setOpen] = useState(() => !tutorialSeen());
+  const [open, setOpen] = useState(false);
   return {
     open,
     show: () => setOpen(true),
@@ -110,26 +111,29 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    title: 'The stock is shared',
+    title: 'One sea, shared by all',
     lines: [
-      'Every boat fishes the same three banks. A crate landed today is a crate the bank cannot lend tomorrow.',
-      'Watch the catch per trip: it slips well before the bank gives way. That early fall is cheap to answer and dear to ignore.',
+      'Three fishing grounds, ten boats: every captain in the port fishes the same banks, and nobody owns the fish.',
+      'The catch per trip is your warning light — it falls long before a bank runs empty.',
+      'Take more than a bank can regrow and the shortfall is written down as a debt to the sea, in crates. It survives the season.',
     ],
     art: StockArt,
   },
   {
-    title: 'The auction pays what the merchant can afford',
+    title: 'The auction sells your catch',
     lines: [
-      'No merchant bids past its own limit, set by its stock against its target. Fill one today and the lot it bids on tomorrow goes cheaper, for you and for every other captain.',
-      'Each merchant carries a why tag: hover it, or focus it with the keyboard, to read the reason behind the limit.',
+      'Close the day and your catch goes to the auction lot by lot: the price falls until a merchant buys. That price is your money.',
+      'Every merchant stops bidding once it has bought its fill — fill one up today and it bids less tomorrow, for you and for every other captain.',
+      'Hover the why tag on a merchant to read its own reason for the limit it holds.',
     ],
     art: AuctionArt,
   },
   {
-    title: 'The council, and the campaign',
+    title: 'The vote closes each season',
     lines: [
-      'Quotas are voted at the close of a season, and an indemnity can swing a vote your way. A campaign runs three seasons.',
-      'The sea keeps what the season left it: the next season opens on the banks you handed over, not on a fresh sea.',
+      'Each licence carries a weekly quota; spend it and your boats stay at the quay until Monday.',
+      'At the season close the fleet votes the next quota — one licence, one vote, and an indemnity can buy a reluctant yes.',
+      'The sea you leave is the sea you inherit: the next season opens on the banks you handed over, not on a fresh one.',
     ],
     art: CampaignArt,
   },

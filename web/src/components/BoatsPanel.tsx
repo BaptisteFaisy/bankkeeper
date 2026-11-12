@@ -3,6 +3,7 @@
 // The net switches only at the quay.
 import type { BoatView, Mesh, ZoneId } from '../types';
 import { MESH_LABEL, ZONE_LABEL, ZONES } from '../types';
+import PanelHead from './PanelHead';
 
 interface Props {
   boats: BoatView[];
@@ -68,7 +69,7 @@ export default function BoatsPanel(props: Props) {
   const mine = props.boats.filter((b) => b.mine);
   return (
     <section className="panel boats" aria-label="Your boats">
-      <h2>Your boats</h2>
+      <PanelHead title="Your boats" note="Two clicks send a boat out: pick the boat, then a ground on the water or a button below." />
       {mine.length === 0 ? (
         <p className="muted">No boats left. The harbour master wishes you fair winds elsewhere.</p>
       ) : (
@@ -78,7 +79,6 @@ export default function BoatsPanel(props: Props) {
           ))}
         </ul>
       )}
-      <p className="hint">Two clicks: pick a boat, then a zone on the chart — or a button above.</p>
     </section>
   );
 }

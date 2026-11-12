@@ -1,5 +1,18 @@
 # STATUS — bankkeeper · G-DESIGN
 
+## Claude — V10 (2026-11-12, soir — l'entrée au port)
+
+- Phase : relecture visuelle de la page de garde (opencode) ; round V10.
+- Fait : photo du port derrière la page de garde et la connexion, voile
+  allégé, formulaire masqué sous le voile, cartes opaques. Détail dans
+  `DESIGN.md` § V10 et `HANDOFF.md`.
+- V10.1 : tutoriel plus ouvert automatiquement (décision Gaia) ; e2e
+  `e2e_tutorial.py` + 2 docs à aligner par opencode (voir HANDOFF).
+- V10.2 : barre du haut en trois cadrans (choix Gaia : B), codée et
+  vérifiée en capture ; `audit_web.py` à relancer sous Linux.
+- Repéré : sous ~1100 px, étiquettes de bancs qui se chevauchent.
+- Non commité.
+
 ## Claude — V9 / V9.1 (2026-11-12, réalisme — **direction validée par Gaia**)
 
 - **V9.1** : occlusion ambiante, matières (crépi, tuiles, pierre, vitres),
@@ -158,3 +171,67 @@ signal (53,65,29) · diorama (22,51,66). Tous les identifiants du HUD présents.
 - **Aperçu** : entrée `tidewater-game` de `HACKATONS/.claude/launch.json` → `http://localhost:47311/` (moteur wasm).
 - **Vérifié** : clic bateau → banc, fin de journée, criée, zoom ; `ci_structural.py` OK.
 - **Reste** : e2e Selenium, build de production (bloqué sous Windows par `proofs/Timeline.ts`), avenant `docs/ART.md`, prévenir Baptiste (dépendance `three`), README juges, script vidéo, payload.
+
+---
+
+## opencode — page de garde + deck lisible (2026-11-12)
+
+- **Phase** : code — branche `feat/cover-page` (non fusionnée, poussee).
+- **Décisions Gaia** : page de garde **à chaque chargement** ; « Scenario »
+  = la **démo guidée qui existe déjà** ; boutons topbar **pas touchés**
+  (« on décidera après »).
+- **Livré** :
+  - `web/src/components/Cover.tsx` + `web/src/cover.css` : voile
+    semi-transparent sur toute la page, titre, slogan (« One harbour,
+    one sea… »), « How to play » en 4 lignes ; **Play** lève le voile,
+    **Scenario** ouvre `scene-preview.html` (la journée scriptée avec
+    légendes). Échap ferme aussi.
+  - Deck rendu compréhensible : `PanelHead.tsx` ajoute une phrase
+    d'entrée en clair sous chaque titre de panneau (Auction, Boats,
+    Ledger, Office, Chronicle) ; onglets renommés Auction / Boats /
+    Today / Manage / History (les `aria-label` des sections ne bougent
+    pas, les sélecteurs e2e restent valides) ; « Today landings » →
+    « Today's landings », « Reasoning » → « Notes from the harbour ».
+  - Tests e2e : `dismiss_cover()` (e2e_tidewater) appelé dans les
+    scripts qui cliquent après un `driver.get` : offline, tutorial,
+    chain_public, onchain, audit_web. `e2e_pwa` et `e2e_proofs` n'en
+    ont pas besoin (aucun clic sur la page).
+- **Vérifié ici** : `ci_structural.py` OK (3 nouveaux fichiers inclus) ;
+  `npx vite build` OK via contournement temporaire du couple
+  `Timeline.tsx` / `timeline.ts` (rien de ce contournement dans le
+  commit) ; `tsc --noEmit` ne montre que l'erreur de casse pré-existante.
+- **Reste (Linux / Baptiste)** : relancer les e2e Selenium ; build de
+  production ; le détail des boutons topbar reste à trancher avec Gaia.
+- **Horodatage** : 2026-11-12
+
+---
+
+## opencode — round 2 : barre du haut réduite, règles limpides (2026-11-12)
+
+- **Décision Gaia** : supprimer **Skipper** (le champ « Captain name »),
+  **Log out**, **Next lot** et **New harbour** ; rendre les règles
+  « How to play » limpides et digestes.
+- **Livré** :
+  - `Auth.tsx` : un seul champ (email). Le capitaine prend le préfixe
+    de l'adresse (`skip@tide.water` → « Skip ») ; plus rien à remplir.
+  - `TopBar.tsx` : plus de `Log out` ni de `New harbour` (le
+    recommencement reste sur l'écran de bilan et l'offre de lien
+    partagé ; pas de déconnexion : le port appartient au navigateur).
+  - `HeaderControls.tsx` : plus de `Next lot` — deux contrôles restent,
+    `Go live` (1 lot / 30 s) et `End the day` (ferme le jour d'un coup).
+  - `Cover.tsx` : la page de garde parle en gestes — **Send / Sell /
+    Watch / Vote**, une phrase par geste, plus une ligne « Goal » claire.
+  - `Tutorial.tsx` : les trois cartes réécrites en phrases courtes et
+    sans jargon (titres inclus) : « One sea, shared by all », « The
+    auction sells your catch », « The vote closes each season ».
+  - Docs alignés : README, GAME-LOOP, COMPLIANCE, DEMO-JUGES, TUTORIAL,
+    FONCTIONNALITES. Tests alignés : le champ nom n'est plus tapé dans
+    les trois e2e ; audit_web : scénario A5 « Log out » remplacé par une
+    note de retrait, les deux clics « Next lot » par un `End the day` ;
+    e2e_tutorial attend les nouveaux titres de cartes.
+- **Vérifié ici** : `ci_structural.py` OK ; `tsc --noEmit` propre ;
+  `npx vite build` OK (contournement Timeline non commité).
+- **À savoir** : le mode « lot par lot » n'existe plus côté UI —
+  `End the day` lande le reste du jour en un clic ; si Gaia le veut en
+  retour, `Next lot` se remonte depuis `game.nextLot` (hooks.ts).
+- **Horodatage** : 2026-11-12

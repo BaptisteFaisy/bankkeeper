@@ -7,6 +7,7 @@ import type { ChronicleEntryView } from '../types';
 import { charterLabel } from '../charter';
 import type { Charter } from '../charter';
 import { fmtGold } from '../format';
+import PanelHead from './PanelHead';
 
 interface Props {
   entries: ChronicleEntryView[];
@@ -38,7 +39,7 @@ function ChronicleRow({ entry }: { entry: ChronicleEntryView }) {
 export default function ChroniclePanel({ entries, charter }: Props) {
   return (
     <section className="panel chronicle" aria-label="Chronicle">
-      <h2>The port's chronicle</h2>
+      <PanelHead title="The port's chronicle" note="One line per closed season: what you were worth, what the sea had left, the rule the fleet carried." />
       {entries.length === 0 ? (
         <p className="muted">No season closed yet. The book opens the day the first bilan is written.</p>
       ) : (

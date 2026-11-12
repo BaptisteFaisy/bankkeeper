@@ -78,7 +78,7 @@ structurel du dossier.
 
 | Attendu | Réel | Preuve vérifiable |
 |---|---|---|
-| Pas de wallet, pas d'extension, pas de phrase | Le formulaire public demande **un email et un nom de capitaine**, et rien d'autre : « Sign in with your email. No wallet, no seed phrase, no gas. » | `web/src/components/Auth.tsx` (écran `Take command`, champs `Email` / `Captain name`, bouton `Set sail`) ; testé au navigateur sur le site public le 11/11 |
+| Pas de wallet, pas d'extension, pas de phrase | Le formulaire public demande **un email**, et rien d'autre : « Sign in with your email. No wallet, no seed phrase, no gas. » Le capitaine prend le préfixe de l'adresse | `web/src/components/Auth.tsx` (écran `Take command`, champ `Email`, bouton `Set sail`) ; testé au navigateur sur le site public le 11/11 |
 | Pas de demande de gas | Le joueur ne signe jamais lui-même ; dans la démo publique, rien n'est signé du tout | `web/src/session.ts` ; `tests/e2e_offline.py` → 0 appel `/api/`, 0 appel au relais, 0 écriture |
 | L'email est une identité, pas une étiquette | **Sur `near-sandbox` : oui.** Le relais sponsorisé dérive un compte NEAR de l'email (`p-<sha256(email)[:20]>.<suffix>`), garde la clé **côté serveur** (mode `0600`, jamais dans l'arbre) et signe pour le joueur | `python3 tests/relay_sponsor.py` **relancé le 11/11 → PASS** : `captain@tidewater.dev` → `p-41abb460db76f2549fb3.test.near`, tx sponsorisée **`GwfdY7nmdTkd5817Ye7XhRN86aJmAr3Vd5c7vNzju5tm`**, `mt_balance_of(3)` **0 → 1**, or **1 000 000 → 720 000** milli, **0,309 Tgas** brûlés ; garde-fous : rafale de 14 appels → 4 refus, 2ᵉ action → `E_ACTION_CAP`, bourse prêtée **une seule fois** |
 | Branché sur la démo publique | **Le client, oui ; le relais public, pas encore.** Un seul build, deux modes : le mode chaîne se décide à l'exécution (`?chain`, ou `?chain=<url>` pour nommer le relais), et sans `?chain` l'email ouvre une session locale (`captain-<hash>`) sans joindre personne. Reste à publier le relais (son URL se cuit au build par `VITE_CHAIN_URL`) et à lier le jeton de session au compte NEAR côté serveur | `web/src/near/chain.ts` (`chainRequested`, `chainBase`, `chainUrl`), `web/src/near/chainSession.ts`, `web/src/components/Auth.tsx`, `web/src/components/ChainBar.tsx` ; preuve publique `tests/e2e_chain_public.py` (**SKIP** explicite tant que le relais n'est pas joignable) ; `docs/AUTH.md` § 7 ; `server/relay.py:381-392` (le jeton de session ne retient pas encore le compte NEAR) |
@@ -115,8 +115,8 @@ est connu et écrit : lier le jeton de session au compte NEAR
 Et la cadence est réelle dans le jeu : le bouton `Go live` lande un lot toutes
 les **30 secondes** (`Config::seconds_per_lot: 30`), dix bateaux, une sortie
 par bateau et par jour (`DEMO_TRIPS = 1`) → **une journée en 5 minutes**, puis
-la soirée (repousse, charges, faillites) et le jour suivant. `Next lot` et
-`End the day` restent disponibles pour jouer au tour par tour ; le
+la soirée (repousse, charges, faillites) et le jour suivant. `End the day`
+reste disponible pour fermer la journée d'un coup ; le
 fast-forward des juges est hors horloge.
 
 ## 2. Le brief, exigence par exigence
