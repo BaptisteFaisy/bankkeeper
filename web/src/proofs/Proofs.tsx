@@ -4,7 +4,7 @@ import { contractRef, readSupplies, TOKENS } from './chain';
 import type { SupplyRow } from './chain';
 import { DEPLOYMENT } from './deployment';
 import { sharedSeason } from './season';
-import { loadTimeline } from './timeline';
+import { loadTimeline } from './timeline-data';
 import ContractCard from './ContractCard';
 import TokenCards from './TokenCards';
 import Timeline from './Timeline';
