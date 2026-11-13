@@ -40,7 +40,9 @@ RPC_FALLBACK = "https://rpc.testnet.near.org"
 LICENCE_TOKEN = "3"
 # A NEAR transaction hash is 32 bytes in base58: 43-44 chars in practice.
 BASE58 = re.compile(r"^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{40,64}$")
-ACCOUNT = re.compile(r"[a-z0-9][a-z0-9._-]*\.near")
+# A testnet account ends in `.testnet`, a sandbox one in `.test.near`; the
+# public demo runs on testnet, so both shapes count as "a real NEAR account".
+ACCOUNT = re.compile(r"[a-z0-9][a-z0-9._-]*\.(?:near|testnet)")
 DOOR = "[data-testid='chain-door']"
 STATUS = "[data-testid='chain-account']"
 TX = "[data-testid='chain-tx']"

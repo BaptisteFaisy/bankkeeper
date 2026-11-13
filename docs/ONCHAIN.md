@@ -158,3 +158,30 @@ that directory is the secret: back it up or you lose every captain.
    of "no seed phrase".
 7. `python3 tests/e2e_offline.py` still proves the wasm demo asks `/api` for
    nothing; chain mode is a separate build and never touches that path.
+
+## Hosting the relayer
+
+The relayer runs as **serverless functions** on a dedicated Vercel project,
+`tidewater-relay`, mounted at `/api/relayer`:
+
+```
+https://tidewater-relay.vercel.app/api/relayer/{health,position,login,licence/buy,loan/buy,council/vote,council/propose}
+```
+
+- `scripts/api/relayer/**` holds the seven entry points; each one re-exports the
+  single `handleRequest` from `scripts/relayer/src/relayer.mjs`, so the Node
+  server and the function host share one router (no second implementation).
+- The deployment root is `scripts/` (`cd scripts && npx vercel deploy --prod`):
+  `package.json` already declares `near-api-js`, so the host installs it.
+- **The chain home is rebuilt in `/tmp` on every cold start** from two
+  encrypted environment variables, `TW_CHAIN_STATE` (the `state.json` contents)
+  and `TW_PLAYER_KEY` (the signing account's credential). Nothing is written to
+  the repository, and no key is ever logged.
+- `TW_ALLOW_ORIGIN` restricts CORS to the game's origin.
+- The signing account is `relay.bankkeeper.testnet`, funded with **1.5 NEAR**
+  and one licence: the maximum loss if the host is abused.
+
+Limits, stated honestly: a function instance keeps no disk, so `guard.mjs`'s
+counters are per instance and disappear (the real bounds are the account's
+balance and the one-purse-per-account rule), and `TW_NEAR_FLOOR` is set low so
+the house never needs the deployer's key on a public endpoint.
