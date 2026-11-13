@@ -117,10 +117,14 @@ def licence_balance(rpc_url, contract, account):
         return None
 
 
-def tx_on_chain(rpc_url, tx_hash):
-    """`tx` by hash: True when the network finalised it successfully."""
+def tx_on_chain(rpc_url, tx_hash, account=""):
+    """`tx` by hash: True when the network finalised it successfully.
+
+    The sender's account id is the second argument the method wants: the
+    public RPC refuses the call without it (HTTP 400).
+    """
     payload = post_json(rpc_url, {"jsonrpc": "2.0", "id": 1, "method": "tx",
-                                  "params": [tx_hash, ""]})
+                                  "params": [tx_hash, account]})
     try:
         return "SuccessValue" in json.dumps(payload["result"]["status"])
     except (TypeError, KeyError, ValueError):
@@ -259,7 +263,11 @@ def proof(site, relayer, rpc_url, contract, email, notes):
             return skip(skipped[0][len("skip: "):] + " — redeploy the demo, then re-run")
         return fail("; ".join(notes) or "the chain proof produced no transaction", notes)
     tx_hash, shown = outcome
-    return verify(site, rpc_url, contract, account, tx_hash, shown, errors, notes, before)
+    result = verify(site, rpc_url, contract, account, tx_hash, shown, errors, notes, before)
+    if result != 0:
+        return result
+    # The licence is proven; the council is the second half of the demo.
+    return vote_phase(relayer, rpc_url, contract, account, email, notes)
 
 
 def verify(site, rpc_url, contract, account, tx_hash, shown, errors, notes, before):
@@ -270,7 +278,7 @@ def verify(site, rpc_url, contract, account, tx_hash, shown, errors, notes, befo
     if not BASE58.match(tx_hash):
         return fail("the hash %r is not base58 of a plausible length" % tx_hash, notes)
     log("• transaction hash: %s (base58, %d chars)" % (tx_hash, len(tx_hash)))
-    if not tx_on_chain(rpc_url, tx_hash):
+    if not tx_on_chain(rpc_url, tx_hash, account):
         return fail("%s does not know the transaction %s" % (rpc_url, tx_hash), notes)
     notes.append("tx: %s is finalised on %s" % (tx_hash[:12], rpc_url))
     balance = licence_balance(rpc_url, contract, account)
@@ -287,6 +295,68 @@ def verify(site, rpc_url, contract, account, tx_hash, shown, errors, notes, befo
     log("PASS — %s?chain=1 → email → NEAR account → buy_licence → %s" % (site, tx_hash))
     log("  licences on chain: %d -> %d · the house paid the gas · no key reached the browser"
         % (before, balance))
+    return 0
+
+
+def open_motion(rpc_url, contract):
+    """The last motion the council has not resolved — the one a vote must hit.
+
+    Read straight at the RPC, walking the ids: the chain answers
+    `E_UNKNOWN_PROPOSAL` past the last one, and that is how the walk knows it
+    has read them all. Returns None when nothing is on the table.
+    """
+    last = None
+    for pid in range(1, 64):
+        value = rpc_view(rpc_url, contract, "get_proposal", {"proposal_id": pid})
+        if value is None:
+            break
+        if not value.get("resolved"):
+            last = {"id": pid, **value}
+    return last
+
+
+def vote_phase(relayer, rpc_url, contract, account, email, notes):
+    """Propose a motion, vote it, and read the result back on the chain.
+
+    This is the judge-facing proof of the council: the relayer tables a
+    `propose_rule` (one yoctoNEAR attached, no escrow), then a vote **without
+    a proposal id** lands on that motion — the last one the council has not
+    resolved — and `get_proposal` shows the weight it carried.
+    """
+    tabled = post_json(relayer + "/council/propose", {"email": email, "quota": 60})
+    if not isinstance(tabled, dict) or not tabled.get("proposalId"):
+        return fail("the relayer did not table a motion: %s" % json.dumps(tabled)[:200], notes)
+    proposal_id = int(tabled["proposalId"])
+    notes.append("propose: motion #%d tabled (tx %s)"
+                 % (proposal_id, str(tabled.get("txHash"))[:12]))
+    if not tx_on_chain(rpc_url, tabled.get("txHash", ""), account):
+        return fail("the chain does not know the propose transaction", notes)
+
+    voted = post_json(relayer + "/council/vote", {"email": email, "approve": True})
+    if not isinstance(voted, dict) or not voted.get("txHash"):
+        return fail("the relayer did not answer the vote: %s" % json.dumps(voted)[:200], notes)
+    if int(voted.get("proposalId", -1)) != proposal_id:
+        return fail("the vote landed on motion #%s, not on the one just tabled (#%d)"
+                     % (voted.get("proposalId"), proposal_id), notes)
+    notes.append("vote: motion #%d, tx %s" % (proposal_id, str(voted.get("txHash"))[:12]))
+    if not tx_on_chain(rpc_url, voted.get("txHash", ""), account):
+        return fail("the chain does not know the vote transaction", notes)
+
+    after = rpc_view(rpc_url, contract, "get_proposal", {"proposal_id": proposal_id})
+    if not isinstance(after, dict):
+        return fail("get_proposal(%d) is unreadable at the RPC" % proposal_id, notes)
+    if after.get("resolved"):
+        return fail("motion #%d is already resolved" % proposal_id, notes)
+    if account not in (after.get("voters") or []):
+        return fail("the voters of motion #%d do not hold %s" % (proposal_id, account), notes)
+    weight = int(after.get("yes_weight", 0))
+    if weight <= 0:
+        return fail("motion #%d carries no yes weight" % proposal_id, notes)
+    log("")
+    log("PASS — the council answered on chain: motion #%d, %s voted yes, weight %d"
+        % (proposal_id, account, weight))
+    log("  propose tx %s · vote tx %s · read at the RPC, not at the relayer"
+        % (str(tabled.get("txHash"))[:12], str(voted.get("txHash"))[:12]))
     return 0
 
 
