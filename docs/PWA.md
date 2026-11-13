@@ -13,7 +13,7 @@ Four files carry it, plus one build script:
 | --- | --- |
 | `web/public/manifest.webmanifest` | name, `start_url: "./"`, `display: standalone`, `#0f2a30` background and theme, 192 and 512 icons |
 | `web/public/icon-192.png`, `icon-512.png` | drawn by `web/scripts/make-icons.py` (`npm run icons`), stdlib only |
-| `web/public/sw.js` | the worker: precache the shell, stale-while-revalidate everything else |
+| `web/public/sw.js` | the worker: precache the shell, pages network-first, stale-while-revalidate everything else |
 | `web/scripts/build-sw.mjs` | stamps the worker after `vite build`: cache version + precache list |
 | `web/src/pwa.ts` | registers `./sw.js`, production only |
 | `web/public/offline.html` | the sheet shown when a navigation has neither cache nor network |
@@ -40,8 +40,13 @@ cannot hand back a stale copy. The list is written by
 About 870 KiB, of which 660 KiB is `engine.wasm`. A single missing file is
 skipped — it costs that file, not the install.
 
-At **runtime**, every same-origin `GET` goes through
-stale-while-revalidate: the cached copy is returned at once and refreshed in
+At **runtime**, a **page** (a navigation) goes to the network first and is
+stored under its own path; its cached copy answers only when the network does
+not. A returning visitor therefore sees a new deploy on the very next visit —
+cache-first pages showed them the previous build, and one shared key let
+`/proofs.html` be stored as the game's index (13/11, fixed).
+
+Every other same-origin `GET` goes through stale-while-revalidate: the cached copy is returned at once and refreshed in
 the background, and that refresh goes out with `cache: 'no-cache'` — it
 revalidates with the origin instead of letting the browser's own HTTP cache
 answer. The versioned cache is the authority here; a stopped server must mean
@@ -53,10 +58,10 @@ Three rules hold everywhere:
 - a response is stored **only** when `response.ok` and same-origin
   (`response.type === 'basic'`) — a 404 or a 500 is never written;
 - `/api/` is never intercepted: the relay build talks to a server on purpose;
-- a navigation is served from the cached `/index.html` whatever the query
-  string, so `?seed=7&weeks=2` links replay offline too. When that key is
-  absent, the worker tries the network, then `/offline.html`, then a
-  12-line inline sheet — a page, never a browser error.
+- offline, `/` is served from the cached `/index.html` whatever the query
+  string, so `?seed=7&weeks=2` links replay offline too; other pages from
+  their own path. When that key is absent too, the worker serves
+  `/offline.html`, then a 12-line inline sheet — a page, never a browser error.
 
 The cache is named `tidewater-<version>`, where `<version>` is 12 hex
 characters of sha256 over the name and the bytes of every shell file: any
