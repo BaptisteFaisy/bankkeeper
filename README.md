@@ -57,6 +57,23 @@ npx --yes vercel deploy --prod --yes \
 Déploiement manuel (aucun projet Vercel n'est lié au dépôt). Empreinte du dernier
 déploiement et vérifications : [`docs/deployments.md`](docs/deployments.md).
 
+### Le relais public (mode chaîne)
+
+Un relais sponsorisé tourne sur **<https://tidewater-relay.vercel.app/api/relayer>**
+(projet Vercel `tidewater-relay`, fonctions serverless Node, compte
+`relay.bankkeeper.testnet` plafonné à 1,5 NEAR). Sur le site public, ajouter
+`?chain=1` suffit — le build cuit l'URL du relais ; pour en nommer un autre :
+
+```
+https://tidewater-play.vercel.app/?chain=https://<relais>/api/relayer
+```
+
+Le relais tient la clé (le navigateur n'en voit jamais aucune), signe et paie
+le gaz à la place du joueur ; l'email devient un compte NEAR testnet. Sans
+`?chain`, la page ne fait **aucun** appel réseau : le hors-ligne reste le
+défaut. Hébergement et limites assumées : [`docs/ONCHAIN.md`](docs/ONCHAIN.md)
+§ « Hosting the relayer ».
+
 ---
 
 ## 1. Ce qui a été fait (l'état réel)
