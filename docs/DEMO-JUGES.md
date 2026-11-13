@@ -45,7 +45,8 @@ et *le registre qui dit qui a pris quoi*.
   capitaine prend le préfixe de l'adresse — puis cliquer **Set sail**.
 - **À l'écran** : la carte marine 2D s'ouvre (`Sea chart`), avec les
   bateaux à la voile sur fond sarcelle, la bande du haut
-  `TIDEWATER · Week 1 · Mon · High · 150.0g · Quota left: 280 · Season 1 of 3`.
+  `Tidewater · Captain Juge · Today Mon, week 1 high tide · Your purse 150 gold
+  · Quota left 280 crates · Go live · End the day · How to play · Judges`.
   Le tutoriel ne s'ouvre plus tout seul : **How to play** dans la barre du
   haut ouvre les trois cartes si besoin (les fermer avec **Done**).
 - **La phrase que le jeu doit pouvoir dire** : aucune encore — la scène
