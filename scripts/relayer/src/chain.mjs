@@ -6,8 +6,9 @@
 // and the new balance. Nothing here returns a secret key.
 import fs from 'node:fs';
 import path from 'node:path';
+import { getTransactionLastResult } from 'near-api-js';
 import {
-  accountExists, chainConfig, createAccount, paths, readJson, readKey,
+  accountExists, chainConfig, createAccount, paths, readKey,
   send, signer, transferNear, view, viewAccountBalance,
 } from '../../sandbox/lib.mjs';
 import { accountKey, emailHash, normaliseEmail } from './identity.mjs';
@@ -116,12 +117,19 @@ export async function seedPurse(email) {
 
 export { ownerSigner, treasurySigner, chainConfig };
 
+/** The `E_…` code a chain error carries (a contract panic, or one of ours),
+ *  or '' when the text holds none. */
+export function errorCode(error) {
+  const text = String(error?.message ?? error);
+  const match = text.match(/E_[A-Z_]+/);
+  return match === null ? '' : match[0];
+}
+
 /** Fine-grained error text from a contract panic, for the UI. */
 export function chainError(error) {
-  const text = String(error?.message ?? error);
-  const match = text.match(/'(E_[A-Z_]+)'|"(E_[A-Z_]+)"/);
-  if (match) return match[1] ?? match[2];
-  return text.slice(0, 240);
+  const code = errorCode(error);
+  if (code !== '') return code;
+  return String(error?.message ?? error).slice(0, 240);
 }
 
 export async function position(email) {
@@ -220,21 +228,92 @@ export async function buyLoan(email, tokenId = DEFAULT_LOAN) {
   });
 }
 
+/** Motions are few (a season's council tables a handful), so the walk is
+ *  short; the bound only guards against a chain that never says "no more". */
+const PROPOSAL_SCAN_LIMIT = 256;
+
+/** The last motion the council has **not** resolved — the one a vote must
+ *  hit — or `null` when none is open.
+ *
+ *  The chain numbers motions from 1 (`next_proposal_id` starts at 1) and its
+ *  `get_proposal` panics `E_UNKNOWN_PROPOSAL` past the last one: that panic is
+ *  how this walk learns it has read them all. One implementation, used by
+ *  `vote()` and by anything else that needs to know which motion is on the
+ *  table (the tabling route included).
+ */
+export async function openProposalId(contractId) {
+  let open = null;
+  for (let id = 1; id <= PROPOSAL_SCAN_LIMIT; id += 1) {
+    let proposal;
+    try {
+      proposal = await view(contractId, 'get_proposal', { proposal_id: id });
+    } catch (error) {
+      if (errorCode(error) === 'E_UNKNOWN_PROPOSAL') return open;
+      throw error;
+    }
+    if (!proposal.resolved) open = id;
+  }
+  throw new Error(`E_PROPOSAL_SCAN_LIMIT: no end to ${PROPOSAL_SCAN_LIMIT} motions`);
+}
+
+/** Cast the captain's ballot. Without an explicit `proposalId` the vote goes
+ *  to the last motion the council has not resolved — the one on the table —
+ *  so the browser never has to carry an id and a stale `state.json` cannot
+ *  aim the vote at a motion that is already closed. With an explicit id, a
+ *  resolved motion is refused up front (`E_RESOLVED`) rather than costing a
+ *  failed transaction. */
 export async function vote(email, approve = true, proposalId = null) {
   const { address, account, accountId } = await needPlayer(email);
   const { contractId } = chainConfig();
-  const state = readJson(paths().state, {}) ?? {};
-  const pid = proposalId ?? state.proposalId;
-  if (pid === null || pid === undefined) throw new Error('no open proposal: the relayer tables one when the council opens');
+  const explicit = proposalId !== null && proposalId !== undefined;
+  const pid = explicit ? Number(proposalId) : await openProposalId(contractId);
+  if (pid === null) {
+    throw new Error('E_NO_OPEN_PROPOSAL: the council has no motion waiting for a vote');
+  }
+  if (explicit) {
+    const target = await view(contractId, 'get_proposal', { proposal_id: pid });
+    if (target.resolved) throw new Error(`E_RESOLVED: motion ${pid} is already resolved`);
+  }
   return serialise(accountId, async () => {
-    const receipt = await send(account, contractId, 'vote', { proposal_id: Number(pid), approve: Boolean(approve) });
-    const proposal = await view(contractId, 'get_proposal', { proposal_id: Number(pid) });
+    const receipt = await send(account, contractId, 'vote', { proposal_id: pid, approve: Boolean(approve) });
+    const proposal = await view(contractId, 'get_proposal', { proposal_id: pid });
     return {
       txHash: receipt.hash,
-      proposalId: Number(pid),
+      proposalId: pid,
       yesWeight: Number(proposal.yes_weight),
       noWeight: Number(proposal.no_weight),
       voters: proposal.voters.length,
+      licences: (await position(address)).licences,
+    };
+  });
+}
+
+/** The quota the strip tables when its default button is pressed. */
+export const DEFAULT_QUOTA = 60;
+
+/** Table a quota motion. `propose_rule` is `#[payable]` and charges for the
+ *  storage it writes: with a zero indemnity (no escrow, no gold moved) the
+ *  contract still wants one yoctoNEAR attached, or it panics
+ *  `E_STORAGE_DEPOSIT_REQUIRED` — the same call the testnet script makes. */
+export async function propose(email, quota = DEFAULT_QUOTA) {
+  const { address, account, accountId } = await needPlayer(email);
+  const { contractId } = chainConfig();
+  const next = Number(quota);
+  if (!Number.isInteger(next) || next <= 0) {
+    throw new Error(`E_BAD_QUOTA: ${quota} is not a licence quota`);
+  }
+  return serialise(accountId, async () => {
+    const receipt = await send(account, contractId, 'propose_rule', {
+      kind: { QuotaPerLicence: next },
+      indemnity_milli: '0',
+    }, { deposit: 1n });
+    const proposalId = Number(getTransactionLastResult(receipt.outcome));
+    const proposal = await view(contractId, 'get_proposal', { proposal_id: proposalId });
+    return {
+      txHash: receipt.hash,
+      proposalId,
+      quota: next,
+      author: proposal.author,
       licences: (await position(address)).licences,
     };
   });

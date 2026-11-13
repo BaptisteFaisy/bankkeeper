@@ -8,7 +8,7 @@ The harbour has two halves, and only one of them is on NEAR.
 | Zone stocks, landings, auction, NPC pilots, day clock | the Rust engine in wasm (`crates/wasm`, `web/src/engine.ts`) | nobody: it is a browser module |
 
 The wasm engine **stays the default**. `VITE_CHAIN=1` adds one strip to the top
-of the screen — one status line, three buttons — and those three buttons are
+of the screen — one status line, four buttons — and those four buttons are
 real transactions on a real NEAR chain. Nothing else in the UI moves.
 
 ## What is on-chain, exactly
@@ -20,8 +20,16 @@ real transactions on a real NEAR chain. Nothing else in the UI moves.
   missed payments. `buy_loan` is reachable from the relayer API; `forbear` is
   one call away and not wired to a button.
 - **Council**: `propose_rule` / `vote` / `cast_npc_votes` / `resolve_council`,
-  one licence one vote. The strip's "Vote yes" is a `vote(proposal_id, true)`
-  signed by the captain.
+  one licence one vote. The strip's "Propose quota" tables a
+  `propose_rule(QuotaPerLicence(60), indemnity 0)` with **1 yoctoNEAR**
+  attached (the contract charges for the storage the motion writes:
+  `E_STORAGE_DEPOSIT_REQUIRED` without it, and no escrow at zero indemnity).
+  "Vote yes" is a `vote(proposal_id, true)` signed by the captain. Without an
+  explicit `proposalId`, that vote goes to the **last motion the council has
+  not resolved** — the one on the table — found by walking `get_proposal(1,
+  2, …)` until the chain answers `E_UNKNOWN_PROPOSAL`; with no unresolved
+  motion at all the relayer answers `E_NO_OPEN_PROPOSAL`, and with an explicit
+  id that is already resolved it answers `E_RESOLVED` before spending gas.
 
 Off-chain, deliberately: fish, stocks, the auction, the NPC boats and the day
 cycle. They are the game; the contract only holds what a player can own or
@@ -55,7 +63,8 @@ GET  /position?email=...           → accountId, goldMilli, licences, day
 POST /login          {email}       → the same shape (+ seedTxHash, seedGoldMilli)
 POST /licence/buy    {email}       → buy_licence()
 POST /loan/buy       {email, tokenId?}
-POST /council/vote   {email, approve?, proposalId?}
+POST /council/vote   {email, approve?, proposalId?}  → the last open motion when `proposalId` is omitted
+POST /council/propose {email, quota}  → propose_rule(QuotaPerLicence(quota), 1 yocto) → txHash, proposalId
 ```
 
 ## Run it
