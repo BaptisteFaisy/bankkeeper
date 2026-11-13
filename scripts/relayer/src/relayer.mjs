@@ -9,12 +9,13 @@
 //   POST /licence/buy {email}            → buy_licence()
 //   POST /loan/buy {email, tokenId?}     → buy_loan(token_id)
 //   POST /council/vote {email, approve}  → vote(proposal_id, approve)
+//   POST /council/propose {email, quota} → propose_rule(QuotaPerLicence(quota))
 //   GET  /position?email=...             → same shape as /login, read-only
 //   GET  /health                         → chain + relayer status
 import fs from 'node:fs';
 import http from 'node:http';
 import { paths, view } from '../../sandbox/lib.mjs';
-import { chainConfig, buyLicence, buyLoan, chainError, login, normaliseEmail, position, vote } from './chain.mjs';
+import { chainConfig, buyLicence, buyLoan, chainError, login, normaliseEmail, position, propose, vote } from './chain.mjs';
 import { allowAction, allowCall, recordAction } from './guard.mjs';
 import { accountKey } from './identity.mjs';
 
@@ -114,6 +115,10 @@ async function route(req, url) {
   }
   if (req.method === 'POST' && url.pathname === '/council/vote') {
     const receipt = await guarded(req, body.email, () => vote(body.email, body.approve !== false, body.proposalId ?? null));
+    return { ...receipt, ...(await position(body.email)) };
+  }
+  if (req.method === 'POST' && url.pathname === '/council/propose') {
+    const receipt = await guarded(req, body.email, () => propose(body.email, body.quota));
     return { ...receipt, ...(await position(body.email)) };
   }
   const notFound = new Error(`no route for ${req.method} ${url.pathname}`);

@@ -2,7 +2,7 @@
 //
 // The card opens the NEAR account (the player sees no wallet, no recovery
 // phrase, no gas prompt); the strip above the harbour shows that account, the
-// last transaction and the three sponsored actions. Both read the same state,
+// last transaction and the four sponsored actions. Both read the same state,
 // so a login is never performed twice. The state itself lives in
 // `chainSession.ts`, split into pieces that each stay small.
 import { createContext, useContext, useMemo } from 'react';
@@ -23,6 +23,7 @@ export interface ChainValue extends ChainFields {
   buyLicence: () => Promise<boolean>;
   buyLoan: () => Promise<boolean>;
   vote: () => Promise<boolean>;
+  propose: () => Promise<boolean>;
 }
 
 const ChainContext = createContext<ChainValue | null>(null);

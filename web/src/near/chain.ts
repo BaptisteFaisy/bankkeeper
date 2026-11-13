@@ -22,6 +22,8 @@ export interface ChainReceipt extends ChainPosition {
   txHash?: string;
   priceMilli?: string;
   proposalId?: number;
+  quota?: number;
+  author?: string;
   yesWeight?: number;
   noWeight?: number;
   voters?: number;
@@ -148,12 +150,24 @@ export function chainVote(email: string, approve: boolean): Promise<ChainReceipt
   return post<ChainReceipt>('/council/vote', { email, approve });
 }
 
+/** The quota the strip tables when its default button is pressed: the one the
+ *  relayer also defaults to, so an old browser and an old relayer agree. */
+export const DEFAULT_QUOTA = 60;
+
+/** Table a quota motion. The relayer attaches the anti-spam yoctoNEAR the
+ *  contract asks for; the motion carries no indemnity, so it costs no gold. */
+export function chainPropose(email: string, quota: number = DEFAULT_QUOTA): Promise<ChainReceipt> {
+  return post<ChainReceipt>('/council/propose', { email, quota });
+}
+
 /** One sentence per relayer refusal, so the player is never left guessing. */
 export function chainErrorMessage(problem: unknown): string {
   const text = problem instanceof Error ? problem.message : String(problem);
   if (text === 'E_RATE_LIMIT') return 'The relayer is rate-limiting right now. Wait a moment and try again.';
   if (text === 'E_ACTION_CAP') return 'This account has used its sponsored transactions for the hour. Try again later.';
   if (text.startsWith('E_SHORT_GOLD')) return 'The NEAR account does not hold enough gold for that purchase.';
+  if (text.startsWith('E_NO_OPEN_PROPOSAL')) return 'The council has no motion on the table: propose one first.';
+  if (text.startsWith('E_COUNCIL_CLOSED')) return 'The council only sits on season days 21 to 27.';
   if (text.startsWith('relayer HTTP ')) return `The relayer answered ${text.slice('relayer HTTP '.length)}. It may be restarting.`;
   if (text.includes('Failed to fetch') || text.includes('NetworkError')) return 'The relayer is unreachable from this browser.';
   return text;

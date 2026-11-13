@@ -240,10 +240,13 @@ rate-limiting right now… ») **et** le bouton « Continue offline instead ». 
 bande ajoute « Try again ». Aucun écran mort : c'est le défaut bloquant qui
 venait d'être corrigé, il ne revient pas.
 
-**La garde anti double-clic est celle du jeu.** Les trois actions sponsorisées
+**La garde anti double-clic est celle du jeu.** Les quatre actions sponsorisées
 passent par `mutate()` (`web/src/actions.ts`), donc par le verrou `inFlight` et
 le debounce de 500 ms déjà éprouvés par `tests/audit_web.py` — pas une deuxième
-garde inventée à côté.
+garde inventée à côté. La quatrième, « Propose quota » (60 licences par défaut),
+passe par la même garde serveur (`guarded()`, `scripts/relayer/src/guard.mjs`)
+que les trois autres et n'est active que quand la session chaîne est prête ; le
+vote sans `proposalId` vise la dernière motion non résolue.
 
 **Ce qui reste à faire côté serveur** (hors de ce lot, `server/` est interdit
 ici) : lier le jeton de `POST /api/auth` au compte NEAR, comme décrit plus bas.

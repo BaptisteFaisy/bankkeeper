@@ -1,4 +1,4 @@
-// The on-chain strip: the NEAR account, the last transaction and the three
+// The on-chain strip: the NEAR account, the last transaction and the four
 // sponsored actions. Mounted only in chain mode — the offline demo never
 // renders it and never calls the relayer.
 //
@@ -39,7 +39,7 @@ function ChainTx({ chain }: { chain: ChainValue }) {
   );
 }
 
-/** The three sponsored actions: one in flight at a time, the rest disabled —
+/** The four sponsored actions: one in flight at a time, the rest disabled —
  *  and none of them before the relayer has opened the account. */
 function ChainActions({ chain }: { chain: ChainValue }) {
   const ready = chain.busy === null && chain.position !== null;
@@ -57,6 +57,10 @@ function ChainActions({ chain }: { chain: ChainValue }) {
       <button type="button" data-testid="chain-vote" disabled={!ready}
         onClick={() => { void chain.vote(); }}>
         {label('vote', 'Vote yes', 'Voting…')}
+      </button>
+      <button type="button" data-testid="chain-propose" disabled={!ready}
+        onClick={() => { void chain.propose(); }}>
+        {label('propose', 'Propose quota', 'Proposing…')}
       </button>
     </>
   );

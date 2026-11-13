@@ -2,7 +2,7 @@
 //
 //   useChainFields    — what the strip shows (account, last tx, note, error);
 //   useChainCalls     — the guarded runner, and the login it is used for;
-//   useChainSponsored — the three actions, plus the automatic login of a
+//   useChainSponsored — the four actions, plus the automatic login of a
 //                       returning captain who has a harbour but no account.
 //
 // The double-click guard is the game's own (`mutate` in actions.ts): one
@@ -11,7 +11,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from '../actions';
 import type { MutDeps } from '../actions';
 import {
-  chainBuyLicence, chainBuyLoan, chainErrorMessage, chainLogin, chainVote, shortHash,
+  chainBuyLicence, chainBuyLoan, chainErrorMessage, chainLogin, chainPropose, chainVote,
+  DEFAULT_QUOTA, shortHash,
 } from './chain';
 import type { ChainPosition, ChainReceipt } from './chain';
 
@@ -22,7 +23,7 @@ export interface ChainFields {
   txHash: string | null;
   note: string;
   error: string | null;
-  /** The action in flight: 'login' | 'licence' | 'loan' | 'vote' | null. */
+  /** The action in flight: 'login' | 'licence' | 'loan' | 'vote' | 'propose' | null. */
   busy: string | null;
 }
 
@@ -85,6 +86,7 @@ export interface ChainSponsored {
   buyLicence: () => Promise<boolean>;
   buyLoan: () => Promise<boolean>;
   vote: () => Promise<boolean>;
+  propose: () => Promise<boolean>;
 }
 
 export function useChainSponsored(
@@ -107,5 +109,6 @@ export function useChainSponsored(
     buyLicence: () => run('chain:licence', who, chainBuyLicence, (r) => `licence bought (${r.licences} held)`),
     buyLoan: () => run('chain:loan', who, chainBuyLoan, (r) => `debt note ${r.tokenId ?? ''} bought`),
     vote: () => run('chain:vote', who, (id) => chainVote(id, true), (r) => `vote ${r.proposalId ?? '?'} yes (${r.yesWeight ?? 0} against ${r.noWeight ?? 0})`),
+    propose: () => run('chain:propose', who, (id) => chainPropose(id, DEFAULT_QUOTA), (r) => `motion ${r.proposalId ?? '?'} tabled (quota ${r.quota ?? DEFAULT_QUOTA} a licence)`),
   }), [who, run, login]);
 }

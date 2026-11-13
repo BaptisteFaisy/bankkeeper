@@ -13,7 +13,13 @@ What it proves, in order:
 5. `mt_balance_of`, read **straight from the RPC**, shows the licence balance
    move (before → after) and the gold paid for it, and the transaction hash
    resolves to a success on the chain;
-6. the guardrails hold: the house lends the purse once, a captain cannot
+6. the council: with no motion on the table a vote answers
+   `E_NO_OPEN_PROPOSAL`; then, on the council window (the local clock is
+   walked there by `scripts/relayer/src/warmup.mjs`, which also tables motion
+   #1), `POST /council/propose` tables motion #2 and a vote **without**
+   `proposalId` lands on #2 — the last motion the council has not resolved —
+   not on #1;
+7. the guardrails hold: the house lends the purse once, a captain cannot
    trigger more sponsored transactions than the cap, and a burst is refused.
 
 Run: python3 tests/relay_sponsor.py
@@ -45,7 +51,10 @@ OTHER_EMAIL = "second@tidewater.dev"
 BURST_EMAIL = "burst@tidewater.dev"
 SEED_GOLD_MILLI = 1_000_000
 RATE_LIMIT = 10
-ACTION_LIMIT = 1
+# One licence, one refused vote, one proposal and one vote: the cap must let a
+# captain use the council, and still bite on the next action (see guardrails).
+ACTION_LIMIT = 4
+COUNCIL_QUOTA = 60
 LICENCE = "3"
 GOLD = "0"
 
@@ -302,15 +311,82 @@ def phase_guards(base):
     check(refused > 0, "a burst of {} calls was not refused".format(RATE_LIMIT + 4))
     status, body = post(base, "/licence/buy", {"email": EMAIL})
     check(status == 429 and body.get("error") == "E_ACTION_CAP",
-          "the action cap did not bite: {} {}".format(status, json.dumps(body)))
+          "the action cap did not bite after {} sponsored actions: {} {}".format(
+              ACTION_LIMIT, status, json.dumps(body)))
     with open(os.path.join(CHAIN_HOME, "ledger.json"), encoding="utf-8") as fh:
         ledger = json.load(fh)
     entry = ledger.get(account_hash(EMAIL), {})
     check(entry.get("seededMilli") == SEED_GOLD_MILLI,
           "the house lent {} milli-gold, not {}".format(entry.get("seededMilli"), SEED_GOLD_MILLI))
-    log("• guardrails: a burst of {} calls → {} refusals · the second sponsored action → "
-        "E_ACTION_CAP · the purse lent once ({} milli-gold)".format(
-            RATE_LIMIT + 4, refused, entry.get("seededMilli")))
+    log("• guardrails: a burst of {} calls → {} refusals · the action after {} sponsored "
+        "ones → E_ACTION_CAP · the purse lent once ({} milli-gold)".format(
+            RATE_LIMIT + 4, refused, ACTION_LIMIT, entry.get("seededMilli")))
+
+
+def phase_no_open_proposal(base):
+    """A vote without a motion on the table names the reason, not a panic."""
+    status, body = post(base, "/council/vote", {"email": EMAIL})
+    check(status == 409 and str(body.get("error", "")).startswith("E_NO_OPEN_PROPOSAL"),
+          "a vote with no motion answered {}: {}".format(status, json.dumps(body)))
+    log("• council, empty ballot: a vote without proposalId → E_NO_OPEN_PROPOSAL")
+
+
+def phase_warmup(env, contract):
+    """Walk the local clock into the council window and table motion #1.
+
+    The repo's own warm-up does both (`run_day` until season day 21, then a
+    `propose_rule` by the house): reusing it keeps one implementation of the
+    walk. It never leaves this throwaway sandbox.
+    """
+    bank = int(view(STATE["rpcUrl"], contract, "get_ledger",
+                    {"owner": "npc:bank", "token_id": LICENCE}))
+    check(bank > 0, "the bank holds {} licences: the warm-up would manufacture one".format(bank))
+    run_node(["scripts/relayer/src/warmup.mjs"], env)
+    with open(os.path.join(CHAIN_HOME, "state.json"), encoding="utf-8") as fh:
+        state = json.load(fh)
+    day = view(STATE["rpcUrl"], contract, "get_day", {})
+    check(day["council_open"] is True, "the council is still closed on day {}".format(day["day"]))
+    first = int(state["proposalId"])
+    motion = view(STATE["rpcUrl"], contract, "get_proposal", {"proposal_id": first})
+    check(motion["resolved"] is False, "the warm-up motion {} is already resolved".format(first))
+    log("• council, window: day {} (council open), motion #{} tabled, unresolved".format(
+        day["day"], first))
+    return first
+
+
+def phase_council(base, contract, account, first):
+    """Propose tables motion #2; a vote without proposalId lands on #2."""
+    status, proposed = post(base, "/council/propose", {"email": EMAIL, "quota": COUNCIL_QUOTA})
+    check(status == 200, "the propose answered {}: {}".format(status, proposed))
+    check(proposed.get("txHash"), "no transaction hash came back from propose")
+    second = int(proposed["proposalId"])
+    check(second == first + 1, "the new motion is #{} after #{}".format(second, first))
+    motion = view(STATE["rpcUrl"], contract, "get_proposal", {"proposal_id": second})
+    check(motion["kind"] == {"QuotaPerLicence": COUNCIL_QUOTA},
+          "the motion carries {} not a {} licence quota".format(motion["kind"], COUNCIL_QUOTA))
+    check(motion["author"] == account, "the motion author is {}".format(motion["author"]))
+    check(int(motion["escrow_milli"]) == 0, "a zero-indemnity motion escrowed {}".format(motion["escrow_milli"]))
+    verdict = tx_status(STATE["rpcUrl"], proposed["txHash"], account)
+    check(decode_receipt(verdict) is not None, "propose_rule did not succeed: " + json.dumps(verdict))
+    log("• council, propose: motion #{} (quota {}) {} · tx {}".format(
+        second, COUNCIL_QUOTA, account, proposed["txHash"]))
+    log("  escrow {} milli (zero indemnity), 1 yoctoNEAR attached for the storage".format(
+        motion["escrow_milli"]))
+
+    status, voted = post(base, "/council/vote", {"email": EMAIL, "approve": True})
+    check(status == 200, "the vote without proposalId answered {}: {}".format(status, voted))
+    check(int(voted["proposalId"]) == second,
+          "the vote landed on motion #{} instead of the open #{}".format(voted["proposalId"], second))
+    after = view(STATE["rpcUrl"], contract, "get_proposal", {"proposal_id": second})
+    check(after["voters"] == [account], "motion #{} voters are {}".format(second, after["voters"]))
+    check(int(after["yes_weight"]) == 1, "motion #{} yes weight is {}".format(second, after["yes_weight"]))
+    older = view(STATE["rpcUrl"], contract, "get_proposal", {"proposal_id": first})
+    check(older["voters"] == [] and int(older["yes_weight"]) == 0,
+          "the older motion #{} also took the vote: {}".format(first, older["voters"]))
+    log("  vote without proposalId → motion #{} yes {} no {} voters [{}] · tx {}".format(
+        second, after["yes_weight"], after["no_weight"], ", ".join(after["voters"]), voted["txHash"]))
+    log("  motion #{} untouched: voters [{}], yes {}".format(first, ", ".join(older["voters"]), older["yes_weight"]))
+    return second
 
 
 STATE = {}
@@ -348,9 +424,12 @@ def main():
         account = phase_identity(base, STATE)
         phase_custody(account)
         tx_hash, licences = phase_transaction(base, STATE["contractId"], account)
+        phase_no_open_proposal(base)
+        first = phase_warmup(env, STATE["contractId"])
+        phase_council(base, STATE["contractId"], account, first)
         phase_guards(base)
         log("")
-        log("PASS — email → deterministic account → sponsored purchase")
+        log("PASS — email → deterministic account → sponsored purchase → council")
         log("  transaction: {}".format(tx_hash))
         log("  licences held by the captain: {}".format(licences))
         log("  the browser never saw a key, a phrase or a gas prompt")
