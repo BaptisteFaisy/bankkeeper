@@ -145,10 +145,21 @@ def open_site(driver, url, timeout=40):
         return False
 
 
-def chain_mode_on(driver):
-    """Does this build carry the chain door at all? (older builds do not)."""
+def chain_mode_on(driver, timeout=12):
+    """Does this build carry the chain door at all? (older builds do not).
+
+    Waiting matters: the door is rendered by React right after the front page
+    lifts, and a one-shot `find_elements` catches the frame before it exists.
+    """
     from selenium.webdriver.common.by import By
-    return bool(driver.find_elements(By.CSS_SELECTOR, DOOR))
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as ec
+    try:
+        WebDriverWait(driver, timeout).until(
+            ec.presence_of_element_located((By.CSS_SELECTOR, DOOR)))
+        return True
+    except Exception:  # noqa: BLE001  (an older build is a skip, not a failure)
+        return False
 
 
 def element_text(driver, selector):
