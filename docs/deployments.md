@@ -238,16 +238,18 @@ endroit où l'adresse est écrite, et le build du site la reprend telle quelle.
 
 | Élément | Valeur |
 |---|---|
-| Déployé le | 2026-11-13 13:59 UTC (14:59 Europe/Paris) |
-| Commit `main` déployé | `72f2336` (PR #92 : le vote vise la motion ouverte, et une motion de quota peut être tablée) |
+| Déployé le | 2026-11-13 22:35 UTC (23:35 Europe/Paris) |
+| Commit `main` déployé | `89f0bf4` (PR #99 : les pages vont au réseau d'abord, chacune sous sa propre clé) |
 | URL de production | <https://tidewater-play.vercel.app> |
-| Déploiement | `tidewater-play-cka8v6b87-bg-1fa3.vercel.app` |
+| Déploiement | `tidewater-play-61cyxyw7n-bg-1fa3.vercel.app` |
 | `engine.wasm` servi | 916 674 octets (895 Kio), `application/wasm`, sha256 `a9dec4c7af9f7e7ade509bc7efcb85607d7d2ee4ced87d8ae4f3f720e38c7410` |
-| Bundle de la page de preuves | `assets/proofs-DKIEcVvf.js` (bundle principal `assets/main-DJNynNAr.js`) |
+| Bundle de la page de preuves | `assets/proofs-C3lmlm7M.js` (bundle principal `assets/main-DJNynNAr.js`) |
+| `sw.js` servi | cache `tidewater-4eb0f55c0215`, `page()` réseau d'abord (une clé par chemin) |
 | Vérifications HTTP | 200 sur `/`, `/proofs.html`, `/engine.wasm`, `/sw.js`, `/manifest.webmanifest`, `/offline.html`, `/scene-preview.html` |
 | Relais public | <https://tidewater-relay.vercel.app/api/relayer> — projet Vercel `tidewater-relay`, fonctions serverless ; `GET /health` → 200 (jour 22, conseil ouvert), `GET /position` → 200, `POST /login` → 200, `POST /licence/buy` → tx réelle `B56Na4AwKtnenMizKtYPZsPSDc9RaYf9khs3i1ZM1MeK`, `POST /council/propose` → motion n°5, tx `6X2CJyCEzqdCktB3UiH1G1JCkbBKyEGvYHzushDDVPyf` ; CORS restreint à `https://tidewater-play.vercel.app` |
 | Vérifications headless (URL publique) | badge « live · lu sur la chaîne », contrat `bankkeeper.testnet` annoncé comme lu dans `docs/deployments.md`, **75/75 transactions confirmées** dans la frise, pied de page « Rejeu on-chain du 11/11/2026 », **0 erreur console, 0 requête en échec, 0 appel `/api/`** ; capture `/tmp/prod-proofs.png` |
+| Vérification du correctif de cache | Chrome headless sur l'URL publique : **la page de garde s'affiche dès la première visite et à la deuxième** (le navigateur déjà venu), et le document servi porte exactement les mêmes assets que `index.html` lu sur le réseau — donc plus de copie d'avant le déploiement ; **0 erreur console, 0 requête en échec** ; capture `/tmp/prod-cover.png` |
 | Interface servie | page de garde (`cover-play`), « Play on chain », bouton « Propose quota » (`chain-propose`) et l'URL du relais cuite au build (`tidewater-relay.vercel.app/api/relayer`) |
-| Vérifications locales sur le même `dist` | `tests/e2e_proofs.py` vert, `tests/ci_structural.py` vert (202 fichiers), `cargo test --workspace` 0 échec |
+| Vérifications locales sur le même `dist` | `tests/e2e_proofs.py` vert, `tests/e2e_pwa.py` vert (déploiement frais vu à la visite suivante), `tests/ci_structural.py` vert (202 fichiers), `cargo test --workspace` 0 échec |
 
 <!-- hand:end -->
