@@ -238,15 +238,16 @@ endroit où l'adresse est écrite, et le build du site la reprend telle quelle.
 
 | Élément | Valeur |
 |---|---|
-| Déployé le | 2026-11-13 12:27 UTC (13:27 Europe/Paris) |
-| Commit `main` déployé | `e8767e5` (PR #89 : V10.3 — écran étroit lisible, et le correctif de collision de casse `proofs/timeline-data.ts`) |
+| Déployé le | 2026-11-13 13:59 UTC (14:59 Europe/Paris) |
+| Commit `main` déployé | `72f2336` (PR #92 : le vote vise la motion ouverte, et une motion de quota peut être tablée) |
 | URL de production | <https://tidewater-play.vercel.app> |
-| Déploiement | `tidewater-play-eh4agc7iq-bg-1fa3.vercel.app` |
+| Déploiement | `tidewater-play-cka8v6b87-bg-1fa3.vercel.app` |
 | `engine.wasm` servi | 916 674 octets (895 Kio), `application/wasm`, sha256 `a9dec4c7af9f7e7ade509bc7efcb85607d7d2ee4ced87d8ae4f3f720e38c7410` |
-| Bundle de la page de preuves | `assets/proofs-KRYAizoJ.js` |
+| Bundle de la page de preuves | `assets/proofs-DKIEcVvf.js` (bundle principal `assets/main-DJNynNAr.js`) |
 | Vérifications HTTP | 200 sur `/`, `/proofs.html`, `/engine.wasm`, `/sw.js`, `/manifest.webmanifest`, `/offline.html`, `/scene-preview.html` |
+| Relais public | <https://tidewater-relay.vercel.app/api/relayer> — projet Vercel `tidewater-relay`, fonctions serverless ; `GET /health` → 200 (jour 22, conseil ouvert), `GET /position` → 200, `POST /login` → 200, `POST /licence/buy` → tx réelle `B56Na4AwKtnenMizKtYPZsPSDc9RaYf9khs3i1ZM1MeK`, `POST /council/propose` → motion n°5, tx `6X2CJyCEzqdCktB3UiH1G1JCkbBKyEGvYHzushDDVPyf` ; CORS restreint à `https://tidewater-play.vercel.app` |
 | Vérifications headless (URL publique) | badge « live · lu sur la chaîne », contrat `bankkeeper.testnet` annoncé comme lu dans `docs/deployments.md`, **75/75 transactions confirmées** dans la frise, pied de page « Rejeu on-chain du 11/11/2026 », **0 erreur console, 0 requête en échec, 0 appel `/api/`** ; capture `/tmp/prod-proofs.png` |
-| Interface servie | la page de garde est là : le bundle public contient `cover-play` et « Play on chain » (le bundle précédent, `main-DSWXUNo8.js`, n'en avait aucun des deux) |
+| Interface servie | page de garde (`cover-play`), « Play on chain », bouton « Propose quota » (`chain-propose`) et l'URL du relais cuite au build (`tidewater-relay.vercel.app/api/relayer`) |
 | Vérifications locales sur le même `dist` | `tests/e2e_proofs.py` vert, `tests/ci_structural.py` vert (202 fichiers), `cargo test --workspace` 0 échec |
 
 <!-- hand:end -->
