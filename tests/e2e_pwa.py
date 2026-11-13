@@ -221,6 +221,37 @@ def sheet_step(driver, base, notes):
     return []
 
 
+def fresh_deploy_step(driver, base, notes):
+    """A new deploy shows on the very next visit, not one visit later.
+
+    The page is already controlled and its index cached. The served
+    `index.html` changes (a marker meta tag in the head, as a new build would
+    change it); the next navigation must carry the marker. A cache-first
+    worker returns the old copy here: that is the regression this step guards.
+    The marker goes inside `<head>`, so it belongs to the document: a comment
+    appended after `</html>` would land outside `documentElement`.
+    """
+    index = os.path.join(ROOT, "web", "dist", "index.html")
+    with open(index, encoding="utf-8") as handle:
+        original = handle.read()
+    marker = "e2e-pwa fresh deploy {}".format(int(time.time()))
+    tag = '<meta name="e2e-pwa-fresh-deploy" content="{}">'.format(marker)
+    tagged = original.replace("<head>", "<head>" + tag, 1)
+    if tagged == original:
+        tagged = original.replace("</body>", tag + "</body>", 1)
+    try:
+        with open(index, "w", encoding="utf-8") as handle:
+            handle.write(tagged)
+        driver.get(base + "/")
+        time.sleep(1.0)
+        seen = marker in driver.execute_script("return document.documentElement.outerHTML;")
+    finally:
+        with open(index, "w", encoding="utf-8") as handle:
+            handle.write(original)
+    notes.append("fresh deploy: {}".format("seen on the next visit" if seen else "NOT seen"))
+    return [] if seen else ["a changed index.html was not served on the next visit (cache-first page)"]
+
+
 def screen_state(driver):
     """Title, rendered children and the first screen word, from the page."""
     script = """
@@ -280,6 +311,7 @@ def main():
     try:
         driver = start_chrome(os.path.join(tmp, "chrome-profile"))
         failures = online_facts(driver, base, notes)
+        failures += fresh_deploy_step(driver, base, notes)
         cut_port = int(base.rsplit(":", 1)[-1])
         failures += offline_step(driver, base, cut_port, proc, notes)
         failures += sheet_step(driver, base, notes)
@@ -306,7 +338,7 @@ def main():
         return 1
     if failures:
         return 1
-    print("OK: installed, controlled the page, and reopened it with the server dead.")
+    print("OK: installed, controlled the page, showed a fresh deploy at once, and reopened it with the server dead.")
     return 0
 
 

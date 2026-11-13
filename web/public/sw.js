@@ -3,8 +3,10 @@
  * Two lists and one rule. `PRECACHE` is the shell: the HTML, the engine, the
  * hashed JS and CSS. It is stamped in at build time by `scripts/build-sw.mjs`
  * (the cache name carries a hash of the file names, so a deploy never serves
- * yesterday's module graph). Everything else same-origin is
- * stale-while-revalidate. Nothing that is not a 200 is ever stored, and
+ * yesterday's module graph). Pages (navigations) go to the network first,
+ * each under its own path, so a deploy shows on the very next visit; the cache
+ * answers a page only when the network does not. Everything else same-origin
+ * is stale-while-revalidate (hashed names: a new build means new keys). Nothing that is not a 200 is ever stored, and
  * `/api/` is never touched: the relay build speaks to a server on purpose.
  *
  * The placeholders below are replaced in `web/dist/sw.js`; left as they are
@@ -68,6 +70,20 @@ async function serve(request, key, fallbackKey) {
   return sheet(cache, fallbackKey);
 }
 
+/** A page: the network first, its cached copy only when the network fails.
+ *
+ * Cache-first pages showed the previous deploy to every returning visitor,
+ * and one shared key let `/proofs.html` be stored as the game's index.
+ */
+async function page(request, key) {
+  const cache = await caches.open(CACHE);
+  const fresh = await refill(cache, key, request);
+  if (fresh !== null && fresh.ok) return fresh;
+  const cached = await cache.match(key);
+  if (cached !== undefined) return cached;
+  return fresh !== null ? fresh : sheet(cache, OFFLINE);
+}
+
 /** Warm the shell one file at a time: a single miss must not void the install. */
 async function precache() {
   const cache = await caches.open(CACHE);
@@ -106,7 +122,9 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
   if (request.mode === 'navigate') {
-    event.respondWith(serve(request, INDEX, OFFLINE));
+    // `/` and `/?seed=…` share the index; every other page keeps its own key
+    const key = url.pathname === '/' ? INDEX : url.pathname;
+    event.respondWith(page(request, key));
     return;
   }
   event.respondWith(serve(request, url.pathname, null));
