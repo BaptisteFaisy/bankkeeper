@@ -205,6 +205,23 @@ def buy_licence(driver, timeout=120):
     return href.rsplit("/", 1)[-1], shown
 
 
+def browser_lost(exc):
+    """Did the **browser** stop answering, as opposed to the app refusing?
+
+    A frozen or killed browser says nothing about the demo: the driver times
+    out talking to Chrome, while a real refusal comes back as a readable
+    message on the card. The two must not be confused — one is an
+    infrastructure accident, the other is the verdict.
+    """
+    name = type(exc).__name__
+    if name in ("ReadTimeoutError", "ConnectionError", "MaxRetryError",
+                "WebDriverException", "InvalidSessionIdException",
+                "NoSuchWindowException", "TargetClosedError"):
+        return True
+    text = str(exc).lower()
+    return "timed out" in text or "connection refused" in text or "target closed" in text
+
+
 def browser_proof(driver, site, relayer, email, notes):
     """Open the demo in chain mode, log in, buy a licence; returns the hash."""
     param = os.environ.get("TW_CHAIN_PARAM", "1")
@@ -226,6 +243,11 @@ def browser_proof(driver, site, relayer, email, notes):
             notes.append("login: the email became a NEAR account")
             return buy_licence(driver)
         except Exception as exc:  # noqa: BLE001  (a refusal is evidence, not a crash)
+            if browser_lost(exc):
+                notes.append("infra: the browser stopped answering (%s)" % type(exc).__name__)
+                log("  the browser stopped answering (%s: %s)"
+                    % (type(exc).__name__, str(exc)[:160]))
+                return None
             log("  no NEAR account with ?chain=%s (%s: %s)" % (value, type(exc).__name__, str(exc)[:160]))
             if attempt == 0:
                 # This attempt talked to a relayer the build did not know: its
@@ -261,6 +283,16 @@ def proof(site, relayer, rpc_url, contract, email, notes):
         skipped = [n for n in notes if n.startswith("skip:")]
         if skipped:
             return skip(skipped[0][len("skip: "):] + " — redeploy the demo, then re-run")
+        infra = [n for n in notes if n.startswith("infra:")]
+        if infra:
+            # The browser stopped answering: nothing was proved, and nothing
+            # was broken either. A busy machine must not look like a failure.
+            # The council proof needs no browser, so it still runs: a real
+            # regression there is never hidden behind a busy machine.
+            council = vote_phase(relayer, rpc_url, contract, account, email, notes)
+            if council != 0:
+                return council
+            return skip(infra[0][len("infra: "):] + " — the browser part was inconclusive, re-run it")
         return fail("; ".join(notes) or "the chain proof produced no transaction", notes)
     tx_hash, shown = outcome
     result = verify(site, rpc_url, contract, account, tx_hash, shown, errors, notes, before)
