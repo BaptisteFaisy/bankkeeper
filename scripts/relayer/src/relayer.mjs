@@ -14,6 +14,7 @@
 //   GET  /health                         → chain + relayer status
 import fs from 'node:fs';
 import http from 'node:http';
+import { pathToFileURL } from 'node:url';
 import { paths, view } from '../../sandbox/lib.mjs';
 import { chainConfig, buyLicence, buyLoan, chainError, login, normaliseEmail, position, propose, vote } from './chain.mjs';
 import { allowAction, allowCall, recordAction } from './guard.mjs';
@@ -78,7 +79,10 @@ function refuse(status, code) {
 
 /** Who is calling: the address, and the captain when there is one. */
 function callerKey(req, email) {
-  const ip = req.socket?.remoteAddress ?? 'unknown';
+  // Behind a function host the peer is a proxy: the caller is the first
+  // address of `x-forwarded-for`, not the socket.
+  const forwarded = String(req.headers?.['x-forwarded-for'] ?? '').split(',')[0].trim();
+  const ip = forwarded !== '' ? forwarded : (req.socket?.remoteAddress ?? 'unknown');
   return `${ip}|${email ? accountKey(email) : '-'}`;
 }
 
@@ -93,14 +97,17 @@ async function guarded(req, email, work) {
   return result;
 }
 
-async function route(req, url) {
+/** The router: one implementation, used by the Node server and by the
+ *  serverless entry. `given` is the body when the host already parsed it
+ *  (a function host does), so the stream is never read twice. */
+export async function route(req, url, given) {
   if (req.method === 'GET' && url.pathname === '/health') return health();
   if (req.method === 'GET' && url.pathname === '/position') {
     const email = normaliseEmail(url.searchParams.get('email'));
     if (!allowCall(callerKey(req, email))) throw refuse(429, 'E_RATE_LIMIT');
     return position(email);
   }
-  const body = await readBody(req);
+  const body = given ?? await readBody(req);
   if (req.method === 'POST' && url.pathname === '/login') {
     if (!allowCall(callerKey(req, body.email))) throw refuse(429, 'E_RATE_LIMIT');
     return login(body.email);
@@ -126,18 +133,26 @@ async function route(req, url) {
   throw notFound;
 }
 
-const server = http.createServer((req, res) => {
+/** One request, start to finish: the shape the Node server serves and the
+ *  shape a function host calls. `given` is the body when the host parsed it. */
+export async function handleRequest(req, res, given) {
   const url = new URL(req.url, `http://${req.headers.host ?? '127.0.0.1'}`);
   if (req.method === 'OPTIONS') return send(res, 204, {});
-  route(req, url)
+  return route(req, url, given)
     .then((result) => send(res, 200, result))
     .catch((error) => {
       const status = error.status ?? (String(error.message).includes('E_') ? 409 : 400);
       send(res, status, { error: chainError(error) });
     });
-});
+}
 
-server.listen(PORT, HOST, () => {
+/** Run the server only when this file *is* the program: a function host
+ *  imports it for `handleRequest` and must not open a port. */
+const isProgram = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+const server = http.createServer(handleRequest);
+
+if (isProgram) server.listen(PORT, HOST, () => {
   fs.writeFileSync(paths().relayerPid, `${JSON.stringify({ pid: process.pid, port: PORT, at: new Date().toISOString() })}\n`);
   const config = chainConfig();
   console.log(`tidewater relayer on http://${HOST}:${PORT}`);
