@@ -23,8 +23,9 @@ Projet pour le hackathon NEAR — track **Games With Real Economies**.
 
 1. **Ouvrir le lien public** : **<https://tidewater-play.vercel.app/?seed=7&weeks=1>**
    — cliquer **Play** sur la page de garde (ou **Scenario** pour la démo guidée
-   d'une journée), saisir un email, cliquer **Set sail**, puis **Skip**
-   sur le tutoriel.
+   d'une journée), saisir un email, cliquer **Set sail**. Le tutoriel ne
+   s'ouvre plus tout seul : **How to play**, dans la barre du haut, l'ouvre
+   à la demande (cartes **Next** / **Done**).
 2. **Parcours 90 s** : cliquer **Go live** (1 lot / 30 s) ou **End the day**,
    survoler **why** à côté d'un acheteur pour lire sa règle de prix, puis lire
    **Who took what** dans le registre.
