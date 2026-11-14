@@ -11,6 +11,17 @@ port où chaque licence donne une voix.
 
 Projet pour le hackathon NEAR — track **Games With Real Economies**.
 
+> **Deuxième soumission du même auteur — [Demerit](https://github.com/Tradoooo/near_demerit)** :
+> une licence professionnelle non transférable sur NEAR (ticket 10 « NFTs That Do Something »),
+> lue en direct sur <https://near-demerit.vercel.app>. Deux projets indépendants, un seul auteur :
+> le hackathon NEAR autorise deux entrées par personne, à condition que chaque README nomme
+> l'autre.
+>
+> *Second entry by the same author — [Demerit](https://github.com/Tradoooo/near_demerit): a
+> non-transferable professional licence on NEAR (ticket 10, "NFTs That Do Something"), read live at
+> <https://near-demerit.vercel.app>. Two independent projects, one builder: the NEAR Hackathon lets
+> one person enter up to two projects, provided each README names the other one.*
+
 - 🎮 **Jouer en ligne (0 installation, 0 serveur)** :
   **[tidewater-play.vercel.app](https://tidewater-play.vercel.app)**
 - 📜 **Contrat NEP-245** : `contracts/tidewater/` (412 Ko wasm, 37 fonctions, ABI embarquée)
